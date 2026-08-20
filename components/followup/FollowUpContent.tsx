@@ -1,0 +1,160 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { DataTable, type TableColumn } from "@/components/ui/Table";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { Tabs } from "@/components/ui/Tabs";
+import { useToast } from "@/components/ui/Toast";
+import { NewFollowUpModal } from "./NewFollowUpModal";
+import type { FollowUp } from "@/types";
+import { formatDate, relativeLabel } from "@/lib/utils";
+import {
+  FOLLOW_UP_STATUS_LABELS,
+  FOLLOW_UP_STATUS_TONES,
+  FOLLOW_UP_TYPE_LABELS,
+} from "@/lib/constants";
+import { IconPlus, IconRefresh, IconEdit, IconTrash, IconCheck } from "@/components/icons";
+
+export interface FollowUpContentProps {
+  groups: {
+    hoje: FollowUp[];
+    atrasados: FollowUp[];
+    proximos: FollowUp[];
+    concluidos: FollowUp[];
+  };
+  responsibleNames: Record<string, string>;
+}
+
+export function FollowUpContent({ groups, responsibleNames }: FollowUpContentProps) {
+  const { toast } = useToast();
+  const [modalOpen, setModalOpen] = useState(false);
+
+  function columns(): TableColumn<FollowUp>[] {
+    return [
+      {
+        key: "cliente",
+        header: "Cliente",
+        render: (followUp) => (
+          <Link href={`/clientes/${followUp.clientId}`} className="font-medium text-foreground hover:text-brand-300">
+            {followUp.clientName}
+          </Link>
+        ),
+      },
+      {
+        key: "responsavel",
+        header: "Responsável",
+        render: (followUp) => <span className="text-muted">{responsibleNames[followUp.responsibleId] ?? followUp.responsibleId}</span>,
+      },
+      {
+        key: "tipo",
+        header: "Tipo",
+        render: (followUp) => <span className="text-muted">{FOLLOW_UP_TYPE_LABELS[followUp.type]}</span>,
+      },
+      {
+        key: "data",
+        header: "Data",
+        render: (followUp) => (
+          <span className="text-muted">
+            {formatDate(followUp.date, { day: "2-digit", month: "short" })}
+            <span className="ml-1.5 text-muted-2">· {relativeLabel(followUp.date)}</span>
+          </span>
+        ),
+      },
+      {
+        key: "horario",
+        header: "Horário",
+        render: (followUp) => <span className="text-foreground/90">{followUp.time}</span>,
+      },
+      {
+        key: "status",
+        header: "Status",
+        render: (followUp) => (
+          <Badge tone={FOLLOW_UP_STATUS_TONES[followUp.status]} dot>
+            {FOLLOW_UP_STATUS_LABELS[followUp.status]}
+          </Badge>
+        ),
+      },
+      {
+        key: "acao",
+        header: "Ação",
+        className: "w-10",
+        render: (followUp) => (
+          <Dropdown
+            align="right"
+            triggerClassName="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-3"
+            trigger={<span className="text-muted">•••</span>}
+            items={[
+              {
+                label: "Concluir",
+                icon: <IconCheck className="h-4 w-4" />,
+                onClick: () =>
+                  toast({ title: "Follow-up concluído", message: followUp.clientName, variant: "success" }),
+              },
+              {
+                label: "Editar",
+                icon: <IconEdit className="h-4 w-4" />,
+                onClick: () =>
+                  toast({ title: "Edição em breve", variant: "info" }),
+              },
+              {
+                label: "Excluir",
+                icon: <IconTrash className="h-4 w-4" />,
+                onClick: () =>
+                  toast({ title: "Exclusão não disponível", message: "Chega com o backend real.", variant: "warning" }),
+                danger: true,
+              },
+            ]}
+          />
+        ),
+      },
+    ];
+  }
+
+  const renderTable = (items: FollowUp[]) => (
+    <div className="overflow-hidden rounded-xl border border-border bg-surface-1">
+      <DataTable
+        columns={columns()}
+        data={items}
+        rowKey={(followUp) => followUp.id}
+        empty={
+          <EmptyState
+            icon={<IconRefresh className="h-6 w-6" />}
+            title="Nada por aqui"
+            description="Não há follow-ups nesta categoria."
+          />
+        }
+      />
+    </div>
+  );
+
+  const tabs = [
+    { id: "hoje", label: "Hoje", badge: groups.hoje.length, content: renderTable(groups.hoje) },
+    { id: "atrasados", label: "Atrasados", badge: groups.atrasados.length, content: renderTable(groups.atrasados) },
+    { id: "proximos", label: "Próximos", badge: groups.proximos.length, content: renderTable(groups.proximos) },
+    { id: "concluidos", label: "Concluídos", badge: groups.concluidos.length, content: renderTable(groups.concluidos) },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Follow-up"
+        description="Rotina comercial: ligações, mensagens, reuniões e propostas"
+        actions={
+          <Button onClick={() => setModalOpen(true)}>
+            <IconPlus className="h-4 w-4" />
+            Novo follow-up
+          </Button>
+        }
+      />
+
+      <Tabs tabs={tabs} />
+
+      <NewFollowUpModal open={modalOpen} onClose={() => setModalOpen(false)} />
+    </div>
+  );
+}

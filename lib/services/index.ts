@@ -1,0 +1,12 @@
+export { clientService } from "./client-service";
+export { dealService } from "./deal-service";
+export type { DealStats } from "./deal-service";
+export { paymentService } from "./payment-service";
+export type { PaymentStats } from "./payment-service";
+export { followUpService } from "./follow-up-service";
+export type { FollowUpGroups } from "./follow-up-service";
+export { taskService } from "./task-service";
+export type { TaskGroups } from "./task-service";
+export { calendarService } from "./calendar-service";
+export { notificationService } from "./notification-service";
+export { userService } from "./user-service";
