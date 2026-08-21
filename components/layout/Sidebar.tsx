@@ -26,7 +26,7 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   followup: IconRefresh,
   calendario: IconCalendar,
   pendentes: IconCheckSquare,
-  pagamentos: IconCreditCard,
+  financeiro: IconCreditCard,
   config: IconSettings,
 };
 

@@ -1,10 +1,21 @@
+import { redirect } from "next/navigation";
 import { SettingsContent } from "@/components/configuracoes/SettingsContent";
 import { userService } from "@/lib/services";
 import { mockCompanies } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function ConfiguracoesPage() {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser) {
+    redirect("/login");
+  }
+
   const [user, users] = await Promise.all([
-    userService.getCurrentUser(),
+    userService.getCurrentUser(authUser.email ?? undefined),
     userService.getAllUsers(),
   ]);
 

@@ -4,16 +4,22 @@ import type { Activity, User } from "@/types";
 /**
  * Repository de usuários e atividades.
  *
- * TODO: substituir por consultas reais ao banco (PostgreSQL/Supabase).
+ * Busca o usuário atual a partir do e-mail da sessão Supabase,
+ * fazendo o match com os dados mockados por e-mail.
  */
 export class UserRepository {
   async findAll(): Promise<User[]> {
     return mockDatabase.read("users");
   }
 
-  async findCurrent(): Promise<User | null> {
+  async findCurrent(email?: string): Promise<User | null> {
     const users = await mockDatabase.read("users");
-    return users.find((user) => user.id === "usr-ana") ?? users[0] ?? null;
+
+    if (email) {
+      return users.find((user) => user.email === email) ?? null;
+    }
+
+    return users[0] ?? null;
   }
 
   async findActivities(): Promise<Activity[]> {

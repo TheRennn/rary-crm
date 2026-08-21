@@ -1,4 +1,4 @@
-import type { DatabaseAdapter, DatabaseSchema } from "./index";
+import type { ArrayTable, DatabaseAdapter, DatabaseSchema } from "./index";
 import { mockData } from "@/lib/mock-data";
 
 /**
@@ -14,6 +14,15 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
     table: T
   ): Promise<DatabaseSchema[T]> {
     return this.data[table];
+  }
+
+  async insert<T extends ArrayTable>(
+    table: T,
+    record: DatabaseSchema[T][number]
+  ): Promise<DatabaseSchema[T][number]> {
+    const rows = this.data[table] as DatabaseSchema[T][number][];
+    rows.push(record);
+    return record;
   }
 }
 

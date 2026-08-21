@@ -137,6 +137,67 @@ export interface Payment {
   method: string;
 }
 
+export type CommissionPaymentMethod = "A_VISTA" | "BOLETO" | "CARTAO";
+
+export interface CommissionInstallment {
+  number: number;
+  dueDate: string;
+  value: number;
+  status: PaymentStatus;
+}
+
+export interface Commission {
+  id: string;
+  companyName: string;
+  period: string;
+  rate: number;
+  baseValue: number;
+  value: number;
+  dueDate: string;
+  status: PaymentStatus;
+  method: CommissionPaymentMethod;
+  installments?: CommissionInstallment[];
+  notes?: string;
+}
+
+export type OrderSource = "REPRESENTANTE" | "EMPRESA";
+export type OrderType = "VENDA" | "AMOSTRA" | "BONIFICACAO";
+
+export interface OrderItem {
+  id: string;
+  product: string;
+  productCode?: string;
+  quantity: number;
+  unitValue: number;
+}
+
+export interface Order {
+  id: string;
+  code: string;
+  clientId?: string;
+  clientName: string;
+  companyName: string;
+  period: string;
+  date: string;
+  source: OrderSource;
+  type: OrderType;
+  items: OrderItem[];
+  total: number;
+  status: PaymentStatus;
+}
+
+export type GoalTargetType = "CLIENTES" | "FATURAMENTO" | "VENDAS";
+
+export interface Goal {
+  id: string;
+  targetType: GoalTargetType;
+  targetValue: number;
+  period: string;
+  currentValue?: number;
+  notes?: string;
+  createdAt: string;
+}
+
 export interface FollowUp {
   id: string;
   clientId: string;

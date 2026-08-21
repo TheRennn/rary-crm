@@ -9,7 +9,7 @@ const navLinks = [
   { label: "Follow-up", href: ROUTES.followUp },
   { label: "Calendário", href: ROUTES.calendario },
   { label: "Pendentes", href: ROUTES.pendentes },
-  { label: "Pagamentos", href: ROUTES.pagamentos },
+  { label: "Financeiro", href: ROUTES.financeiro },
 ];
 
 export function LandingFooter() {

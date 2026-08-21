@@ -2,10 +2,13 @@ import type {
   Activity,
   CalendarEvent,
   Client,
+  Commission,
   Company,
   Deal,
   FollowUp,
+  Goal,
   Notification,
+  Order,
   Payment,
   Purchase,
   Task,
@@ -22,8 +25,16 @@ import type {
  * Nenhum componente deve acessar este contrato diretamente —
  * sempre passando por repositories/services.
  */
+export type ArrayTable = {
+  [K in keyof DatabaseSchema]: DatabaseSchema[K] extends unknown[] ? K : never;
+}[keyof DatabaseSchema];
+
 export interface DatabaseAdapter {
   read<T extends keyof DatabaseSchema>(table: T): Promise<DatabaseSchema[T]>;
+  insert<T extends ArrayTable>(
+    table: T,
+    record: DatabaseSchema[T][number]
+  ): Promise<DatabaseSchema[T][number]>;
 }
 
 export interface DatabaseSchema {
@@ -33,6 +44,9 @@ export interface DatabaseSchema {
   deals: Deal[];
   purchases: Purchase[];
   payments: Payment[];
+  commissions: Commission[];
+  orders: Order[];
+  goals: Goal[];
   followUps: FollowUp[];
   tasks: Task[];
   calendarEvents: CalendarEvent[];

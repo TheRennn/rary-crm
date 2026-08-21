@@ -8,6 +8,7 @@ import { NotificationCenter } from "@/components/ui/NotificationCenter";
 import { IconMenu, IconSearch, IconLogout, IconUser, IconSettings } from "@/components/icons";
 import type { User } from "@/types";
 import { ROUTES } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
 
 export interface TopbarProps {
   user: User | null;
@@ -81,7 +82,11 @@ export function Topbar({ user, companyName, onOpenMobileNav }: TopbarProps) {
             {
               label: "Sair da conta",
               icon: <IconLogout className="h-4 w-4" />,
-              onClick: () => router.push("/login"),
+              onClick: async () => {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                router.push("/login");
+              },
               danger: true,
             },
           ]}

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { IconMail, IconEye } from "@/components/icons";
 import { IconKey, IconEyeOff } from "@/components/ui/icons-additional";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,20 +19,35 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
 
-    // TODO: sprint seguinte — autenticação real (Supabase/PostgreSQL).
-    setTimeout(() => {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
       setLoading(false);
       toast({
-        title: "Bem-vindo de volta!",
-        message: "Login validado (modo desenvolvimento).",
-        variant: "success",
+        title: "Erro ao entrar",
+        message:
+          error.message === "Invalid login credentials"
+            ? "E-mail ou senha inválidos."
+            : error.message,
+        variant: "error",
       });
-      router.push("/dashboard");
-    }, 700);
+      return;
+    }
+
+    toast({
+      title: "Bem-vindo de volta!",
+      message: "Login realizado com sucesso.",
+      variant: "success",
+    });
+    router.push("/dashboard");
   }
 
   return (
@@ -41,7 +57,10 @@ export default function LoginPage() {
       footer={
         <>
           Ainda não tem conta?{" "}
-          <Link href="/cadastro" className="font-medium text-brand-400 hover:text-brand-300">
+          <Link
+            href="/cadastro"
+            className="font-medium text-brand-400 hover:text-brand-300"
+          >
             Criar conta
           </Link>
         </>
@@ -73,7 +92,11 @@ export default function LoginPage() {
               aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
               className="text-muted-2 transition-colors hover:text-foreground"
             >
-              {showPassword ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+              {showPassword ? (
+                <IconEyeOff className="h-4 w-4" />
+              ) : (
+                <IconEye className="h-4 w-4" />
+              )}
             </button>
           }
           required

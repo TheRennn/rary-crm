@@ -250,3 +250,190 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   Dashboard — tema, densidade e micro-interações (escopado)
+   ============================================================ */
+
+[data-appearance="light"] {
+  --background: #f1f1f5;
+  --foreground: #16161a;
+  --surface-0: #fafafc;
+  --surface-1: #ffffff;
+  --surface-2: #f4f4f7;
+  --surface-3: #ececf1;
+  --surface-hover: #e3e3ea;
+  --border: #e3e3ea;
+  --border-strong: #d3d3dd;
+  --muted: #5f5f6a;
+  --muted-2: #9a9aa5;
+  color-scheme: light;
+}
+
+[data-appearance="light"] .dash-widget {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+/* Densidade */
+[data-density="compact"] .dash-widget {
+  padding: 0.75rem 0.875rem;
+}
+[data-density="compact"] .dash-widget-title {
+  font-size: 0.75rem;
+}
+[data-density="compact"] .dash-widget-sub {
+  font-size: 0.6875rem;
+}
+[data-density="compact"] .dash-grid {
+  gap: 0.625rem;
+}
+
+[data-density="comfortable"] .dash-widget {
+  padding: 1rem 1.2rem;
+}
+[data-density="comfortable"] .dash-widget-title {
+  font-size: 0.8125rem;
+}
+[data-density="comfortable"] .dash-widget-sub {
+  font-size: 0.75rem;
+}
+[data-density="comfortable"] .dash-grid {
+  gap: 1rem;
+}
+
+[data-density="spacious"] .dash-widget {
+  padding: 1.5rem 1.75rem;
+}
+[data-density="spacious"] .dash-widget-title {
+  font-size: 0.9375rem;
+}
+[data-density="spacious"] .dash-widget-sub {
+  font-size: 0.8125rem;
+}
+[data-density="spacious"] .dash-grid {
+  gap: 1.75rem;
+}
+
+.dash-widget {
+  padding: 1.05rem 1.25rem;
+}
+
+.dash-widget-title {
+  font-size: 0.8125rem;
+}
+
+/* Cards com hover elevado */
+@keyframes widget-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 8px 32px -14px color-mix(in srgb, var(--brand-primary) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 10px 40px -12px color-mix(in srgb, var(--brand-primary) 55%, transparent);
+  }
+}
+
+.dash-widget-hover {
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background-color 0.22s ease;
+}
+.dash-widget-hover:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--brand-primary) 45%, var(--border-strong));
+  box-shadow: 0 12px 40px -14px color-mix(in srgb, var(--brand-primary) 40%, transparent);
+}
+
+/* Entrada dos widgets no grid */
+@keyframes widget-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-widget-in {
+  animation: widget-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pop-check {
+  0% {
+    transform: scale(0.3) rotate(-30deg);
+  }
+  60% {
+    transform: scale(1.15) rotate(8deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+.animate-pop-check {
+  animation: pop-check 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes grow-width {
+  from {
+    width: 0%;
+  }
+}
+.animate-grow-width {
+  animation: grow-width 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes bar-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+.animate-bar-rise {
+  transform-origin: bottom;
+  animation: bar-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes shimmer-slide {
+  to {
+    transform: translateX(100%);
+  }
+}
+.dash-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--border) 55%, transparent);
+}
+.dash-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--surface-hover) 70%, transparent),
+    transparent
+  );
+  animation: shimmer-slide 1.6s ease-in-out infinite;
+}
+
+/* Comando rápido Ctrl+K */
+@keyframes kb-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-primary) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+.animate-kb-pulse {
+  animation: kb-pulse 2.4s ease-in-out infinite;
+}
+
+/* KPI sparkline linha de tendência */
+.dash-kpi-spark {
+  transition: stroke-dashoffset 0.8s ease;
+}

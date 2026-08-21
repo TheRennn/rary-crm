@@ -3,12 +3,16 @@ import type {
   CalendarEvent,
   Client,
   ClientStatus,
+  Commission,
+  CommissionInstallment,
   Company,
   Deal,
   DealStatus,
   FollowUp,
   FollowUpStatus,
+  Goal,
   Notification,
+  Order,
   Payment,
   PaymentStatus,
   Purchase,
@@ -31,7 +35,7 @@ function timeAgoLabel(days: number): string {
 export const mockUsers: User[] = [
   {
     id: "usr-ana",
-    name: "Ana Ribeiro",
+    name: "Ana Gabriela",
     email: "ana@rary.com",
     role: "ADMIN",
     companyId: "comp-rary",
@@ -425,6 +429,172 @@ export const mockPayments: Payment[] = [
   { id: "pay-010", clientId: "clt-007", dealId: "deal-010", clientName: "Pereira Alimentos", description: "Plataforma Business — cancelado", value: 36000, dueDate: daysFromNow(-30), status: "CANCELADO", method: "Boleto" },
 ];
 
+function buildInstallments(
+  value: number,
+  count: number,
+  dueDate: string
+): CommissionInstallment[] {
+  const each = Math.round((value / count) * 100) / 100;
+  return Array.from({ length: count }, (_, index) => {
+    const due = new Date(dueDate);
+    due.setMonth(due.getMonth() + index);
+    return {
+      number: index + 1,
+      dueDate: due.toISOString().slice(0, 10),
+      value: index === count - 1 ? Math.round((value - each * (count - 1)) * 100) / 100 : each,
+      status: "PENDENTE",
+    };
+  });
+}
+
+export const mockCommissions: Commission[] = [
+  { id: "com-001", companyName: "Eletro Sul", period: "2026-07", rate: 5, baseValue: 48200, value: 2410, dueDate: daysFromNow(-12), status: "PAGO", method: "A_VISTA", notes: "Vendas de julho" },
+  { id: "com-002", companyName: "ConstruMax Materiais", period: "2026-07", rate: 4, baseValue: 63500, value: 2540, dueDate: daysFromNow(-3), status: "ATRASADO", method: "BOLETO", notes: "Pagamento está com a empresa" },
+  { id: "com-003", companyName: "Agro Camargo", period: "2026-06", rate: 6, baseValue: 32900, value: 1974, dueDate: daysFromNow(-40), status: "PAGO", method: "BOLETO" },
+  { id: "com-004", companyName: "VetCare Distribuidora", period: "2026-08", rate: 5, baseValue: 58600, value: 2930, dueDate: daysFromNow(0), status: "PENDENTE", method: "CARTAO", installments: buildInstallments(2930, 3, daysFromNow(0)), notes: "Confirmação do contador" },
+  { id: "com-005", companyName: "Grupo Andes", period: "2026-07", rate: 3.5, baseValue: 121400, value: 4249, dueDate: daysFromNow(5), status: "PENDENTE", method: "BOLETO", installments: buildInstallments(4249, 2, daysFromNow(5)) },
+  { id: "com-006", companyName: "Metalúrgica Campos", period: "2026-06", rate: 4, baseValue: 44750, value: 1790, dueDate: daysFromNow(-65), status: "PAGO", method: "A_VISTA" },
+  { id: "com-007", companyName: "Química Reverte", period: "2026-08", rate: 7, baseValue: 27600, value: 1932, dueDate: daysFromNow(-6), status: "ATRASADO", method: "CARTAO", installments: buildInstallments(1932, 12, daysFromNow(-6)), notes: "Aguardando liberação" },
+  { id: "com-008", companyName: "Papelaria Norte", period: "2026-08", rate: 5, baseValue: 19800, value: 990, dueDate: daysFromNow(9), status: "PENDENTE", method: "A_VISTA" },
+  { id: "com-009", companyName: "AutoPeças Vega", period: "2026-07", rate: 4, baseValue: 35000, value: 1400, dueDate: daysFromNow(14), status: "PENDENTE", method: "BOLETO", installments: buildInstallments(1400, 4, daysFromNow(14)), notes: "Parcelado na competência" },
+  { id: "com-010", companyName: "Têxtil Sul", period: "2026-06", rate: 5, baseValue: 92000, value: 4600, dueDate: daysFromNow(-30), status: "CANCELADO", method: "CARTAO", notes: "Reembolso de pedido" },
+];
+
+export const mockOrders: Order[] = [
+  {
+    id: "ord-001",
+    code: "PED-0001",
+    clientId: "clt-001",
+    clientName: "Empresa XYZ",
+    companyName: "Eletro Sul",
+    period: "2026-07",
+    date: daysFromNow(-20),
+    source: "EMPRESA",
+    type: "VENDA",
+    items: [
+      { id: "oi-001", product: "Bomba Centrífuga BC-25", productCode: "BC-25", quantity: 3, unitValue: 3200 },
+      { id: "oi-002", product: "Termostato Industrial TI-90", productCode: "TI-90", quantity: 5, unitValue: 850 },
+    ],
+    total: 13850,
+    status: "PAGO",
+  },
+  {
+    id: "ord-002",
+    code: "PED-0002",
+    clientId: "clt-004",
+    clientName: "Clínica Vitalis",
+    companyName: "VetCare Distribuidora",
+    period: "2026-08",
+    date: daysFromNow(-4),
+    source: "REPRESENTANTE",
+    type: "AMOSTRA",
+    items: [{ id: "oi-003", product: "Autoclave 21L", productCode: "AC-21", quantity: 1, unitValue: 0 }],
+    total: 0,
+    status: "PENDENTE",
+  },
+  {
+    id: "ord-003",
+    code: "PED-0003",
+    clientId: "clt-006",
+    clientName: "Mendonça Educação",
+    companyName: "Papelaria Norte",
+    period: "2026-07",
+    date: daysFromNow(-12),
+    source: "REPRESENTANTE",
+    type: "VENDA",
+    items: [
+      { id: "oi-004", product: "Bobina Térmica 80mm", productCode: "BT-080", quantity: 120, unitValue: 35 },
+      { id: "oi-005", product: "Fita Adesiva AZ 50m", productCode: "FA-50", quantity: 90, unitValue: 12.5 },
+    ],
+    total: 5325,
+    status: "PAGO",
+  },
+  {
+    id: "ord-004",
+    code: "PED-0004",
+    clientId: "clt-010",
+    clientName: "Farias Tech",
+    companyName: "Grupo Andes",
+    period: "2026-08",
+    date: daysFromNow(-2),
+    source: "EMPRESA",
+    type: "VENDA",
+    items: [
+      { id: "oi-006", product: "Servo Motor SM-400", productCode: "SM-400", quantity: 6, unitValue: 4800 },
+      { id: "oi-007", product: "Inversor de Frequência IF-5", productCode: "IF-5", quantity: 4, unitValue: 2100 },
+    ],
+    total: 37200,
+    status: "PENDENTE",
+  },
+  {
+    id: "ord-005",
+    code: "PED-0005",
+    clientId: "clt-008",
+    clientName: "Campos Serviços",
+    companyName: "AutoPeças Vega",
+    period: "2026-08",
+    date: daysFromNow(-1),
+    source: "REPRESENTANTE",
+    type: "VENDA",
+    items: [
+      { id: "oi-008", product: "Amortecedor dianteiro", productCode: "AM-0240", quantity: 20, unitValue: 240 },
+      { id: "oi-009", product: "Pastilha de freio", productCode: "PF-0185", quantity: 16, unitValue: 185 },
+    ],
+    total: 7760,
+    status: "PENDENTE",
+  },
+  {
+    id: "ord-006",
+    code: "PED-0006",
+    clientId: "clt-011",
+    clientName: "Barros Consultoria",
+    companyName: "Química Reverte",
+    period: "2026-08",
+    date: daysFromNow(0),
+    source: "REPRESENTANTE",
+    type: "VENDA",
+    items: [
+      { id: "oi-010", product: "Reagente RX-200", productCode: "RX-200", quantity: 15, unitValue: 620 },
+      { id: "oi-011", product: "Kit Análise KA-5", productCode: "KA-5", quantity: 8, unitValue: 940 },
+    ],
+    total: 16820,
+    status: "PENDENTE",
+  },
+  {
+    id: "ord-007",
+    code: "PED-0007",
+    clientId: "clt-009",
+    clientName: "Rocha Digital",
+    companyName: "Grupo Andes",
+    period: "2026-08",
+    date: daysFromNow(1),
+    source: "REPRESENTANTE",
+    type: "AMOSTRA",
+    items: [
+      { id: "oi-012", product: "Servo Motor SM-400", productCode: "SM-400", quantity: 1, unitValue: 0 },
+      { id: "oi-013", product: "Inversor de Frequência IF-5", productCode: "IF-5", quantity: 1, unitValue: 0 },
+    ],
+    total: 0,
+    status: "PENDENTE",
+  },
+  {
+    id: "ord-008",
+    code: "PED-0008",
+    clientId: "clt-003",
+    clientName: "Nogueira Indústria",
+    companyName: "Química Reverte",
+    period: "2026-08",
+    date: daysFromNow(2),
+    source: "EMPRESA",
+    type: "BONIFICACAO",
+    items: [
+      { id: "oi-014", product: "Reagente RX-200", productCode: "RX-200", quantity: 12, unitValue: 0 },
+    ],
+    total: 0,
+    status: "PENDENTE",
+  },
+];
+
 const followUpStatuses: Record<string, FollowUpStatus> = {
   hoje: "HOJE",
   atrasado: "ATRASADO",
@@ -480,7 +650,7 @@ export const mockNotifications: Notification[] = [
 export const mockActivities: Activity[] = [
   { id: "act-001", type: "CLIENTE", title: "Novo cliente cadastrado", detail: "Diego Rocha — Rocha Digital", createdAt: timeAgoLabel(-1), actor: "Carlos Mendes" },
   { id: "act-002", type: "VENDA", title: "Venda registrada", detail: "Plataforma RARY Starter — R$ 4.800,00", createdAt: timeAgoLabel(-2), actor: "Carlos Mendes" },
-  { id: "act-003", type: "FOLLOW_UP", title: "Follow-up agendado", detail: "Reunião com Clínica Vitalis", createdAt: timeAgoLabel(-1), actor: "Ana Ribeiro" },
+  { id: "act-003", type: "FOLLOW_UP", title: "Follow-up agendado", detail: "Reunião com Clínica Vitalis", createdAt: timeAgoLabel(-1), actor: "Ana Gabriela" },
   { id: "act-004", type: "PAGAMENTO", title: "Pagamento recebido", detail: "Empresa XYZ — R$ 24.000,00", createdAt: timeAgoLabel(-20), actor: "Sistema" },
   { id: "act-005", type: "TAREFA", title: "Tarefa criada", detail: "Relatório mensal de vendas", createdAt: timeAgoLabel(-3), actor: "Rafael Souza" },
 ];
@@ -515,6 +685,13 @@ export const mockTimelines: Record<string, TimelineEntry[]> = {
   ],
 };
 
+export const mockGoals: Goal[] = [
+  { id: "goal-001", targetType: "FATURAMENTO", targetValue: 420000, period: "2026-08", createdAt: daysFromNow(-10), notes: "Meta de agosto" },
+  { id: "goal-002", targetType: "CLIENTES", targetValue: 24, period: "2026-08", createdAt: daysFromNow(-9), notes: "Novos clientes no trim" },
+  { id: "goal-003", targetType: "VENDAS", targetValue: 340000, period: "2026-08", createdAt: daysFromNow(-8), notes: "Volume de vendas" },
+  { id: "goal-004", targetType: "FATURAMENTO", targetValue: 380000, period: "2026-07", currentValue: 398500, createdAt: daysFromNow(-40), notes: "Meta batida em julho" },
+];
+
 export const mockData = {
   users: mockUsers,
   companies: mockCompanies,
@@ -522,6 +699,9 @@ export const mockData = {
   deals: mockDeals,
   purchases: mockPurchases,
   payments: mockPayments,
+  commissions: mockCommissions,
+  orders: mockOrders,
+  goals: mockGoals,
   followUps: mockFollowUps,
   tasks: mockTasks,
   calendarEvents: mockCalendarEvents,

@@ -5,8 +5,8 @@ import type { Activity, User } from "@/types";
  * Service de usuários e feed de atividades.
  */
 export class UserService {
-  async getCurrentUser(): Promise<User | null> {
-    return userRepository.findCurrent();
+  async getCurrentUser(email?: string): Promise<User | null> {
+    return userRepository.findCurrent(email);
   }
 
   async getAllUsers(): Promise<User[]> {

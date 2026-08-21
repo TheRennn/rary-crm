@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { Filter } from "@/components/ui/Filter";
 import { Badge } from "@/components/ui/Badge";
@@ -87,11 +86,6 @@ export function PaymentsContent({ payments, stats }: PaymentsContentProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Pagamentos"
-        description="Contas a receber e recebimentos"
-      />
-
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Recebido"

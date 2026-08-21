@@ -16,7 +16,7 @@ interface PermissionRow {
 const initialPermissions: PermissionRow[] = [
   { id: "perm-clientes", label: "Clientes", description: "Visualizar e gerenciar clientes", admin: true, gerente: true, vendedor: true },
   { id: "perm-vendas", label: "Vendas", description: "Registrar e acompanhar vendas", admin: true, gerente: true, vendedor: true },
-  { id: "perm-pagamentos", label: "Pagamentos", description: "Visualizar e gerir pagamentos", admin: true, gerente: true, vendedor: false },
+  { id: "perm-pagamentos", label: "Financeiro", description: "Visualizar e gerir contas a receber e comissões", admin: true, gerente: true, vendedor: false },
   { id: "perm-config", label: "Configurações", description: "Alterar configurações do sistema", admin: true, gerente: false, vendedor: false },
   { id: "perm-usuarios", label: "Usuários", description: "Gerenciar usuários e permissões", admin: true, gerente: false, vendedor: false },
 ];

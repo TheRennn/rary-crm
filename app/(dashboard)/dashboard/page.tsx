@@ -1,79 +1,87 @@
-import { DashboardStats } from "@/components/dashboard/DashboardStats";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import { UpcomingCommitments } from "@/components/dashboard/UpcomingCommitments";
-import { PendingTasks } from "@/components/dashboard/PendingTasks";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { redirect } from "next/navigation";
+import { DashboardClient } from "@/components/dashboard/DashboardClient";
+import {
+  buildDashboardData,
+  type DashboardMetricInput,
+} from "@/lib/dashboard/dashboard-mock-data";
+import type { DashboardData } from "@/lib/dashboard/dashboard-types";
 import {
   calendarService,
   clientService,
   dealService,
   followUpService,
+  notificationService,
   paymentService,
   taskService,
   userService,
 } from "@/lib/services";
+import { createClient } from "@/lib/supabase/server";
 
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return "Bom dia";
-  if (hour >= 12 && hour < 18) return "Boa tarde";
-  return "Boa noite";
-}
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: "Administrador",
+  GERENTE: "Gerente",
+  VENDEDOR: "Vendedor",
+};
 
 export default async function DashboardPage() {
-  const [user, clients, dealStats, paymentStats, followUpGroups, taskGroups, events, activities] =
-    await Promise.all([
-      userService.getCurrentUser(),
-      clientService.getAll(),
-      dealService.getStats(),
-      paymentService.getStats(),
-      followUpService.getGroups(),
-      taskService.getGroups(),
-      calendarService.getAll(),
-      userService.getActivities(),
-    ]);
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
-  // eslint-disable-next-line react-hooks/purity -- janela de recência calculada no servidor (mock)
-  const thirtyDaysAgo = Date.now() - 30 * 86400000;
-  const newClients = clients.filter(
-    (client) => new Date(client.createdAt).getTime() >= thirtyDaysAgo
-  ).length;
+  if (!authUser) {
+    redirect("/login");
+  }
 
-  const todayISO = new Date().toISOString().slice(0, 10);
-  const upcomingEvents = events
-    .filter((event) => event.date.slice(0, 10) >= todayISO)
-    .sort((a, b) =>
-      (a.date + a.time).localeCompare(b.date + b.time)
-    )
-    .slice(0, 6);
+  const [
+    user,
+    clients,
+    deals,
+    payments,
+    followUpGroups,
+    taskGroups,
+    events,
+    notifications,
+    activities,
+  ] = await Promise.all([
+    userService.getCurrentUser(authUser.email ?? undefined),
+    clientService.getAll(),
+    dealService.getAll(),
+    paymentService.getAll(),
+    followUpService.getGroups(),
+    taskService.getGroups(),
+    calendarService.getAll(),
+    notificationService.getAll(),
+    userService.getActivities(),
+  ]);
 
-  const pendingTasks = [...taskGroups.atrasadas, ...taskGroups.hoje].slice(0, 6);
-
-  const stats = {
-    clients: clients.length,
-    newClients,
-    concludedDeals: dealStats.concludedCount,
-    pendingDealsValue: dealStats.pendingValue,
-    overdueTasks: taskGroups.atrasadas.length,
-    paymentsReceived: paymentStats.received,
-    followUpsToday: followUpGroups.hoje.length,
+  const input: DashboardMetricInput = {
+    clients,
+    deals,
+    payments,
+    followUps: [
+      ...followUpGroups.hoje,
+      ...followUpGroups.atrasados,
+      ...followUpGroups.proximos,
+      ...followUpGroups.concluidos,
+    ],
+    tasks: [
+      ...taskGroups.atrasadas,
+      ...taskGroups.hoje,
+      ...taskGroups.proximas,
+      ...taskGroups.concluidas,
+    ],
+    events,
+    notifications,
+    activities,
   };
 
-  return (
-    <div className="flex flex-col gap-8">
-      <PageHeader
-        title={`${greeting()}, ${user?.name?.split(" ")[0] ?? "equipe"}`}
-        description="Visão geral da operação"
-      />
+  const data: DashboardData = {
+    ...buildDashboardData(input),
+    user: user
+      ? { name: user.name.split(" ")[0], role: ROLE_LABELS[user.role] ?? user.role }
+      : null,
+  };
 
-      <DashboardStats data={stats} />
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <UpcomingCommitments events={upcomingEvents} />
-        <PendingTasks tasks={pendingTasks} />
-      </div>
-
-      <RecentActivity activities={activities} />
-    </div>
-  );
+  return <DashboardClient data={data} />;
 }

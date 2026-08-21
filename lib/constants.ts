@@ -1,10 +1,14 @@
 import type {
   CalendarEventType,
   ClientStatus,
+  CommissionPaymentMethod,
   DealStatus,
   FollowUpStatus,
   FollowUpType,
+  GoalTargetType,
   Notification,
+  OrderSource,
+  OrderType,
   PaymentStatus,
   TaskStatus,
 } from "@/types";
@@ -26,7 +30,7 @@ export const ROUTES = {
   followUp: "/follow-up",
   calendario: "/calendario",
   pendentes: "/pendentes",
-  pagamentos: "/pagamentos",
+  financeiro: "/financeiro",
   configuracoes: "/configuracoes",
   integracoes: "/configuracoes/integracoes",
   login: "/login",
@@ -43,7 +47,7 @@ export const NAV_SECTIONS = [
       { label: "Follow-up", href: ROUTES.followUp, icon: "followup" },
       { label: "Calendário", href: ROUTES.calendario, icon: "calendario" },
       { label: "Pendentes", href: ROUTES.pendentes, icon: "pendentes" },
-      { label: "Pagamentos", href: ROUTES.pagamentos, icon: "pagamentos" },
+      { label: "Financeiro", href: ROUTES.financeiro, icon: "financeiro" },
     ],
   },
   {
@@ -104,6 +108,35 @@ export const PAYMENT_STATUS_TONES: Record<PaymentStatus, BadgeTone> = {
   PENDENTE: "warning",
   ATRASADO: "danger",
   CANCELADO: "neutral",
+};
+
+export const COMMISSION_METHOD_LABELS: Record<CommissionPaymentMethod, string> = {
+  A_VISTA: "À vista",
+  BOLETO: "Boleto",
+  CARTAO: "Cartão",
+};
+
+export const COMMISSION_METHOD_OPTIONS = [
+  { value: "A_VISTA", label: "À vista" },
+  { value: "BOLETO", label: "Boleto" },
+  { value: "CARTAO", label: "Cartão" },
+] as const;
+
+export const ORDER_SOURCE_LABELS: Record<OrderSource, string> = {
+  REPRESENTANTE: "Representante",
+  EMPRESA: "Empresa",
+};
+
+export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
+  VENDA: "Venda",
+  AMOSTRA: "Amostra",
+  BONIFICACAO: "Bonificação",
+};
+
+export const GOAL_TARGET_LABELS: Record<GoalTargetType, string> = {
+  CLIENTES: "Clientes",
+  FATURAMENTO: "Faturamento",
+  VENDAS: "Vendas",
 };
 
 export const FOLLOW_UP_TYPE_LABELS: Record<FollowUpType, string> = {
