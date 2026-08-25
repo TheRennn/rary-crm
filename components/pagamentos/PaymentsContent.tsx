@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { StatCard } from "@/components/ui/StatCard";
 import { Filter } from "@/components/ui/Filter";
 import { Badge } from "@/components/ui/Badge";
@@ -10,7 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import type { Payment, PaymentStatus } from "@/types";
 import { cn, formatCurrency, formatDate, isOverdue, relativeLabel } from "@/lib/utils";
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_TONES } from "@/lib/constants";
-import { IconCreditCard, IconCheckCircle, IconAlertCircle, IconClock } from "@/components/icons";
+import { IconCreditCard, IconCheckCircle, IconAlertCircle, IconClock, IconEdit, IconTrash } from "@/components/icons";
 import type { PaymentStats } from "@/lib/services";
 
 export interface PaymentsContentProps {
@@ -24,6 +26,7 @@ const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).ma
 }));
 
 export function PaymentsContent({ payments, stats }: PaymentsContentProps) {
+  const { toast } = useToast();
   const [status, setStatus] = useState("TODOS");
 
   const filtered = useMemo(() => {
@@ -81,6 +84,33 @@ export function PaymentsContent({ payments, stats }: PaymentsContentProps) {
       key: "forma",
       header: "Forma de pagamento",
       render: (payment) => <span className="text-muted">{payment.method}</span>,
+    },
+    {
+      key: "acoes",
+      header: "Ações",
+      className: "w-10",
+      render: (payment) => (
+        <Dropdown
+          align="right"
+          triggerClassName="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-3"
+          trigger={<span className="text-muted">•••</span>}
+          items={[
+            {
+              label: "Editar",
+              icon: <IconEdit className="h-4 w-4" />,
+              onClick: () =>
+                toast({ title: "Edição em breve", message: `${payment.description} — edição será liberada no próximo sprint.`, variant: "info" }),
+            },
+            {
+              label: "Excluir",
+              icon: <IconTrash className="h-4 w-4" />,
+              danger: true,
+              onClick: () =>
+                toast({ title: "Exclusão não disponível", message: `${payment.description} — exclusão chega com o backend real.`, variant: "warning" }),
+            },
+          ]}
+        />
+      ),
     },
   ];
 

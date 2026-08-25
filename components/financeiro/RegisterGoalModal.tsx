@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { MaskedInput } from "@/components/ui/MaskedInput";
 import { IconPlus } from "@/components/icons";
 import { useToast } from "@/components/ui/Toast";
 import { goalService } from "@/lib/services";
 import { GOAL_TARGET_LABELS } from "@/lib/constants";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, parseCurrency } from "@/lib/utils";
 import type { Goal, GoalTargetType } from "@/types";
 import type { GoalCurrents } from "./GoalsView";
 
@@ -16,6 +17,7 @@ export interface RegisterGoalModalProps {
   onClose: () => void;
   onCreated: (goal: Goal) => void;
   currents?: GoalCurrents;
+  editGoal?: Goal | null;
 }
 
 const inputClasses =
@@ -27,14 +29,26 @@ const GOAL_TYPE_OPTIONS: { value: GoalTargetType; label: string; hint: string }[
   { value: "VENDAS", label: "Vendas", hint: "em reais" },
 ];
 
-export function RegisterGoalModal({ open, onClose, onCreated, currents }: RegisterGoalModalProps) {
+export function RegisterGoalModal({ open, onClose, onCreated, currents, editGoal }: RegisterGoalModalProps) {
   const { toast } = useToast();
+  const isEditing = !!editGoal;
   const [targetType, setTargetType] = useState<GoalTargetType>("FATURAMENTO");
   const [targetValue, setTargetValue] = useState("");
   const [period, setPeriod] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editGoal && open) {
+      setTargetType(editGoal.targetType);
+      setTargetValue(editGoal.targetType === "CLIENTES" ? String(editGoal.targetValue) : formatCurrency(editGoal.targetValue));
+      setPeriod(editGoal.period);
+      setNotes(editGoal.notes ?? "");
+    } else if (!open) {
+      reset();
+    }
+  }, [editGoal, open]);
 
   function reset() {
     setTargetType("FATURAMENTO");
@@ -52,7 +66,7 @@ export function RegisterGoalModal({ open, onClose, onCreated, currents }: Regist
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const value = Number(targetValue);
+    const value = targetType === "CLIENTES" ? Number(targetValue) : parseCurrency(targetValue);
     if (!Number.isFinite(value) || value <= 0) {
       setError("Informe um valor de meta válido.");
       return;
@@ -66,23 +80,40 @@ export function RegisterGoalModal({ open, onClose, onCreated, currents }: Regist
     setError(null);
     try {
       const snapshot = currents?.[targetType.toLowerCase() as keyof GoalCurrents];
-      const created = await goalService.create({
-        targetType,
-        targetValue: value,
-        period,
-        currentValue: snapshot,
-        notes: notes.trim() || undefined,
-      });
-      onCreated(created);
-      toast({
-        title: "Meta registrada",
-        message: `${GOAL_TARGET_LABELS[targetType]} de ${formatCurrency(value)} para ${period}.`,
-        variant: "success",
-      });
+
+      if (isEditing) {
+        const updated = await goalService.update(editGoal.id, {
+          targetType,
+          targetValue: value,
+          period,
+          currentValue: snapshot,
+          notes: notes.trim() || undefined,
+        });
+        onCreated(updated);
+        toast({
+          title: "Meta atualizada",
+          message: `${GOAL_TARGET_LABELS[targetType]} de ${formatCurrency(value)} para ${period}.`,
+          variant: "success",
+        });
+      } else {
+        const created = await goalService.create({
+          targetType,
+          targetValue: value,
+          period,
+          currentValue: snapshot,
+          notes: notes.trim() || undefined,
+        });
+        onCreated(created);
+        toast({
+          title: "Meta registrada",
+          message: `${GOAL_TARGET_LABELS[targetType]} de ${formatCurrency(value)} para ${period}.`,
+          variant: "success",
+        });
+      }
       reset();
       onClose();
     } catch {
-      setError("Não foi possível registrar a meta. Tente novamente.");
+      setError(isEditing ? "Não foi possível atualizar a meta. Tente novamente." : "Não foi possível registrar a meta. Tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -92,8 +123,8 @@ export function RegisterGoalModal({ open, onClose, onCreated, currents }: Regist
     <Modal
       open={open}
       onClose={handleClose}
-      title="Adicionar meta"
-      description="Meta de clientes, faturamento ou vendas para a empresa"
+      title={isEditing ? "Editar meta" : "Adicionar meta"}
+      description={isEditing ? "Atualize os dados da meta" : "Meta de clientes, faturamento ou vendas para a empresa"}
       footer={
         <>
           <Button type="button" variant="secondary" onClick={handleClose} disabled={saving}>
@@ -101,7 +132,7 @@ export function RegisterGoalModal({ open, onClose, onCreated, currents }: Regist
           </Button>
           <Button type="submit" form="goal-form" loading={saving}>
             <IconPlus className="h-4 w-4" />
-            {targetValue ? `Salvar ${formatCurrency(Number(targetValue) || 0)}` : "Salvar"}
+            {isEditing ? "Salvar alterações" : targetValue ? `${targetType === "CLIENTES" ? formatCurrency(Number(targetValue) || 0) : formatCurrency(parseCurrency(targetValue))}` : "Salvar"}
           </Button>
         </>
       }
@@ -140,17 +171,28 @@ export function RegisterGoalModal({ open, onClose, onCreated, currents }: Regist
               {targetType === "CLIENTES" ? "Meta de clientes" : "Meta (R$)"}{" "}
               <span className="text-danger">*</span>
             </label>
-            <input
-              id="gl-value"
-              type="number"
-              min="0"
-              step={targetType === "CLIENTES" ? "1" : "0.01"}
-              value={targetValue}
-              onChange={(event) => setTargetValue(event.target.value)}
-              placeholder={targetType === "CLIENTES" ? "Ex.: 24" : "Ex.: 420000"}
-              className={inputClasses}
-              required
-            />
+            {targetType === "CLIENTES" ? (
+              <input
+                id="gl-value"
+                type="number"
+                min="0"
+                step="1"
+                value={targetValue}
+                onChange={(event) => setTargetValue(event.target.value)}
+                placeholder="Ex.: 24"
+                className={inputClasses}
+                required
+              />
+            ) : (
+              <MaskedInput
+                id="gl-value"
+                mask="currency"
+                value={targetValue}
+                onChange={setTargetValue}
+                placeholder="Ex.: 420.000,00"
+                required
+              />
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="gl-period" className="text-xs font-medium text-muted">

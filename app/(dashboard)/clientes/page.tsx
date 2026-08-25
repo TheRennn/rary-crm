@@ -1,6 +1,8 @@
 import { ClientList } from "@/components/clientes/ClientList";
 import { clientService, userService } from "@/lib/services";
 
+export const dynamic = "force-dynamic";
+
 export default async function ClientesPage({
   searchParams,
 }: PageProps<"/clientes">) {

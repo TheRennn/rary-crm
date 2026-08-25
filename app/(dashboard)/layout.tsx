@@ -15,8 +15,17 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect("/login");
   }
 
-  const appUser = await userService.getCurrentUser(user.email ?? undefined);
-  const companyName = appUser?.companyId === "comp-rary" ? "RARY" : "Minha empresa";
+  const appUser = await userService.getCurrentUser(user, supabase);
+
+  let companyName = "Minha empresa";
+  if (appUser?.companyId) {
+    const { data: company } = await supabase
+      .from("companies")
+      .select("name")
+      .eq("id", appUser.companyId)
+      .single();
+    if (company?.name) companyName = company.name;
+  }
 
   return (
     <DashboardShell user={appUser} companyName={companyName}>

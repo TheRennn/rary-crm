@@ -1,6 +1,7 @@
 import { clientRepository } from "@/lib/repositories";
 import { generateClientCode } from "@/lib/utils";
 import type { Client, ClientStatus } from "@/types";
+import type { CreateClientInput } from "@/lib/repositories/client-repository";
 
 /**
  * Service de clientes — regras de negócio e composição de dados.
@@ -66,6 +67,10 @@ export class ClientService {
   async getResponsibles(): Promise<string[]> {
     const clients = await this.getAll();
     return Array.from(new Set(clients.map((c) => c.responsibleId)));
+  }
+
+  async update(id: string, input: Partial<CreateClientInput>): Promise<Client> {
+    return clientRepository.update(id, input);
   }
 }
 

@@ -23,6 +23,10 @@ export class PaymentService {
     return paymentRepository.findByClient(clientId);
   }
 
+  async update(id: string, input: Partial<Omit<Payment, "id">>): Promise<Payment> {
+    return paymentRepository.update(id, input);
+  }
+
   async getStats(): Promise<PaymentStats> {
     const payments = await this.getAll();
     const received = payments.filter((p) => p.status === "PAGO");

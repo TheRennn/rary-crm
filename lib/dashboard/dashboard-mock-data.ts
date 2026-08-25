@@ -25,8 +25,6 @@ import type {
 
 export const ORGANIZATIONS: DashboardOrganization[] = [
   { id: "org-rary", name: "RARY Labs", tagline: "Workspace principal" },
-  { id: "org-abc", name: "Empresa ABC", tagline: "Operação secundária" },
-  { id: "org-xyz", name: "Empresa XYZ", tagline: "Operação terciária" },
 ];
 
 export interface DashboardMetricInput {
@@ -40,33 +38,38 @@ export interface DashboardMetricInput {
   activities: Activity[];
 }
 
-/** PRNG determinístico — garante números estáveis entre SSR e cliente. */
-function mulberry32(seed: number): () => number {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+function getPeriodRange(period: DashboardPeriod): { start: Date; end: Date } {
+  const end = new Date();
+  const start = new Date();
+  switch (period) {
+    case "today":
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "7d":
+      start.setDate(start.getDate() - 7);
+      break;
+    case "30d":
+      start.setDate(start.getDate() - 30);
+      break;
+    case "90d":
+      start.setDate(start.getDate() - 90);
+      break;
+    default:
+      start.setDate(start.getDate() - 30);
+      break;
+  }
+  return { start, end };
 }
 
-const revenueByPeriod: Record<DashboardPeriod, number> = {
-  today: 12480,
-  "7d": 38640,
-  "30d": 84320,
-  "90d": 226400,
-  custom: 84320,
-};
+function filterDealsByPeriod(deals: Deal[], period: DashboardPeriod): Deal[] {
+  const { start } = getPeriodRange(period);
+  return deals.filter((d) => new Date(d.createdAt) >= start);
+}
 
-const deltaByPeriod: Record<DashboardPeriod, number> = {
-  today: 8.2,
-  "7d": 12.4,
-  "30d": 18.4,
-  "90d": 21.7,
-  custom: 18.4,
-};
+function filterPaymentsByPeriod(payments: Payment[], period: DashboardPeriod): Payment[] {
+  const { start } = getPeriodRange(period);
+  return payments.filter((p) => new Date(p.dueDate) >= start);
+}
 
 function periodPointCount(period: DashboardPeriod): number {
   switch (period) {
@@ -100,127 +103,428 @@ function periodLabels(period: DashboardPeriod): string[] {
   return labels;
 }
 
-function buildSeries(period: DashboardPeriod, seed: number, scale = 1): SeriesPoint[] {
-  const points = periodPointCount(period);
+function buildRevenueSeries(
+  deals: Deal[],
+  period: DashboardPeriod
+): SeriesPoint[] {
   const labels = periodLabels(period);
-  const random = mulberry32(seed);
-  const weights = Array.from({ length: points }, () => 0.55 + random() * 1.15);
-  const denominator = weights.reduce((acc, weight) => acc + weight, 0);
-  const total = revenueByPeriod[period] * scale;
-  return weights.map((weight, index) => ({
-    label: labels[index] ?? String(index),
-    value: Math.round((total * weight) / (denominator * 1)) / 1,
+  const count = periodPointCount(period);
+  const { start, end } = getPeriodRange(period);
+  const totalMs = end.getTime() - start.getTime();
+  const bucketMs = totalMs / count;
+
+  const concluded = deals.filter((d) => d.status === "CONCLUIDA");
+  const buckets = new Array(count).fill(0);
+
+  for (const deal of concluded) {
+    const dealTime = new Date(deal.createdAt).getTime();
+    const idx = Math.min(
+      Math.floor((dealTime - start.getTime()) / bucketMs),
+      count - 1
+    );
+    if (idx >= 0 && idx < count) {
+      buckets[idx] += deal.value;
+    }
+  }
+
+  return labels.map((label, i) => ({
+    label,
+    value: Math.round(buckets[i] ?? 0),
   }));
+}
+
+function buildSalesSeries(
+  deals: Deal[],
+  period: DashboardPeriod
+): SeriesPoint[] {
+  const labels = periodLabels(period);
+  const count = periodPointCount(period);
+  const { start } = getPeriodRange(period);
+  const totalMs = new Date().getTime() - start.getTime();
+  const bucketMs = totalMs / count;
+
+  const buckets = new Array(count).fill(0);
+
+  for (const deal of deals) {
+    const dealTime = new Date(deal.createdAt).getTime();
+    const idx = Math.min(
+      Math.floor((dealTime - start.getTime()) / bucketMs),
+      count - 1
+    );
+    if (idx >= 0 && idx < count) {
+      buckets[idx] += 1;
+    }
+  }
+
+  return labels.map((label, i) => ({
+    label,
+    value: buckets[i] ?? 0,
+  }));
+}
+
+function buildClientSeries(
+  clients: Client[],
+  period: DashboardPeriod
+): SeriesPoint[] {
+  const labels = periodLabels(period);
+  const count = periodPointCount(period);
+  const { start } = getPeriodRange(period);
+  const totalMs = new Date().getTime() - start.getTime();
+  const bucketMs = totalMs / count;
+
+  const buckets = new Array(count).fill(0);
+
+  for (const client of clients) {
+    const clientTime = new Date(client.createdAt).getTime();
+    const idx = Math.min(
+      Math.floor((clientTime - start.getTime()) / bucketMs),
+      count - 1
+    );
+    if (idx >= 0 && idx < count) {
+      buckets[idx] += 1;
+    }
+  }
+
+  let cumulative = 0;
+  return labels.map((label, i) => {
+    cumulative += buckets[i] ?? 0;
+    return { label, value: cumulative };
+  });
+}
+
+function computeDelta(current: number, previous: number): number {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Math.round(((current - previous) / previous) * 1000) / 10;
+}
+
+function getPreviousPeriodRange(period: DashboardPeriod): { start: Date; end: Date } {
+  const { start: currentStart, end: currentEnd } = getPeriodRange(period);
+  const duration = currentEnd.getTime() - currentStart.getTime();
+  return {
+    start: new Date(currentStart.getTime() - duration),
+    end: new Date(currentEnd.getTime() - duration),
+  };
+}
+
+function sumDealValues(deals: Deal[], start: Date, end: Date): number {
+  return deals
+    .filter((d) => {
+      if (d.status !== "CONCLUIDA") return false;
+      const t = new Date(d.createdAt).getTime();
+      return t >= start.getTime() && t <= end.getTime();
+    })
+    .reduce((sum, d) => sum + d.value, 0);
+}
+
+function countDeals(deals: Deal[], start: Date, end: Date): number {
+  return deals.filter((d) => {
+    const t = new Date(d.createdAt).getTime();
+    return t >= start.getTime() && t <= end.getTime();
+  }).length;
+}
+
+function countConcludedDeals(deals: Deal[], start: Date, end: Date): number {
+  return deals.filter((d) => {
+    if (d.status !== "CONCLUIDA") return false;
+    const t = new Date(d.createdAt).getTime();
+    return t >= start.getTime() && t <= end.getTime();
+  }).length;
 }
 
 export function buildKpisForPeriod(
   period: DashboardPeriod,
-  counters: { clients: number; pendingCount: number }
+  data: DashboardMetricInput
 ): DashboardKpis {
-  const totalRevenue = revenueByPeriod[period];
-  const delta = deltaByPeriod[period];
-  const salesTotal = Math.round(totalRevenue / 660);
-  const clientsTotal = Math.max(counters.clients, 8);
-  const pending = Math.max(counters.pendingCount, 4);
+  const { start, end } = getPeriodRange(period);
+  const { start: prevStart, end: prevEnd } = getPreviousPeriodRange(period);
 
-  const sparklineFor = (seed: number, divisor = 1): number[] =>
-    buildSeries(period, seed, 1 / divisor).map((point) => point.value);
+  const revenue = sumDealValues(data.deals, start, end);
+  const prevRevenue = sumDealValues(data.deals, prevStart, prevEnd);
+  const revenueDelta = computeDelta(revenue, prevRevenue);
+
+  const totalDeals = countDeals(data.deals, start, end);
+  const prevDeals = countDeals(data.deals, prevStart, prevEnd);
+  const salesDelta = computeDelta(totalDeals, prevDeals);
+
+  const concludedDeals = countConcludedDeals(data.deals, start, end);
+  const conversionRate = totalDeals > 0 ? Math.round((concludedDeals / totalDeals) * 1000) / 10 : 0;
+  const prevConcluded = countConcludedDeals(data.deals, prevStart, prevEnd);
+  const prevTotal = countDeals(data.deals, prevStart, prevEnd);
+  const prevConversion = prevTotal > 0 ? Math.round((prevConcluded / prevTotal) * 1000) / 10 : 0;
+  const conversionDelta = computeDelta(conversionRate, prevConversion);
+
+  const pendingTasks = data.tasks.filter(
+    (t) => t.status !== "CONCLUIDA"
+  ).length;
+  const { start: prevTaskStart, end: prevTaskEnd } = getPreviousPeriodRange(period);
+  const prevPending = data.tasks.filter((t) => {
+    const tDate = new Date(t.dueDate);
+    return tDate >= prevTaskStart && tDate <= prevTaskEnd && t.status !== "CONCLUIDA";
+  }).length;
+  const pendingDelta = computeDelta(pendingTasks, prevPending);
+
+  const sparklineFromSeries = (series: SeriesPoint[]): number[] =>
+    series.map((p) => p.value);
+
+  const revenueSeries = buildRevenueSeries(data.deals, period);
+  const salesSeries = buildSalesSeries(data.deals, period);
 
   return {
     faturamento: {
       label: "Faturamento",
-      value: totalRevenue,
-      delta,
-      direction: "up",
+      value: revenue,
+      delta: revenueDelta,
+      direction: revenueDelta >= 0 ? "up" : "down",
       goodWhen: "up",
-      sparkline: sparklineFor(1001),
+      sparkline: sparklineFromSeries(revenueSeries),
     },
     vendas: {
       label: "Vendas",
-      value: salesTotal,
-      delta: 12.7,
-      direction: "up",
+      value: totalDeals,
+      delta: salesDelta,
+      direction: salesDelta >= 0 ? "up" : "down",
       goodWhen: "up",
-      sparkline: sparklineFor(2002, 660),
+      sparkline: sparklineFromSeries(salesSeries),
     },
     clientes: {
       label: "Clientes",
-      value: clientsTotal,
-      delta: 8.2,
-      direction: "up",
+      value: data.clients.length,
+      delta: 0,
+      direction: "neutral",
       goodWhen: "up",
-      sparkline: sparklineFor(3003, 660),
+      sparkline: sparklineFromSeries(
+        buildClientSeries(data.clients, period)
+      ),
     },
     conversao: {
       label: "Conversão",
-      value: 24.8,
-      delta: 4.1,
-      direction: "up",
+      value: conversionRate,
+      delta: conversionDelta,
+      direction: conversionDelta >= 0 ? "up" : "down",
       goodWhen: "up",
-      sparkline: sparklineFor(4004, 4000),
+      sparkline: sparklineFromSeries(revenueSeries).map((v) =>
+        totalDeals > 0 ? Math.round((v / (revenue || 1)) * 100 * 10) / 10 : 0
+      ),
     },
     pendencias: {
       label: "Pendências",
-      value: pending,
-      delta: 12.3,
-      direction: "down",
+      value: pendingTasks,
+      delta: pendingDelta,
+      direction: pendingDelta <= 0 ? "up" : "down",
       goodWhen: "down",
-      sparkline: sparklineFor(5005, 140),
+      sparkline: sparklineFromSeries(salesSeries).map((v, i) =>
+        Math.max(0, pendingTasks + ((i % 3) - 1))
+      ),
     },
   };
 }
 
 export function buildMetricsForPeriod(
   period: DashboardPeriod,
-  counters: { clients: number }
+  data: DashboardMetricInput
 ): ChartMetrics {
-  const clientsTotal = Math.max(counters.clients, 8);
+  const concluded = data.deals.filter((d) => d.status === "CONCLUIDA");
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const newClients = data.clients.filter(
+    (c) => new Date(c.createdAt) >= thirtyDaysAgo
+  ).length;
+  const activeClients = data.clients.filter(
+    (c) => c.status === "CLIENTE_ATIVO" || c.status === "EM_NEGOCIACAO"
+  ).length;
+  const inactiveClients = data.clients.filter(
+    (c) => c.status === "INATIVO" || c.status === "PERDIDO"
+  ).length;
+
   return {
-    revenue: buildSeries(period, 7007),
-    sales: buildSeries(period, 8008, 1 / 660),
-    clients: buildSeries(period, 9009, 1 / 660).map((point) => ({
-      ...point,
-      value: Math.round(point.value) + clientsTotal,
-    })),
+    revenue: buildRevenueSeries(data.deals, period),
+    sales: buildSalesSeries(data.deals, period),
+    clients: buildClientSeries(data.clients, period),
     clientDistribution: [
-      { label: "Novos", value: 128, tone: "brand" },
-      { label: "Ativos", value: 742, tone: "success" },
-      { label: "Inativos", value: 92, tone: "neutral" },
+      { label: "Novos", value: newClients, tone: "brand" },
+      { label: "Ativos", value: activeClients, tone: "success" },
+      { label: "Inativos", value: inactiveClients, tone: "neutral" },
     ],
   };
 }
 
-function buildPipeline(_deals: Deal[]): PipelineData {
-  const stages: PipelineData["stages"] = [
-    {
-      id: "leads",
-      label: "Leads",
-      count: 42,
-      value: 48000,
-    },
-    {
-      id: "contato",
-      label: "Contato",
-      count: 28,
-      value: 36600,
-    },
-    {
-      id: "proposta",
-      label: "Proposta",
-      count: 14,
-      value: 28400,
-    },
-    {
-      id: "negociacao",
-      label: "Negociação",
-      count: 7,
-      value: 15400,
-    },
-  ];
-  stages.push({ id: "fechamento", label: "Fechamento", count: 3, value: 0 });
-  const totalValue = stages.reduce((sum, stage) => sum + stage.value, 0);
-  const totalCount = stages.reduce((sum, stage) => sum + stage.count, 0);
-  return { stages, totalValue: totalValue || 0, totalCount, conversion: 24.8 };
+function buildPipeline(deals: Deal[]): PipelineData {
+  const statusMap: Record<string, { label: string; order: number }> = {
+    ORCAMENTO: { label: "Orçamento", order: 0 },
+    NEGOCIACAO: { label: "Negociação", order: 1 },
+    APROVADA: { label: "Aprovada", order: 2 },
+    CONCLUIDA: { label: "Fechamento", order: 3 },
+    CANCELADA: { label: "Cancelada", order: 4 },
+  };
+
+  const grouped: Record<string, { count: number; value: number }> = {};
+  for (const deal of deals) {
+    if (deal.status === "CANCELADA") continue;
+    if (!grouped[deal.status]) {
+      grouped[deal.status] = { count: 0, value: 0 };
+    }
+    grouped[deal.status].count += 1;
+    grouped[deal.status].value += deal.value;
+  }
+
+  const stages = Object.entries(grouped)
+    .map(([status, data]) => ({
+      id: status.toLowerCase(),
+      label: statusMap[status]?.label ?? status,
+      order: statusMap[status]?.order ?? 99,
+      count: data.count,
+      value: data.value,
+    }))
+    .sort((a, b) => a.order - b.order);
+
+  if (stages.length === 0) {
+    stages.push(
+      { id: "sem-dados", label: "Sem dados", order: 0, count: 0, value: 0 }
+    );
+  }
+
+  const totalValue = stages.reduce((sum, s) => sum + s.value, 0);
+  const totalCount = stages.reduce((sum, s) => sum + s.count, 0);
+  const concludedCount = deals.filter((d) => d.status === "CONCLUIDA").length;
+  const totalCountAll = deals.length;
+  const conversion =
+    totalCountAll > 0
+      ? Math.round((concludedCount / totalCountAll) * 1000) / 10
+      : 0;
+
+  return { stages, totalValue, totalCount, conversion };
+}
+
+function buildPerformance(deals: Deal[]): PerformanceRow[] {
+  const grouped: Record<string, { count: number; concluded: number }> = {};
+
+  for (const deal of deals) {
+    const rid = deal.responsibleId || "unknown";
+    if (!grouped[rid]) {
+      grouped[rid] = { count: 0, concluded: 0 };
+    }
+    grouped[rid].count += 1;
+    if (deal.status === "CONCLUIDA") {
+      grouped[rid].concluded += 1;
+    }
+  }
+
+  const rows: PerformanceRow[] = Object.entries(grouped).map(
+    ([id, data], index) => ({
+      id: `perf-${id}`,
+      responsible: id,
+      sales: data.count,
+      conversion:
+        data.count > 0
+          ? Math.round((data.concluded / data.count) * 1000) / 10
+          : 0,
+      rank: 0,
+    })
+  );
+
+  rows.sort((a, b) => b.sales - a.sales);
+  rows.forEach((row, i) => {
+    row.rank = i + 1;
+  });
+
+  return rows.slice(0, 10);
+}
+
+function buildGoals(
+  revenueTotal: number,
+  period: DashboardPeriod,
+  goals?: { targetValue: number; currentValue?: number }[]
+): GoalData {
+  let target = 0;
+  let achieved = 0;
+
+  if (goals && goals.length > 0) {
+    const goal = goals[0];
+    target = goal.targetValue;
+    achieved = goal.currentValue ?? revenueTotal;
+  } else {
+    target = revenueTotal > 0 ? Math.ceil(revenueTotal * 1.3) : 10000;
+    achieved = revenueTotal;
+  }
+
+  const percentage =
+    target > 0 ? Math.round((achieved / target) * 1000) / 10 : 0;
+
+  return {
+    label: "Meta de vendas",
+    target,
+    achieved,
+    percentage,
+    remaining: Math.max(target - achieved, 0),
+  };
+}
+
+function compactNumber(value: number): string {
+  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(value);
+}
+
+function buildInsights(
+  data: DashboardMetricInput,
+  revenue: number,
+  conversion: number
+): InsightItem[] {
+  const staleClients = data.clients.filter(
+    (client) => Date.now() - new Date(client.lastContactAt).getTime() > 15 * 86400000
+  ).length;
+  const upcomingPayments = data.payments.filter((payment) => {
+    if (payment.status !== "PENDENTE") return false;
+    const days = (new Date(payment.dueDate).getTime() - Date.now()) / 86400000;
+    return days >= 0 && days <= 7;
+  }).length;
+
+  const items: InsightItem[] = [];
+
+  if (revenue > 0) {
+    items.push({
+      id: "ins-revenue",
+      tone: "positive",
+      message: `Faturamento no período: ${compactNumber(revenue)}.`,
+    });
+  } else {
+    items.push({
+      id: "ins-revenue",
+      tone: "info",
+      message: "Nenhuma venda concluída no período ainda.",
+    });
+  }
+
+  if (staleClients > 0)
+    items.push({
+      id: "ins-stale",
+      tone: "warning",
+      message: `${staleClients} clientes estão há mais de 15 dias sem contato.`,
+    });
+
+  if (conversion > 0) {
+    items.push({
+      id: "ins-conversion",
+      tone: conversion >= 20 ? "success" : "neutral",
+      message: `Taxa de conversão: ${conversion.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%.`,
+    });
+  }
+
+  if (upcomingPayments > 0)
+    items.push({
+      id: "ins-payments",
+      tone: "info",
+      message: `${upcomingPayments} pagamentos estão próximos do vencimento.`,
+    });
+
+  if (items.length === 0) {
+    items.push({
+      id: "ins-empty",
+      tone: "info",
+      message: "Adicione clientes e vendas para ver insights.",
+    });
+  }
+
+  return items;
 }
 
 function buildAttention(data: DashboardMetricInput): AttentionItem[] {
@@ -297,7 +601,7 @@ function buildAttention(data: DashboardMetricInput): AttentionItem[] {
   if (items.length === 0)
     items.push({
       id: "att-clear",
-      label: "itens urgentes agora",
+      label: "tudo em dia",
       count: 0,
       severity: "normal",
     });
@@ -331,88 +635,6 @@ function buildRecentClients(clients: Client[]): RecentClientItem[] {
   });
 }
 
-function buildPerformance(): PerformanceRow[] {
-  return [
-    { id: "perf-ana", responsible: "Ana Gabriela", sales: 32, conversion: 28.4, rank: 1 },
-    { id: "perf-carlos", responsible: "Carlos Mendes", sales: 27, conversion: 24.1, rank: 2 },
-    { id: "perf-julia", responsible: "Júlia Martins", sales: 21, conversion: 21.7, rank: 3 },
-    { id: "perf-rafael", responsible: "Rafael Souza", sales: 14, conversion: 18.2, rank: 4 },
-  ];
-}
-
-function buildGoals(revenueTotal: number, period: DashboardPeriod): GoalData {
-  const targetByPeriod: Record<DashboardPeriod, number> = {
-    today: 4200,
-    "7d": 24500,
-    "30d": 100000,
-    "90d": 270000,
-    custom: 100000,
-  };
-  const target = targetByPeriod[period] ?? 100000;
-  const achieved = Math.min(revenueTotal, target);
-  const percentage = Math.round((achieved / target) * 1000) / 10;
-  return {
-    label: "Meta de vendas",
-    target,
-    achieved,
-    percentage,
-    remaining: Math.max(target - achieved, 0),
-  };
-}
-
-function compactNumber(value: number): string {
-  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(value);
-}
-
-function buildInsights(data: DashboardMetricInput): InsightItem[] {
-  const revenue = revenueByPeriod["30d"];
-  const staleClients = data.clients.filter(
-    (client) => Date.now() - new Date(client.lastContactAt).getTime() > 15 * 86400000
-  ).length;
-  const upcomingPayments = data.payments.filter((payment) => {
-    if (payment.status !== "PENDENTE") return false;
-    const days = (new Date(payment.dueDate).getTime() - Date.now()) / 86400000;
-    return days >= 0 && days <= 7;
-  }).length;
-  const percentage = Math.round((revenue / 100000) * 100);
-
-  const items: InsightItem[] = [
-    {
-      id: "ins-revenue",
-      tone: "positive",
-      message: `Seu faturamento aumentou 18,4% no mês — ${compactNumber(revenue)} no período.`,
-    },
-  ];
-
-  if (staleClients > 0)
-    items.push({
-      id: "ins-stale",
-      tone: "warning",
-      message: `${staleClients} clientes estão há mais de 15 dias sem contato.`,
-    });
-
-  items.push({
-    id: "ins-goal",
-    tone: "success",
-    message: `Você atingiu ${percentage}% da meta mensal de vendas.`,
-  });
-
-  if (upcomingPayments > 0)
-    items.push({
-      id: "ins-payments",
-      tone: "info",
-      message: `${upcomingPayments} pagamentos estão próximos do vencimento.`,
-    });
-
-  items.push({
-    id: "ins-conversion",
-    tone: "neutral",
-    message: "Sua taxa de conversão está em 24,8%, acima da média do segmento.",
-  });
-
-  return items;
-}
-
 function buildActivities(data: DashboardMetricInput): Activity[] {
   const fromNotifications: Activity[] = data.notifications.slice(0, 3).map((n, index) => ({
     id: `act-ntf-${index}`,
@@ -426,13 +648,13 @@ function buildActivities(data: DashboardMetricInput): Activity[] {
 }
 
 export function buildDashboardData(data: DashboardMetricInput): DashboardData {
-  const kpis = buildKpisForPeriod("30d", {
-    clients: data.clients.length,
-    pendingCount: data.tasks.filter((task) => task.status !== "CONCLUIDA").length,
-  });
-  const metrics = buildMetricsForPeriod("30d", { clients: data.clients.length });
+  const kpis = buildKpisForPeriod("30d", data);
+  const metrics = buildMetricsForPeriod("30d", data);
   const pipeline = buildPipeline(data.deals);
-  const goals = buildGoals(kpis.faturamento.value, "30d");
+  const performance = buildPerformance(data.deals);
+  const conversion = pipeline.conversion;
+  const revenue = kpis.faturamento.value;
+  const goals = buildGoals(revenue, "30d");
 
   const hour = new Date().getHours();
   const greeting =
@@ -473,9 +695,9 @@ export function buildDashboardData(data: DashboardMetricInput): DashboardData {
     calendarEvents: data.events,
     pendingTasks: [...overdueTaskList, ...todayTaskList].slice(0, 6),
     recentClients: buildRecentClients(data.clients),
-    performance: buildPerformance(),
+    performance,
     goals,
-    insights: buildInsights(data),
+    insights: buildInsights(data, revenue, conversion),
     clients: data.clients,
     deals: data.deals,
     payments: data.payments,
@@ -495,17 +717,29 @@ export function formatDashboardPercent(value: number): string {
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value) + "%";
 }
 
-export interface DashboardPeriodCounters {
-  clients: number;
-  pendingCount: number;
+export interface DashboardPeriodData {
+  clients: Client[];
+  deals: Deal[];
+  payments: Payment[];
+  tasks: Task[];
 }
 
 export function dashboardSummaryForPeriod(
   period: DashboardPeriod,
-  counters: DashboardPeriodCounters
-): { kpis: DashboardKpis; metrics: ChartMetrics } {
-  return {
-    kpis: buildKpisForPeriod(period, counters),
-    metrics: buildMetricsForPeriod(period, counters),
+  data: DashboardPeriodData
+): { kpis: DashboardKpis; metrics: ChartMetrics; goals: GoalData } {
+  const metricInput: DashboardMetricInput = {
+    clients: data.clients,
+    deals: data.deals,
+    payments: data.payments,
+    followUps: [],
+    tasks: data.tasks,
+    events: [],
+    notifications: [],
+    activities: [],
   };
+  const kpis = buildKpisForPeriod(period, metricInput);
+  const metrics = buildMetricsForPeriod(period, metricInput);
+  const goals = buildGoals(kpis.faturamento.value, period);
+  return { kpis, metrics, goals };
 }

@@ -16,7 +16,7 @@ import { IconKey } from "@/components/ui/icons-additional";
 import type { UserRole } from "@/types";
 
 export interface SettingsContentProps {
-  user: { id: string; name: string; email: string; role: UserRole } | null;
+  user: { id: string; name: string; email: string; role: UserRole; phone?: string } | null;
   company: { id: string; name: string; cnpj: string; segment: string; city: string; state: string };
   users: { id: string; name: string; email: string; role: UserRole }[];
 }

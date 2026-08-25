@@ -2,10 +2,11 @@
 
 import { useMemo } from "react";
 import type { ReactNode } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { StatCard } from "@/components/ui/StatCard";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { IconUsers, IconTrendingUp, IconCreditCard } from "@/components/icons";
+import { IconUsers, IconTrendingUp, IconCreditCard, IconEdit, IconTrash } from "@/components/icons";
 import { GOAL_TARGET_LABELS } from "@/lib/constants";
 import { cn, formatCurrency } from "@/lib/utils";
 import type { BadgeTone } from "@/lib/constants";
@@ -20,6 +21,7 @@ export interface GoalCurrents {
 export interface GoalsViewProps {
   goals: Goal[];
   currents: GoalCurrents;
+  onEdit?: (goal: Goal) => void;
 }
 
 const GOAL_TYPES: GoalTargetType[] = ["CLIENTES", "FATURAMENTO", "VENDAS"];
@@ -45,7 +47,8 @@ const GOAL_META: Record<
   },
 };
 
-export function GoalsView({ goals, currents }: GoalsViewProps) {
+export function GoalsView({ goals, currents, onEdit }: GoalsViewProps) {
+  const { toast } = useToast();
   const sorted = useMemo(
     () =>
       [...goals].sort(
@@ -141,11 +144,31 @@ export function GoalsView({ goals, currents }: GoalsViewProps) {
                       <p className="text-xs text-muted">Competência {goal.period}</p>
                     </div>
                   </div>
-                  {achieved ? (
-                    <Badge tone="success">Atingida</Badge>
-                  ) : (
-                    <Badge tone={meta.tone}>{pct}%</Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {achieved ? (
+                      <Badge tone="success">Atingida</Badge>
+                    ) : (
+                      <Badge tone={meta.tone}>{pct}%</Badge>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onEdit?.(goal)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-3 hover:text-foreground"
+                      title="Editar meta"
+                    >
+                      <IconEdit className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toast({ title: "Exclusão não disponível", message: `Exclusão de meta chega com o backend real.`, variant: "warning" })
+                      }
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-danger/10 hover:text-danger"
+                      title="Excluir meta"
+                    >
+                      <IconTrash className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-end justify-between">

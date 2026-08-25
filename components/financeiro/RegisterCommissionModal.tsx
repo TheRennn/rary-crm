@@ -1,20 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { MaskedInput } from "@/components/ui/MaskedInput";
 import { IconPlus } from "@/components/icons";
 import { useToast } from "@/components/ui/Toast";
 import { commissionService } from "@/lib/services";
 import { COMMISSION_METHOD_OPTIONS } from "@/lib/constants";
 import type { Commission, CommissionPaymentMethod } from "@/types";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, parseCurrency } from "@/lib/utils";
 
 export interface RegisterCommissionModalProps {
   open: boolean;
   onClose: () => void;
   existingCompanies: string[];
   onCreated: (commission: Commission) => void;
+  editCommission?: Commission | null;
 }
 
 const inputClasses =
@@ -25,8 +27,10 @@ export function RegisterCommissionModal({
   onClose,
   existingCompanies,
   onCreated,
+  editCommission,
 }: RegisterCommissionModalProps) {
   const { toast } = useToast();
+  const isEditing = !!editCommission;
   const [company, setCompany] = useState("");
   const [period, setPeriod] = useState("");
   const [rate, setRate] = useState("");
@@ -39,9 +43,25 @@ export function RegisterCommissionModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (editCommission && open) {
+      setCompany(editCommission.companyName);
+      setPeriod(editCommission.period);
+      setRate(String(editCommission.rate));
+      setBaseValue(formatCurrency(editCommission.baseValue));
+      setDueDate(editCommission.dueDate?.slice(0, 10) ?? "");
+      setStatus(editCommission.status);
+      setMethod(editCommission.method);
+      setInstallmentsCount(editCommission.installments?.length ?? 1);
+      setNotes(editCommission.notes ?? "");
+    } else if (!open) {
+      reset();
+    }
+  }, [editCommission, open]);
+
   const previewValue = useMemo(() => {
     const r = Number(rate) || 0;
-    const b = Number(baseValue) || 0;
+    const b = parseCurrency(baseValue);
     return Math.round((b * r) / 100);
   }, [rate, baseValue]);
 
@@ -82,7 +102,7 @@ export function RegisterCommissionModal({
       return;
     }
     const rateValue = Number(rate);
-    const baseValueNumber = Number(baseValue);
+    const baseValueNumber = parseCurrency(baseValue);
     if (!Number.isFinite(rateValue) || rateValue <= 0) {
       setError("Informe uma porcentagem de comissão válida.");
       return;
@@ -95,30 +115,49 @@ export function RegisterCommissionModal({
     setSaving(true);
     setError(null);
     try {
-      const created = await commissionService.create({
-        companyName,
-        period,
-        rate: rateValue,
-        baseValue: baseValueNumber,
-        dueDate: dueDate || undefined,
-        status,
-        method,
-        installmentsCount: method === "A_VISTA" ? 1 : installmentsCountEffective,
-        notes: notes.trim() || undefined,
-      });
-      onCreated(created);
-      toast({
-        title: "Comissão registrada",
-        message:
-          created.installments && created.installments.length > 1
-            ? `${created.installments.length}x de ${formatCurrency(created.installments[0].value)} de ${created.companyName} — competência ${created.period}.`
-            : `${formatCurrency(created.value)} de ${created.companyName} — competência ${created.period}.`,
-        variant: "success",
-      });
+      if (isEditing) {
+        const updated = await commissionService.update(editCommission.id, {
+          companyName,
+          period,
+          rate: rateValue,
+          baseValue: baseValueNumber,
+          dueDate: dueDate || undefined,
+          status,
+          method,
+          notes: notes.trim() || undefined,
+        });
+        onCreated(updated);
+        toast({
+          title: "Comissão atualizada",
+          message: `${formatCurrency(updated.value)} de ${updated.companyName} — competência ${updated.period}.`,
+          variant: "success",
+        });
+      } else {
+        const created = await commissionService.create({
+          companyName,
+          period,
+          rate: rateValue,
+          baseValue: baseValueNumber,
+          dueDate: dueDate || undefined,
+          status,
+          method,
+          installmentsCount: method === "A_VISTA" ? 1 : installmentsCountEffective,
+          notes: notes.trim() || undefined,
+        });
+        onCreated(created);
+        toast({
+          title: "Comissão registrada",
+          message:
+            created.installments && created.installments.length > 1
+              ? `${created.installments.length}x de ${formatCurrency(created.installments[0].value)} de ${created.companyName} — competência ${created.period}.`
+              : `${formatCurrency(created.value)} de ${created.companyName} — competência ${created.period}.`,
+          variant: "success",
+        });
+      }
       reset();
       onClose();
     } catch {
-      setError("Não foi possível registrar a comissão. Tente novamente.");
+      setError(isEditing ? "Não foi possível atualizar a comissão. Tente novamente." : "Não foi possível registrar a comissão. Tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -128,8 +167,8 @@ export function RegisterCommissionModal({
     <Modal
       open={open}
       onClose={handleClose}
-      title="Registrar comissão"
-      description="Comissão a receber de uma empresa representada"
+      title={isEditing ? "Editar comissão" : "Registrar comissão"}
+      description={isEditing ? "Atualize os dados da comissão" : "Comissão a receber de uma empresa representada"}
       footer={
         <>
           <Button type="button" variant="secondary" onClick={handleClose} disabled={saving}>
@@ -137,7 +176,7 @@ export function RegisterCommissionModal({
           </Button>
           <Button type="submit" form="commission-form" loading={saving}>
             <IconPlus className="h-4 w-4" />
-            {previewValue > 0 ? `Salvar ${formatCurrency(previewValue)}` : "Salvar"}
+            {isEditing ? "Salvar alterações" : previewValue > 0 ? `Salvar ${formatCurrency(previewValue)}` : "Salvar"}
           </Button>
         </>
       }
@@ -216,15 +255,13 @@ export function RegisterCommissionModal({
             <label htmlFor="cm-base" className="text-xs font-medium text-muted">
               Base de cálculo (R$) <span className="text-danger">*</span>
             </label>
-            <input
+            <MaskedInput
               id="cm-base"
-              type="number"
+              mask="currency"
               min="0"
-              step="0.01"
               value={baseValue}
-              onChange={(event) => setBaseValue(event.target.value)}
-              placeholder="Ex.: 50000"
-              className={inputClasses}
+              onChange={setBaseValue}
+              placeholder="Ex.: 50.000,00"
               required
             />
           </div>

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { MaskedInput } from "@/components/ui/MaskedInput";
 import { IconPlus, IconX } from "@/components/icons";
 import { useToast } from "@/components/ui/Toast";
 import { orderService } from "@/lib/services";
 import { ORDER_TYPE_LABELS, ORDER_SOURCE_LABELS } from "@/lib/constants";
 import type { Order, OrderItem, OrderSource, OrderType, PaymentStatus } from "@/types";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, maskCurrency, parseCurrency } from "@/lib/utils";
 
 export interface RegisterOrderModalProps {
   open: boolean;
@@ -16,12 +17,13 @@ export interface RegisterOrderModalProps {
   existingClients: string[];
   existingCompanies: string[];
   onCreated: (order: Order) => void;
+  editOrder?: Order | null;
 }
 
 const inputClasses =
   "w-full rounded-lg border border-border-strong bg-surface-1 px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20";
 
-type DraftItem = Omit<OrderItem, "id"> & { key: string };
+type DraftItem = Omit<OrderItem, "id" | "unitValue"> & { key: string; unitValue: string };
 
 const TYPE_OPTIONS: OrderType[] = ["VENDA", "AMOSTRA", "BONIFICACAO"];
 const SOURCE_OPTIONS: OrderSource[] = ["REPRESENTANTE", "EMPRESA"];
@@ -32,8 +34,10 @@ export function RegisterOrderModal({
   existingClients,
   existingCompanies,
   onCreated,
+  editOrder,
 }: RegisterOrderModalProps) {
   const { toast } = useToast();
+  const isEditing = !!editOrder;
   const [clientName, setClientName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [period, setPeriod] = useState("");
@@ -42,12 +46,36 @@ export function RegisterOrderModal({
   const [type, setType] = useState<OrderType>("VENDA");
   const [status, setStatus] = useState<PaymentStatus>("PENDENTE");
   const [items, setItems] = useState<DraftItem[]>([
-    { key: "row-1", product: "", productCode: "", quantity: 1, unitValue: 0 },
+    { key: "row-1", product: "", productCode: "", quantity: 1, unitValue: "" },
   ]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const total = items.reduce((acc, item) => acc + (item.quantity || 0) * (item.unitValue || 0), 0);
+  useEffect(() => {
+    if (editOrder && open) {
+      setClientName(editOrder.clientName);
+      setCompanyName(editOrder.companyName);
+      setPeriod(editOrder.period);
+      setDate(editOrder.date?.slice(0, 10) ?? new Date().toISOString().slice(0, 10));
+      setSource(editOrder.source);
+      setType(editOrder.type);
+      setStatus(editOrder.status);
+      setItems(editOrder.items.map((item, i) => ({
+        key: `row-${i}`,
+        product: item.product,
+        productCode: item.productCode ?? "",
+        quantity: item.quantity,
+        unitValue: maskCurrency(String(Math.round(item.unitValue * 100))),
+      })));
+    } else if (!open) {
+      reset();
+    }
+  }, [editOrder, open]);
+
+  const total = items.reduce((acc, item) => {
+    const unitVal = typeof item.unitValue === "string" ? parseCurrency(item.unitValue) : (item.unitValue || 0);
+    return acc + (item.quantity || 0) * unitVal;
+  }, 0);
 
   function updateItem(key: string, patch: Partial<DraftItem>) {
     setItems((prev) => prev.map((item) => (item.key === key ? { ...item, ...patch } : item)));
@@ -56,7 +84,7 @@ export function RegisterOrderModal({
   function addItem() {
     setItems((prev) => [
       ...prev,
-      { key: `row-${Date.now().toString(36)}`, product: "", productCode: "", quantity: 1, unitValue: 0 },
+      { key: `row-${Date.now().toString(36)}`, product: "", productCode: "", quantity: 1, unitValue: "" },
     ]);
   }
 
@@ -72,7 +100,7 @@ export function RegisterOrderModal({
     setSource("REPRESENTANTE");
     setType("VENDA");
     setStatus("PENDENTE");
-    setItems([{ key: "row-1", product: "", productCode: "", quantity: 1, unitValue: 0 }]);
+    setItems([{ key: "row-1", product: "", productCode: "", quantity: 1, unitValue: "" }]);
     setError(null);
   }
 
@@ -111,28 +139,48 @@ export function RegisterOrderModal({
         product: item.product.trim() || item.productCode || "Produto",
         productCode: item.productCode?.trim() || undefined,
         quantity: Math.max(1, item.quantity || 1),
-        unitValue: Math.max(0, item.unitValue || 0),
+        unitValue: Math.max(0, typeof item.unitValue === "string" ? parseCurrency(item.unitValue) : (item.unitValue || 0)),
       }));
-      const created = await orderService.create({
-        clientName: client,
-        companyName: company,
-        period,
-        date,
-        source,
-        type,
-        status,
-        items: fullItems,
-      });
-      onCreated(created);
-      toast({
-        title: "Pedido adicionado",
-        message: `${created.code} · ${created.clientName} — ${ORDER_TYPE_LABELS[created.type]}`,
-        variant: "success",
-      });
+
+      if (isEditing) {
+        const updated = await orderService.update(editOrder.id, {
+          clientName: client,
+          companyName: company,
+          period,
+          date,
+          source,
+          type,
+          status,
+          items: fullItems,
+        });
+        onCreated(updated);
+        toast({
+          title: "Pedido atualizado",
+          message: `${updated.code} · ${updated.clientName} — ${ORDER_TYPE_LABELS[updated.type]}`,
+          variant: "success",
+        });
+      } else {
+        const created = await orderService.create({
+          clientName: client,
+          companyName: company,
+          period,
+          date,
+          source,
+          type,
+          status,
+          items: fullItems,
+        });
+        onCreated(created);
+        toast({
+          title: "Pedido adicionado",
+          message: `${created.code} · ${created.clientName} — ${ORDER_TYPE_LABELS[created.type]}`,
+          variant: "success",
+        });
+      }
       reset();
       onClose();
     } catch {
-      setError("Não foi possível registrar o pedido. Tente novamente.");
+      setError(isEditing ? "Não foi possível atualizar o pedido. Tente novamente." : "Não foi possível registrar o pedido. Tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -142,8 +190,8 @@ export function RegisterOrderModal({
     <Modal
       open={open}
       onClose={handleClose}
-      title="Adicionar pedido"
-      description="Pedido do cliente com os produtos da empresa representada"
+      title={isEditing ? "Editar pedido" : "Adicionar pedido"}
+      description={isEditing ? "Atualize os dados do pedido" : "Pedido do cliente com os produtos da empresa representada"}
       size="lg"
       footer={
         <>
@@ -152,7 +200,7 @@ export function RegisterOrderModal({
           </Button>
           <Button type="submit" form="order-form" loading={saving}>
             <IconPlus className="h-4 w-4" />
-            {total > 0 ? `Salvar ${formatCurrency(total)}` : "Salvar"}
+            {isEditing ? "Salvar alterações" : total > 0 ? `Salvar ${formatCurrency(total)}` : "Salvar"}
           </Button>
         </>
       }
@@ -338,13 +386,11 @@ export function RegisterOrderModal({
               </div>
               <div className="flex flex-col gap-1 sm:w-28">
                 <span className="text-[10px] uppercase tracking-wide text-muted-2">Valor un. (R$)</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={item.unitValue}
-                  onChange={(event) => updateItem(item.key, { unitValue: Number(event.target.value) })}
-                  className={inputClasses}
+                <MaskedInput
+                  mask="currency"
+                  value={typeof item.unitValue === "string" ? item.unitValue : String(item.unitValue || "")}
+                  onChange={(val) => updateItem(item.key, { unitValue: val })}
+                  placeholder="0,00"
                 />
               </div>
               <button

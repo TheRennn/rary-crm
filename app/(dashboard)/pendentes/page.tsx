@@ -1,6 +1,8 @@
 import { TaskBoard } from "@/components/pendentes/TaskBoard";
 import { clientService, taskService, userService } from "@/lib/services";
 
+export const dynamic = "force-dynamic";
+
 export default async function PendentesPage() {
   const [groups, clients, users] = await Promise.all([
     taskService.getGroups(),

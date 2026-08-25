@@ -56,6 +56,21 @@ export class OrderService {
     };
     return orderRepository.create(order);
   }
+
+  async update(id: string, input: Partial<Omit<Order, "id" | "total" | "items"> & { items: Omit<OrderItem, "id">[] }>): Promise<Order> {
+    const payload: Record<string, unknown> = { ...input };
+    if (input.items) {
+      const items: OrderItem[] = input.items.map((item, index) => ({
+        ...item,
+        id: `oi-${Date.now().toString(36)}-${itemCounter++}-${index}`,
+        quantity: Math.max(1, Number(item.quantity) || 0),
+        unitValue: Math.max(0, Number(item.unitValue) || 0),
+      }));
+      payload.items = items;
+      payload.total = items.reduce((acc, item) => acc + item.quantity * item.unitValue, 0);
+    }
+    return orderRepository.update(id, payload as Partial<Omit<Order, "id">>);
+  }
 }
 
 export const orderService = new OrderService();

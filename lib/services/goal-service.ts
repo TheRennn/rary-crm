@@ -18,6 +18,10 @@ export class GoalService {
     };
     return goalRepository.create(goal);
   }
+
+  async update(id: string, input: Partial<CreateGoalInput>): Promise<Goal> {
+    return goalRepository.update(id, input);
+  }
 }
 
 export const goalService = new GoalService();

@@ -68,14 +68,15 @@ function DashboardInner({ data }: DashboardClientProps) {
   const bucket = resolveBucket(preferences.period, preferences.customRange);
 
   const summary = useMemo(() => {
-    const { kpis, metrics } = dashboardSummaryForPeriod(bucket, {
-      clients: data.clients.length,
-      pendingCount: data.tasks.filter((task) => task.status !== "CONCLUIDA").length,
+    const { kpis, metrics, goals } = dashboardSummaryForPeriod(bucket, {
+      clients: data.clients,
+      deals: data.deals,
+      payments: data.payments,
+      tasks: data.tasks,
     });
-    const goals = { ...data.goals, achieved: Math.min(kpis.faturamento.value, data.goals.target), percentage: Math.round((Math.min(kpis.faturamento.value, data.goals.target) / data.goals.target) * 1000) / 10, remaining: Math.max(data.goals.target - Math.min(kpis.faturamento.value, data.goals.target), 0) };
     return { kpis, metrics, goals };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bucket, data.clients.length]);
+  }, [bucket, data.clients, data.deals, data.payments, data.tasks]);
 
   const periodKey = `${preferences.period}-${preferences.customRange?.from ?? ""}-${preferences.customRange?.to ?? ""}-${bucket}`;
 

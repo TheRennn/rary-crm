@@ -34,11 +34,37 @@ export interface ClientListProps {
   initialQuery?: string;
 }
 
-const statusOptions = (Object.keys(CLIENT_STATUS_LABELS) as Array<keyof typeof CLIENT_STATUS_LABELS>).map(
-  (status) => ({ value: status, label: CLIENT_STATUS_LABELS[status] })
-);
+const statusOptions = [
+  { value: "NOVO", label: "Novo" },
+  { value: "EM_NEGOCIACAO", label: "Em negociação" },
+  { value: "CLIENTE_ATIVO", label: "Cliente ativo" },
+  { value: "INATIVO", label: "Inativo" },
+  { value: "PERDIDO", label: "Perdido" },
+];
 
-const segmentOptions = SEGMENTS.map((segment) => ({ value: segment, label: segment }));
+const segmentOptions = [
+  { value: "Tecnologia", label: "Tecnologia" },
+  { value: "Varejo", label: "Varejo" },
+  { value: "Indústria", label: "Indústria" },
+  { value: "Serviços", label: "Serviços" },
+  { value: "Saúde", label: "Saúde" },
+  { value: "Educação", label: "Educação" },
+  { value: "Alimentação", label: "Alimentação" },
+  { value: "Logística", label: "Logística" },
+  { value: "Construção Civil", label: "Construção Civil" },
+  { value: "Agronegócio", label: "Agronegócio" },
+  { value: "Automotivo", label: "Automotivo" },
+  { value: "Consultoria", label: "Consultoria" },
+  { value: "E-commerce", label: "E-commerce" },
+  { value: "Energia", label: "Energia" },
+  { value: "Financeiro", label: "Financeiro" },
+  { value: "Imobiliário", label: "Imobiliário" },
+  { value: "Jurídico", label: "Jurídico" },
+  { value: "Pet", label: "Pet" },
+  { value: "Telecomunicações", label: "Telecomunicações" },
+  { value: "Transporte", label: "Transporte" },
+  { value: "Turismo", label: "Turismo" },
+];
 
 const periodOptions = [
   { value: "TODOS", label: "Todos" },
@@ -262,7 +288,7 @@ export function ClientList({ clients, users, initialQuery = "" }: ClientListProp
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface-1">
+      <div className="rounded-xl border border-border bg-surface-1">
         <DataTable
           columns={columns}
           data={filtered}

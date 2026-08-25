@@ -31,7 +31,7 @@ export default function CadastroPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -56,9 +56,32 @@ export default function CadastroPage() {
       return;
     }
 
+    if (data.user) {
+      const companyId = `comp-${Date.now().toString(36)}`;
+
+      await supabase.from("companies").insert({
+        id: companyId,
+        name: company,
+        cnpj: "",
+        segment: segment || "Tecnologia",
+        city: "",
+        state: "",
+      });
+
+      await supabase.from("users").insert({
+        id: `usr-${data.user.id.slice(0, 8)}`,
+        auth_id: data.user.id,
+        name,
+        email,
+        role: "ADMIN",
+        company_id: companyId,
+        phone: "",
+      });
+    }
+
     toast({
       title: "Conta criada!",
-      message: "Verifique seu e-mail para confirmar o cadastro.",
+      message: "Faça login para acessar o painel.",
       variant: "success",
     });
     router.push("/login");

@@ -9,11 +9,8 @@ import {
   userService,
 } from "@/lib/services";
 import { clientRepository } from "@/lib/repositories";
-import { mockClientIds } from "@/lib/mock-data";
 
-export function generateStaticParams() {
-  return mockClientIds.map((id) => ({ id }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function ClienteDetailPage({
   params,

@@ -11,8 +11,8 @@ import { Filter } from "@/components/ui/Filter";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable, type TableColumn } from "@/components/ui/Table";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { useToast } from "@/components/ui/Toast";
 import { SalesByMonth } from "./SalesByMonth";
+import { RegisterDealModal } from "./RegisterDealModal";
 import type { Deal, DealStatus } from "@/types";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import {
@@ -21,13 +21,19 @@ import {
   PAYMENT_STATUS_LABELS,
   PAYMENT_STATUS_TONES,
 } from "@/lib/constants";
-import { IconTrendingUp, IconPlus } from "@/components/icons";
+import type { PaymentStatus } from "@/types";
+import { useToast } from "@/components/ui/Toast";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { IconTrendingUp, IconPlus, IconEdit, IconTrash } from "@/components/icons";
 import type { DealStats } from "@/lib/services";
 
 export interface SalesContentProps {
   deals: Deal[];
   stats: DealStats;
   clientNames: Record<string, string>;
+  clients: { id: string; name: string; code: string }[];
+  users: { id: string; name: string }[];
+  currentUserId?: string;
 }
 
 const statusOptions = (Object.keys(DEAL_STATUS_LABELS) as DealStatus[]).map((status) => ({
@@ -35,10 +41,25 @@ const statusOptions = (Object.keys(DEAL_STATUS_LABELS) as DealStatus[]).map((sta
   label: DEAL_STATUS_LABELS[status],
 }));
 
-export function SalesContent({ deals, stats, clientNames }: SalesContentProps) {
+const paymentStatusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((s) => ({
+  value: s,
+  label: PAYMENT_STATUS_LABELS[s],
+}));
+
+export function SalesContent({
+  deals,
+  stats,
+  clientNames,
+  clients,
+  users,
+  currentUserId,
+}: SalesContentProps) {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("TODOS");
+  const [paymentStatus, setPaymentStatus] = useState("TODOS");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editDeal, setEditDeal] = useState<Deal | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -52,9 +73,10 @@ export function SalesContent({ deals, stats, clientNames }: SalesContentProps) {
         return false;
       }
       if (status !== "TODOS" && deal.status !== status) return false;
+      if (paymentStatus !== "TODOS" && deal.paymentStatus !== paymentStatus) return false;
       return true;
     });
-  }, [deals, query, status, clientNames]);
+  }, [deals, query, status, paymentStatus, clientNames]);
 
   const columns: TableColumn<Deal>[] = [
     {
@@ -104,6 +126,35 @@ export function SalesContent({ deals, stats, clientNames }: SalesContentProps) {
         </Badge>
       ),
     },
+    {
+      key: "acoes",
+      header: "Ações",
+      className: "w-10",
+      render: (deal) => (
+        <Dropdown
+          align="right"
+          triggerClassName="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-3"
+          trigger={<span className="text-muted">•••</span>}
+          items={[
+            {
+              label: "Editar",
+              icon: <IconEdit className="h-4 w-4" />,
+              onClick: () => {
+                setEditDeal(deal);
+                setModalOpen(true);
+              },
+            },
+            {
+              label: "Excluir",
+              icon: <IconTrash className="h-4 w-4" />,
+              danger: true,
+              onClick: () =>
+                toast({ title: "Exclusão não disponível", message: `${deal.product} — exclusão chega com o backend real.`, variant: "warning" }),
+            },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -112,15 +163,7 @@ export function SalesContent({ deals, stats, clientNames }: SalesContentProps) {
         title="Vendas"
         description="Acompanhe a performance comercial"
         actions={
-          <Button
-            onClick={() =>
-              toast({
-                title: "Registro de venda",
-                message: "Acesse o cliente para registrar uma venda.",
-                variant: "info",
-              })
-            }
-          >
+          <Button onClick={() => { setEditDeal(null); setModalOpen(true); }}>
             <IconPlus className="h-4 w-4" />
             Nova venda
           </Button>
@@ -165,7 +208,7 @@ export function SalesContent({ deals, stats, clientNames }: SalesContentProps) {
         </Card>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface-1">
+      <div className="rounded-xl border border-border bg-surface-1">
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <SearchInput
             value={query}
@@ -173,12 +216,20 @@ export function SalesContent({ deals, stats, clientNames }: SalesContentProps) {
             placeholder="Buscar por produto, código ou cliente..."
             className="w-full sm:max-w-xs"
           />
-          <Filter
-            options={statusOptions}
-            value={status}
-            onChange={setStatus}
-            className="w-full sm:w-48"
-          />
+          <div className="flex gap-2">
+            <Filter
+              options={statusOptions}
+              value={status}
+              onChange={setStatus}
+              className="w-full sm:w-48"
+            />
+            <Filter
+              options={paymentStatusOptions}
+              value={paymentStatus}
+              onChange={setPaymentStatus}
+              className="w-full sm:w-48"
+            />
+          </div>
         </div>
         <DataTable
           columns={columns}
@@ -193,6 +244,15 @@ export function SalesContent({ deals, stats, clientNames }: SalesContentProps) {
           }
         />
       </div>
+
+      <RegisterDealModal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setEditDeal(null); }}
+        clients={clients}
+        users={users}
+        currentUserId={currentUserId}
+        editDeal={editDeal}
+      />
     </div>
   );
 }

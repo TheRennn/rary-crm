@@ -1,12 +1,15 @@
 import { userRepository } from "@/lib/repositories";
 import type { Activity, User } from "@/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+type AuthUser = { id: string; email?: string; user_metadata?: Record<string, unknown> };
 
 /**
  * Service de usuários e feed de atividades.
  */
 export class UserService {
-  async getCurrentUser(email?: string): Promise<User | null> {
-    return userRepository.findCurrent(email);
+  async getCurrentUser(authUser?: AuthUser | null, serverClient?: SupabaseClient): Promise<User | null> {
+    return userRepository.findCurrent(authUser, serverClient);
   }
 
   async getAllUsers(): Promise<User[]> {

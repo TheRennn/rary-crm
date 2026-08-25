@@ -71,6 +71,19 @@ export class CommissionService {
     return commissionRepository.create(commission);
   }
 
+  async update(id: string, input: Partial<CreateCommissionInput>): Promise<Commission> {
+    const updateData: Record<string, unknown> = {};
+    if (input.companyName !== undefined) updateData.companyName = input.companyName;
+    if (input.period !== undefined) updateData.period = input.period;
+    if (input.rate !== undefined) updateData.rate = input.rate;
+    if (input.baseValue !== undefined) updateData.baseValue = input.baseValue;
+    if (input.status !== undefined) updateData.status = input.status;
+    if (input.notes !== undefined) updateData.notes = input.notes;
+    if (input.dueDate !== undefined) updateData.dueDate = input.dueDate;
+    if (input.method !== undefined) updateData.method = input.method;
+    return commissionRepository.update(id, updateData);
+  }
+
   async getStats(): Promise<CommissionStats> {
     const commissions = await this.getAll();
     const received = commissions.filter((c) => c.status === "PAGO");

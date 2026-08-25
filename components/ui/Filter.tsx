@@ -41,8 +41,10 @@ export function Filter({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           className={cn(
-            "h-10 w-full appearance-none rounded-lg border border-border bg-surface-1 text-sm text-foreground transition-colors focus:outline-none focus:ring-2 focus:border-brand-500/60 focus:ring-brand-500/25",
-            icon ? "pl-10 pr-9" : "px-3 pr-9"
+            "h-11 w-full appearance-none rounded-xl border border-border bg-surface-1 px-3 pr-9 text-sm text-foreground transition-all",
+            "focus:outline-none focus:ring-2 focus:border-brand-500/60 focus:ring-brand-500/25 focus:shadow-lg focus:shadow-brand-600/5",
+            "hover:border-border-strong",
+            icon ? "pl-10" : ""
           )}
         >
           <option value={all.value}>{all.label}</option>

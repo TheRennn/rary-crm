@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { StatCard } from "@/components/ui/StatCard";
 import { Filter } from "@/components/ui/Filter";
 import { Badge } from "@/components/ui/Badge";
@@ -23,10 +25,13 @@ import {
   IconClock,
   IconCheckCircle,
   IconTrendingUp,
+  IconEdit,
+  IconTrash,
 } from "@/components/icons";
 
 export interface PedidosContentProps {
   orders: Order[];
+  onEdit?: (order: Order) => void;
 }
 
 const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((status) => ({
@@ -50,7 +55,8 @@ const TYPE_TONES: Record<OrderType, BadgeTone> = {
   BONIFICACAO: "warning",
 };
 
-export function PedidosContent({ orders }: PedidosContentProps) {
+export function PedidosContent({ orders, onEdit }: PedidosContentProps) {
+  const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [type, setType] = useState("TODOS");
   const [status, setStatus] = useState("TODOS");
@@ -213,6 +219,32 @@ export function PedidosContent({ orders }: PedidosContentProps) {
         <Badge tone={PAYMENT_STATUS_TONES[order.status]} dot>
           {PAYMENT_STATUS_LABELS[order.status]}
         </Badge>
+      ),
+    },
+    {
+      key: "acoes",
+      header: "Ações",
+      className: "w-10",
+      render: (order) => (
+        <Dropdown
+          align="right"
+          triggerClassName="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-3"
+          trigger={<span className="text-muted">•••</span>}
+          items={[
+            {
+              label: "Editar",
+              icon: <IconEdit className="h-4 w-4" />,
+              onClick: () => onEdit?.(order),
+            },
+            {
+              label: "Excluir",
+              icon: <IconTrash className="h-4 w-4" />,
+              danger: true,
+              onClick: () =>
+                toast({ title: "Exclusão não disponível", message: `${order.code} — exclusão chega com o backend real.`, variant: "warning" }),
+            },
+          ]}
+        />
       ),
     },
   ];

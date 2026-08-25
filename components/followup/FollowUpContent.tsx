@@ -116,7 +116,7 @@ export function FollowUpContent({ groups, responsibleNames }: FollowUpContentPro
   }
 
   const renderTable = (items: FollowUp[]) => (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface-1">
+    <div className="rounded-xl border border-border bg-surface-1">
       <DataTable
         columns={columns()}
         data={items}

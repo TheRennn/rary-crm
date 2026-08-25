@@ -1,15 +1,27 @@
-import { mockDatabase } from "@/lib/db/mock-adapter";
+import { createUniversalClient } from "@/lib/supabase/universal";
 import type { Notification } from "@/types";
 
-/**
- * Repository de notificações.
- *
- * TODO: substituir por consultas reais (notificações via banco/push já prontas
- * para consumo no NotificationCenter).
- */
+function rowToNotification(row: Record<string, unknown>): Notification {
+  return {
+    id: row.id as string,
+    type: row.type as Notification["type"],
+    title: row.title as string,
+    message: row.message as string,
+    createdAt: row.created_at as string,
+    read: (row.read as boolean) ?? false,
+  };
+}
+
 export class NotificationRepository {
   async findAll(): Promise<Notification[]> {
-    return mockDatabase.read("notifications");
+    const supabase = await createUniversalClient();
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error || !data) return [];
+    return data.map(rowToNotification);
   }
 }
 

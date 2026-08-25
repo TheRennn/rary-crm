@@ -7,6 +7,8 @@ import {
 } from "@/lib/services";
 import { FinanceiroContent } from "@/components/financeiro/FinanceiroContent";
 
+export const dynamic = "force-dynamic";
+
 export default async function FinanceiroPage() {
   const [payments, paymentStats, commissions, orders, goals, clients] = await Promise.all([
     paymentService.getAll(),

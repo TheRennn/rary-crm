@@ -106,6 +106,9 @@ export function FinanceiroContent({
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  const [editCommission, setEditCommission] = useState<Commission | null>(null);
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [editGoal, setEditGoal] = useState<Goal | null>(null);
   const { toast } = useToast();
 
   const active = PROFILES.find((option) => option.id === profile)!;
@@ -206,7 +209,7 @@ export function FinanceiroContent({
           {adminTab === "receber" ? (
             <PaymentsContent key="payments" payments={payments} stats={paymentStats} />
           ) : (
-            <GoalsView key="goals" goals={goals} currents={currents} />
+            <GoalsView key="goals" goals={goals} currents={currents} onEdit={(g) => { setEditGoal(g); setGoalOpen(true); }} />
           )}
         </div>
       ) : (
@@ -221,36 +224,54 @@ export function FinanceiroContent({
             onChange={(id) => setRepTab(id as RepTab)}
           />
           {repTab === "comissoes" ? (
-            <CommissionsContent key="commissions" commissions={commissions} />
+            <CommissionsContent key="commissions" commissions={commissions} onEdit={(c) => { setEditCommission(c); setCommissionOpen(true); }} />
           ) : (
-            <PedidosContent key="orders" orders={orders} />
+            <PedidosContent key="orders" orders={orders} onEdit={(o) => { setEditOrder(o); setOrderOpen(true); }} />
           )}
         </div>
       )}
 
       <RegisterCommissionModal
         open={commissionOpen}
-        onClose={() => setCommissionOpen(false)}
+        onClose={() => { setCommissionOpen(false); setEditCommission(null); }}
         existingCompanies={existingCompanies}
+        editCommission={editCommission}
         onCreated={(commission) => {
-          setCommissions((prev) => [commission, ...prev]);
+          if (editCommission) {
+            setCommissions((prev) => prev.map((c) => c.id === commission.id ? commission : c));
+          } else {
+            setCommissions((prev) => [commission, ...prev]);
+          }
+          setEditCommission(null);
         }}
       />
       <RegisterOrderModal
         open={orderOpen}
-        onClose={() => setOrderOpen(false)}
+        onClose={() => { setOrderOpen(false); setEditOrder(null); }}
         existingClients={clients}
         existingCompanies={existingCompanies}
+        editOrder={editOrder}
         onCreated={(order) => {
-          setOrders((prev) => [order, ...prev]);
+          if (editOrder) {
+            setOrders((prev) => prev.map((o) => o.id === order.id ? order : o));
+          } else {
+            setOrders((prev) => [order, ...prev]);
+          }
+          setEditOrder(null);
         }}
       />
       <RegisterGoalModal
         open={goalOpen}
-        onClose={() => setGoalOpen(false)}
+        onClose={() => { setGoalOpen(false); setEditGoal(null); }}
         currents={currents}
+        editGoal={editGoal}
         onCreated={(goal) => {
-          setGoals((prev) => [goal, ...prev]);
+          if (editGoal) {
+            setGoals((prev) => prev.map((g) => g.id === goal.id ? goal : g));
+          } else {
+            setGoals((prev) => [goal, ...prev]);
+          }
+          setEditGoal(null);
         }}
       />
     </div>

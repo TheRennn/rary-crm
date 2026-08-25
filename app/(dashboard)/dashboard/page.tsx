@@ -17,6 +17,8 @@ import {
 } from "@/lib/services";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrador",
   GERENTE: "Gerente",
@@ -44,7 +46,7 @@ export default async function DashboardPage() {
     notifications,
     activities,
   ] = await Promise.all([
-    userService.getCurrentUser(authUser.email ?? undefined),
+    userService.getCurrentUser(authUser, supabase),
     clientService.getAll(),
     dealService.getAll(),
     paymentService.getAll(),

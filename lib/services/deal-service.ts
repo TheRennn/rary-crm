@@ -1,5 +1,8 @@
 import { dealRepository } from "@/lib/repositories";
 import type { Deal, Purchase } from "@/types";
+import type { CreateDealInput } from "@/lib/repositories/deal-repository";
+
+export type { CreateDealInput };
 
 export interface DealStats {
   total: number;
@@ -32,6 +35,14 @@ export class DealService {
 
   async getPurchasesByClient(clientId: string): Promise<Purchase[]> {
     return dealRepository.findPurchasesByClient(clientId);
+  }
+
+  async create(input: CreateDealInput): Promise<Deal> {
+    return dealRepository.create(input);
+  }
+
+  async update(id: string, input: Partial<CreateDealInput>): Promise<Deal> {
+    return dealRepository.update(id, input);
   }
 
   async getStats(): Promise<DealStats> {

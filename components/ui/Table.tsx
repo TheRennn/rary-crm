@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export function Table({ className, ...props }: TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full">
       <table
         className={cn("w-full border-collapse text-left text-sm", className)}
         {...props}
@@ -32,7 +32,7 @@ export function DataTable<T>({ columns, data, rowKey, empty, onRowClick }: Table
     return <>{empty}</>;
   }
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full">
       <table className="w-full border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-border">

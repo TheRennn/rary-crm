@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useToast } from "@/components/ui/Toast";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { StatCard } from "@/components/ui/StatCard";
 import { Filter } from "@/components/ui/Filter";
 import { Badge } from "@/components/ui/Badge";
@@ -17,10 +19,13 @@ import {
   IconClock,
   IconTrendingUp,
   IconArrowRight,
+  IconEdit,
+  IconTrash,
 } from "@/components/icons";
 
 export interface CommissionsContentProps {
   commissions: Commission[];
+  onEdit?: (commission: Commission) => void;
 }
 
 const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((status) => ({
@@ -44,7 +49,8 @@ function summarize(commissions: Commission[]) {
   };
 }
 
-export function CommissionsContent({ commissions }: CommissionsContentProps) {
+export function CommissionsContent({ commissions, onEdit }: CommissionsContentProps) {
+  const { toast } = useToast();
   const [status, setStatus] = useState("TODOS");
   const [period, setPeriod] = useState("TODOS");
   const [company, setCompany] = useState("TODOS");
@@ -179,6 +185,32 @@ export function CommissionsContent({ commissions }: CommissionsContentProps) {
         ) : (
           <span className="text-muted-2">—</span>
         ),
+    },
+    {
+      key: "acoes",
+      header: "Ações",
+      className: "w-10",
+      render: (commission) => (
+        <Dropdown
+          align="right"
+          triggerClassName="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-3"
+          trigger={<span className="text-muted">•••</span>}
+          items={[
+            {
+              label: "Editar",
+              icon: <IconEdit className="h-4 w-4" />,
+              onClick: () => onEdit?.(commission),
+            },
+            {
+              label: "Excluir",
+              icon: <IconTrash className="h-4 w-4" />,
+              danger: true,
+              onClick: () =>
+                toast({ title: "Exclusão não disponível", message: `${commission.companyName} — exclusão chega com o backend real.`, variant: "warning" }),
+            },
+          ]}
+        />
+      ),
     },
   ];
 

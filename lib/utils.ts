@@ -69,6 +69,64 @@ export function formatDocument(doc: string): string {
   return doc;
 }
 
+export function maskPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length === 0) return "";
+  if (digits.length <= 10) {
+    let result = `(${digits.slice(0, 2)}`;
+    if (digits.length > 2) result += `) ${digits.slice(2, 6)}`;
+    if (digits.length > 6) result += `-${digits.slice(6, 10)}`;
+    return result;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+}
+
+export function maskCpf(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length === 0) return "";
+  let result = digits.slice(0, 3);
+  if (digits.length > 3) result += `.${digits.slice(3, 6)}`;
+  if (digits.length > 6) result += `.${digits.slice(6, 9)}`;
+  if (digits.length > 9) result += `-${digits.slice(9, 11)}`;
+  return result;
+}
+
+export function maskCnpj(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length === 0) return "";
+  let result = digits.slice(0, 2);
+  if (digits.length > 2) result += `.${digits.slice(2, 5)}`;
+  if (digits.length > 5) result += `.${digits.slice(5, 8)}`;
+  if (digits.length > 8) result += `/${digits.slice(8, 12)}`;
+  if (digits.length > 12) result += `-${digits.slice(12, 14)}`;
+  return result;
+}
+
+export function maskCpfCnpj(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length <= 11) {
+    return maskCpf(value);
+  }
+  return maskCnpj(digits.slice(0, 14));
+}
+
+export function stripMask(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+export function maskCurrency(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 15);
+  if (!digits) return "";
+  const num = Number(digits) / 100;
+  return num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function parseCurrency(value: string): number {
+  const cleaned = value.replace(/\./g, "").replace(",", ".");
+  const num = parseFloat(cleaned);
+  return Number.isFinite(num) ? num : 0;
+}
+
 export function isOverdue(iso: string | null | undefined): boolean {
   if (!iso) return false;
   const date = new Date(iso);

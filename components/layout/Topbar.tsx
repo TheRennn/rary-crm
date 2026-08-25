@@ -85,7 +85,7 @@ export function Topbar({ user, companyName, onOpenMobileNav }: TopbarProps) {
               onClick: async () => {
                 const supabase = createClient();
                 await supabase.auth.signOut();
-                router.push("/login");
+                window.location.href = "/";
               },
               danger: true,
             },

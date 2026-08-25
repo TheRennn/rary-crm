@@ -8,6 +8,7 @@ import { DataTable, type TableColumn } from "@/components/ui/Table";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { MaskedInput } from "@/components/ui/MaskedInput";
 import { Select } from "@/components/ui/Select";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { useToast } from "@/components/ui/Toast";
@@ -135,7 +136,7 @@ export function ClientPurchases({ purchases }: ClientPurchasesProps) {
             <DatePicker id="pch-data" label="Data" required />
             <Input id="pch-qtd" label="Quantidade" type="number" min={1} defaultValue={1} required />
           </div>
-          <Input id="pch-valor" label="Valor (R$)" type="number" min={0} step="0.01" placeholder="0,00" required />
+          <MaskedInput id="pch-valor" mask="currency" label="Valor (R$)" placeholder="0,00" required />
           <div className="grid grid-cols-2 gap-4">
             <Select id="pch-status" label="Status" options={purchaseStatusOptions} placeholder="Selecione" required defaultValue="APROVADA" />
             <Select id="pch-pagamento" label="Pagamento" options={paymentStatusOptions} placeholder="Selecione" required defaultValue="PENDENTE" />

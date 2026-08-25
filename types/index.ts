@@ -34,7 +34,29 @@ export type Segment =
   | "Saúde"
   | "Educação"
   | "Alimentação"
-  | "Logística";
+  | "Logística"
+  | "Construção Civil"
+  | "Agronegócio"
+  | "Automotivo"
+  | "Beleza e Estética"
+  | "Comunicação e Marketing"
+  | "Consultoria"
+  | "E-commerce"
+  | "Energia"
+  | "Engenharia"
+  | "Farmacêutico"
+  | "Financeiro"
+  | "Imobiliário"
+  | "Jurídico"
+  | "Manutenção"
+  | "Metalurgia"
+  | "Mobiliário"
+  | "Pet"
+  | "Restaurante e Lanchonete"
+  | "Segurança"
+  | "Telecomunicações"
+  | "Transporte"
+  | "Turismo";
 
 export type UserRole = "ADMIN" | "GERENTE" | "VENDEDOR";
 

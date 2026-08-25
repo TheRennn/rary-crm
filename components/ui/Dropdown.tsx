@@ -56,7 +56,10 @@ export function Dropdown({
     <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-lg text-sm text-muted transition-colors hover:text-foreground",
           triggerClassName
@@ -85,7 +88,8 @@ export function Dropdown({
               type="button"
               role="menuitem"
               disabled={item.disabled}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setOpen(false);
                 item.onClick();
               }}
