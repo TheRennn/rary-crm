@@ -74,6 +74,7 @@ export interface User {
   role: UserRole;
   companyId: string;
   phone?: string;
+  emailVerified: boolean;
 }
 
 export interface Company {

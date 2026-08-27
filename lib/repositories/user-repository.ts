@@ -24,6 +24,7 @@ export class UserRepository {
         role: existing.role,
         companyId: existing.company_id ?? "",
         phone: existing.phone ?? "",
+        emailVerified: existing.email_verified ?? false,
       };
     }
 
@@ -62,6 +63,7 @@ export class UserRepository {
       role: "ADMIN",
       companyId,
       phone: "",
+      emailVerified: false,
     };
   }
 

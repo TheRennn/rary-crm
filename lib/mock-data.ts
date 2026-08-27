@@ -39,6 +39,7 @@ export const mockUsers: User[] = [
     email: "ana@rary.com",
     role: "ADMIN",
     companyId: "comp-rary",
+    emailVerified: true,
   },
   {
     id: "usr-carlos",
@@ -46,6 +47,7 @@ export const mockUsers: User[] = [
     email: "carlos@rary.com",
     role: "VENDEDOR",
     companyId: "comp-rary",
+    emailVerified: true,
   },
   {
     id: "usr-julia",
@@ -53,6 +55,7 @@ export const mockUsers: User[] = [
     email: "julia@rary.com",
     role: "VENDEDOR",
     companyId: "comp-rary",
+    emailVerified: true,
   },
   {
     id: "usr-rafael",
@@ -60,6 +63,7 @@ export const mockUsers: User[] = [
     email: "rafael@rary.com",
     role: "GERENTE",
     companyId: "comp-rary",
+    emailVerified: true,
   },
 ];
 

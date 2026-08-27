@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { IconUser, IconBuilding, IconBell, IconLink, IconPalette } from "@/components/icons";
 
 export interface SettingsContentProps {
-  user: { id: string; name: string; email: string; role: string; phone?: string } | null;
+  user: { id: string; name: string; email: string; role: string; phone?: string; emailVerified?: boolean } | null;
   company: { id: string; name: string; cnpj: string; segment: string; city: string; state: string };
 }
 

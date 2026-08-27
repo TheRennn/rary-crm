@@ -81,10 +81,10 @@ export default function CadastroPage() {
 
     toast({
       title: "Conta criada!",
-      message: "Faça login para acessar o painel.",
+      message: "Verifique seu e-mail para ativar sua conta.",
       variant: "success",
     });
-    router.push("/login");
+    router.push(`/verificar-email?email=${encodeURIComponent(email)}`);
   }
 
   return (

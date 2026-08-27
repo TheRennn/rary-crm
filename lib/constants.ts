@@ -35,6 +35,7 @@ export const ROUTES = {
   integracoes: "/configuracoes/integracoes",
   login: "/login",
   cadastro: "/cadastro",
+  verificarEmail: "/verificar-email",
 } as const;
 
 export const NAV_SECTIONS = [

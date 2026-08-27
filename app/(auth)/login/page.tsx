@@ -24,7 +24,7 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -39,6 +39,16 @@ export default function LoginPage() {
             : error.message,
         variant: "error",
       });
+      return;
+    }
+
+    if (data.user && !data.user.email_confirmed_at) {
+      toast({
+        title: "E-mail não verificado",
+        message: "Verifique seu e-mail para acessar o painel.",
+        variant: "warning",
+      });
+      router.push(`/verificar-email?email=${encodeURIComponent(email)}`);
       return;
     }
 

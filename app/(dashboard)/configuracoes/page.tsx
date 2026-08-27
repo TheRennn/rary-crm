@@ -27,7 +27,7 @@ export default async function ConfiguracoesPage() {
     <SettingsContent
       user={
         user
-          ? { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone }
+          ? { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, emailVerified: user.emailVerified }
           : null
       }
       company={
