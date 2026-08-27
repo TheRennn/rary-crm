@@ -1,20 +1,18 @@
-import { TaskBoard } from "@/components/pendentes/TaskBoard";
-import { clientService, taskService, userService } from "@/lib/services";
+import { TaskBoardClient } from "@/components/pendentes/TaskBoardClient";
+import { clientService, taskService } from "@/lib/services";
 
 export const dynamic = "force-dynamic";
 
 export default async function PendentesPage() {
-  const [groups, clients, users] = await Promise.all([
+  const [groups, clients] = await Promise.all([
     taskService.getGroups(),
     clientService.getAll(),
-    userService.getAllUsers(),
   ]);
 
   return (
-    <TaskBoard
+    <TaskBoardClient
       groups={groups}
       clients={clients.map((client) => ({ value: client.id, label: client.companyName }))}
-      users={users.map((user) => ({ value: user.id, label: user.name }))}
     />
   );
 }

@@ -45,10 +45,14 @@ export class DealService {
     return dealRepository.update(id, input);
   }
 
+  async delete(id: string): Promise<void> {
+    return dealRepository.delete(id);
+  }
+
   async getStats(): Promise<DealStats> {
     const deals = await this.getAll();
     const active = deals.filter((d) => d.status !== "CANCELADA");
-    const concluded = deals.filter((d) => d.status === "CONCLUIDA");
+    const concluded = deals.filter((d) => d.status === "CONCLUIDA" || d.paymentStatus === "PAGO");
     const pending = deals.filter((d) =>
       ["ORCAMENTO", "NEGOCIACAO", "APROVADA"].includes(d.status)
     );

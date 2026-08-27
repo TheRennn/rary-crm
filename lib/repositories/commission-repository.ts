@@ -73,6 +73,12 @@ export class CommissionRepository {
     if (error) throw error;
     return rowToCommission(data);
   }
+
+  async delete(id: string): Promise<void> {
+    const supabase = await createUniversalClient();
+    const { error } = await supabase.from("commissions").delete().eq("id", id);
+    if (error) throw error;
+  }
 }
 
 export const commissionRepository = new CommissionRepository();

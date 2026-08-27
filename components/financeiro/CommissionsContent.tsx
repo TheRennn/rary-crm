@@ -26,6 +26,7 @@ import {
 export interface CommissionsContentProps {
   commissions: Commission[];
   onEdit?: (commission: Commission) => void;
+  onDelete?: (commission: Commission) => void;
 }
 
 const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((status) => ({
@@ -49,7 +50,7 @@ function summarize(commissions: Commission[]) {
   };
 }
 
-export function CommissionsContent({ commissions, onEdit }: CommissionsContentProps) {
+export function CommissionsContent({ commissions, onEdit, onDelete }: CommissionsContentProps) {
   const { toast } = useToast();
   const [status, setStatus] = useState("TODOS");
   const [period, setPeriod] = useState("TODOS");
@@ -205,8 +206,7 @@ export function CommissionsContent({ commissions, onEdit }: CommissionsContentPr
               label: "Excluir",
               icon: <IconTrash className="h-4 w-4" />,
               danger: true,
-              onClick: () =>
-                toast({ title: "Exclusão não disponível", message: `${commission.companyName} — exclusão chega com o backend real.`, variant: "warning" }),
+              onClick: () => onDelete?.(commission),
             },
           ]}
         />

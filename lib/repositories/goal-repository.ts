@@ -58,6 +58,12 @@ export class GoalRepository {
     if (error) throw error;
     return rowToGoal(data);
   }
+
+  async delete(id: string): Promise<void> {
+    const supabase = await createUniversalClient();
+    const { error } = await supabase.from("goals").delete().eq("id", id);
+    if (error) throw error;
+  }
 }
 
 export const goalRepository = new GoalRepository();

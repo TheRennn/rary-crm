@@ -149,7 +149,7 @@ export interface ChartMetrics {
 }
 
 export interface DashboardData {
-  user: { name: string; role: string } | null;
+  user: { name: string } | null;
   greeting: string;
   todayLabel: string;
   organizations: DashboardOrganization[];

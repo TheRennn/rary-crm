@@ -138,6 +138,12 @@ export class DealRepository {
     if (error) throw error;
     return rowToDeal(data);
   }
+
+  async delete(id: string): Promise<void> {
+    const supabase = await createUniversalClient();
+    const { error } = await supabase.from("deals").delete().eq("id", id);
+    if (error) throw error;
+  }
 }
 
 export const dealRepository = new DealRepository();

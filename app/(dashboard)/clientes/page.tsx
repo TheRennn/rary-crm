@@ -1,5 +1,5 @@
-import { ClientList } from "@/components/clientes/ClientList";
-import { clientService, userService } from "@/lib/services";
+import { ClientListClient } from "@/components/clientes/ClientListClient";
+import { clientService } from "@/lib/services";
 
 export const dynamic = "force-dynamic";
 
@@ -9,15 +9,11 @@ export default async function ClientesPage({
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q : "";
 
-  const [clients, users] = await Promise.all([
-    clientService.getAll(),
-    userService.getAllUsers(),
-  ]);
+  const clients = await clientService.getAll();
 
   return (
-    <ClientList
+    <ClientListClient
       clients={clients}
-      users={users.map((user) => ({ id: user.id, name: user.name }))}
       initialQuery={query}
     />
   );

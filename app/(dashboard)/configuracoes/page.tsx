@@ -15,10 +15,7 @@ export default async function ConfiguracoesPage() {
     redirect("/login");
   }
 
-  const [user, users] = await Promise.all([
-    userService.getCurrentUser(authUser, supabase),
-    userService.getAllUsers(),
-  ]);
+  const user = await userService.getCurrentUser(authUser, supabase);
 
   const { data: company } = await supabase
     .from("companies")
@@ -38,7 +35,6 @@ export default async function ConfiguracoesPage() {
           ? { id: company.id, name: company.name, cnpj: company.cnpj, segment: company.segment, city: company.city, state: company.state }
           : { id: "", name: "", cnpj: "", segment: "", city: "", state: "" }
       }
-      users={users.map((item) => ({ id: item.id, name: item.name, email: item.email, role: item.role }))}
     />
   );
 }

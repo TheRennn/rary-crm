@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/Toast";
 import { clientRepository } from "@/lib/repositories";
 import { clientService } from "@/lib/services";
 import { CLIENT_STATUS_LABELS, COUNTRY_OPTIONS, UF_LIST } from "@/lib/constants";
-import type { ClientStatus } from "@/types";
+import type { Client, ClientStatus } from "@/types";
 import {
   IconArrowLeft,
   IconUser,
@@ -30,8 +30,8 @@ import {
 } from "@/components/icons";
 
 export interface ClientFormProps {
-  users: { id: string; name: string }[];
   currentUserId?: string;
+  editClient?: Client | null;
 }
 
 const typeOptions = [
@@ -142,9 +142,10 @@ const statusOptions = [
 const ufOptions = UF_LIST.map((uf) => ({ value: uf, label: uf }));
 const countryOptions = COUNTRY_OPTIONS.map((c) => ({ value: c.value, label: c.label }));
 
-export default function ClientForm({ users, currentUserId }: ClientFormProps) {
+export default function ClientForm({ currentUserId, editClient }: ClientFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const isEditing = !!editClient;
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -170,21 +171,50 @@ export default function ClientForm({ users, currentUserId }: ClientFormProps) {
   const [obs, setObs] = useState("");
 
   useEffect(() => {
-    clientService.getNextCode().then(setCode);
-  }, []);
+    if (!isEditing) {
+      clientService.getNextCode().then(setCode);
+    } else {
+      setCode(editClient.code);
+    }
+  }, [isEditing, editClient]);
 
-  const responsavelOptions = users.length > 0
-    ? users.map((u) => ({ value: u.id, label: u.name }))
-    : currentUserId
-      ? [{ value: currentUserId, label: "Eu mesmo (administrador)" }]
-      : [];
+  useEffect(() => {
+    if (editClient) {
+      setNome(editClient.name);
+      setDoc(editClient.cpfCnpj);
+      setTipo(editClient.type);
+      setEmpresaNome(editClient.companyName);
+      setEmpresaCnpj(editClient.companyCnpj);
+      setSegmento(editClient.segment);
+      setCidade(editClient.city);
+      setUf(editClient.state);
+      setDecisorNome(editClient.decisor.name);
+      setDecisorCargo(editClient.decisor.role);
+      setDecisorTelefone(editClient.decisor.phone);
+      setDecisorEmail(editClient.decisor.email);
+      setResponsavel(editClient.responsibleId);
+      setStatus(editClient.status);
+      setOrigem(editClient.origin);
+      setObs(editClient.notes ?? "");
+      const whatsapp = editClient.contacts.find((c) => c.type === "WHATSAPP");
+      const email = editClient.contacts.find((c) => c.type === "EMAIL");
+      const phone = editClient.contacts.find((c) => c.type === "TELEFONE");
+      setWhatsapp(whatsapp?.value ?? "");
+      setContatoEmail(email?.value ?? "");
+      setContatoTelefone(phone?.value ?? "");
+    }
+  }, [editClient]);
+
+  const responsavelOptions = currentUserId
+    ? [{ value: currentUserId, label: "Eu mesmo" }]
+    : [];
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
 
     try {
-      const client = await clientRepository.create({
+      const clientData = {
         name: nome,
         cpfCnpj: doc,
         type: (tipo || "PESSOA_FISICA") as "PESSOA_FISICA" | "PESSOA_JURIDICA",
@@ -204,19 +234,30 @@ export default function ClientForm({ users, currentUserId }: ClientFormProps) {
         status: (status || "NOVO") as ClientStatus,
         origin: origem,
         notes: obs || undefined,
-      });
+      };
 
-      toast({
-        title: "Cliente cadastrado",
-        message: `${client.code} — ${client.name} criado com sucesso.`,
-        variant: "success",
-      });
-      router.push("/clientes");
+      if (isEditing) {
+        const updated = await clientService.update(editClient.id, clientData);
+        toast({
+          title: "Cliente atualizado",
+          message: `${updated.code} — ${updated.name} atualizado com sucesso.`,
+          variant: "success",
+        });
+        router.push(`/clientes/${editClient.id}`);
+      } else {
+        const client = await clientRepository.create(clientData);
+        toast({
+          title: "Cliente cadastrado",
+          message: `${client.code} — ${client.name} criado com sucesso.`,
+          variant: "success",
+        });
+        router.push("/clientes");
+      }
       router.refresh();
     } catch (err) {
       toast({
         title: "Erro ao salvar",
-        message: "Não foi possível cadastrar o cliente. Tente novamente.",
+        message: isEditing ? "Não foi possível atualizar o cliente. Tente novamente." : "Não foi possível cadastrar o cliente. Tente novamente.",
         variant: "error",
       });
     } finally {
@@ -227,15 +268,15 @@ export default function ClientForm({ users, currentUserId }: ClientFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
       <PageHeader
-        title="Novo cliente"
-        description={`Código gerado automaticamente: ${code || "..."}`}
+        title={isEditing ? "Editar cliente" : "Novo cliente"}
+        description={isEditing ? `${editClient.code} — ${editClient.name}` : `Código gerado automaticamente: ${code || "..."}`}
         actions={
           <>
-            <Link href="/clientes">
+            <Link href={isEditing ? `/clientes/${editClient.id}` : "/clientes"}>
               <Button variant="outline">Cancelar</Button>
             </Link>
             <Button type="submit" loading={submitting}>
-              Salvar cliente
+              {isEditing ? "Salvar alterações" : "Salvar cliente"}
             </Button>
           </>
         }
@@ -500,14 +541,14 @@ export default function ClientForm({ users, currentUserId }: ClientFormProps) {
       </Card>
 
       <div className="flex items-center gap-3 border-t border-border pt-6">
-        <Link href="/clientes">
+        <Link href={isEditing ? `/clientes/${editClient.id}` : "/clientes"}>
           <Button variant="ghost">
             <IconArrowLeft className="h-4 w-4" />
-            Voltar para clientes
+            {isEditing ? "Voltar para cliente" : "Voltar para clientes"}
           </Button>
         </Link>
         <Button type="submit" size="lg" loading={submitting} className="ml-auto">
-          Salvar cliente
+          {isEditing ? "Salvar alterações" : "Salvar cliente"}
         </Button>
       </div>
     </form>

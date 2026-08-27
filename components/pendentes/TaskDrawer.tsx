@@ -8,17 +8,29 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { useToast } from "@/components/ui/Toast";
-import type { Task } from "@/types";
+import { taskService } from "@/lib/services";
+import type { Task, TaskStatus } from "@/types";
 
 export interface TaskDrawerProps {
   open: boolean;
   onClose: () => void;
   task: Task | null;
   clients: { value: string; label: string }[];
-  users: { value: string; label: string }[];
+  onSaved?: (task: Task) => void;
 }
 
-export function TaskDrawer({ open, onClose, task, clients, users }: TaskDrawerProps) {
+function computeStatus(dueDate: string, dueTime: string, completed: boolean): TaskStatus {
+  if (completed) return "CONCLUIDA";
+  const now = new Date();
+  const due = new Date(dueDate + "T" + dueTime);
+  const diffMs = due.getTime() - now.getTime();
+  const diffDays = diffMs / 86400000;
+  if (diffDays < 0) return "ATRASADA";
+  if (diffDays < 1) return "HOJE";
+  return "PROXIMA";
+}
+
+export function TaskDrawer({ open, onClose, task, clients, onSaved }: TaskDrawerProps) {
   const { toast } = useToast();
   const [title, setTitle] = useState(task?.title ?? "");
   const [dueDate, setDueDate] = useState(task ? task.dueDate.slice(0, 10) : "");
@@ -28,18 +40,46 @@ export function TaskDrawer({ open, onClose, task, clients, users }: TaskDrawerPr
   const [description, setDescription] = useState(task?.description ?? "");
   const [saving, setSaving] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      toast({
-        title: task ? "Tarefa atualizada" : "Tarefa criada",
-        message: title,
-        variant: "success",
-      });
+
+    try {
+      if (task) {
+        const updated = await taskService.update(task.id, {
+          title,
+          dueDate,
+          dueTime,
+          clientId: clientId || undefined,
+          responsibleId,
+          description: description || undefined,
+          status: computeStatus(dueDate, dueTime, task.completed),
+        });
+        toast({ title: "Tarefa atualizada", message: updated.title, variant: "success" });
+        onSaved?.(updated);
+      } else {
+        const status = computeStatus(dueDate, dueTime, false);
+        const selectedClient = clients.find((c) => c.value === clientId);
+        const created = await taskService.create({
+          title,
+          dueDate,
+          dueTime,
+          clientId: clientId || undefined,
+          clientName: selectedClient?.label,
+          responsibleId,
+          description: description || undefined,
+          status,
+          completed: false,
+        });
+        toast({ title: "Tarefa criada", message: created.title, variant: "success" });
+        onSaved?.(created);
+      }
       onClose();
-    }, 600);
+    } catch {
+      toast({ title: "Erro ao salvar", message: "Não foi possível salvar a tarefa.", variant: "error" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -90,14 +130,12 @@ export function TaskDrawer({ open, onClose, task, clients, users }: TaskDrawerPr
           onChange={(event) => setClientId(event.target.value)}
           placeholder="Nenhum cliente"
         />
-        <Select
+        <Input
           id="task-responsavel"
           label="Responsável"
-          options={users}
           value={responsibleId}
           onChange={(event) => setResponsibleId(event.target.value)}
-          placeholder="Selecione o responsável"
-          required
+          placeholder="Responsável"
         />
         <Textarea
           id="task-desc"

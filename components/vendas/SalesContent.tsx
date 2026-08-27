@@ -32,8 +32,8 @@ export interface SalesContentProps {
   stats: DealStats;
   clientNames: Record<string, string>;
   clients: { id: string; name: string; code: string }[];
-  users: { id: string; name: string }[];
   currentUserId?: string;
+  onDelete?: (deal: Deal) => void;
 }
 
 const statusOptions = (Object.keys(DEAL_STATUS_LABELS) as DealStatus[]).map((status) => ({
@@ -51,8 +51,8 @@ export function SalesContent({
   stats,
   clientNames,
   clients,
-  users,
   currentUserId,
+  onDelete,
 }: SalesContentProps) {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
@@ -148,8 +148,7 @@ export function SalesContent({
               label: "Excluir",
               icon: <IconTrash className="h-4 w-4" />,
               danger: true,
-              onClick: () =>
-                toast({ title: "Exclusão não disponível", message: `${deal.product} — exclusão chega com o backend real.`, variant: "warning" }),
+              onClick: () => onDelete?.(deal),
             },
           ]}
         />
@@ -249,7 +248,6 @@ export function SalesContent({
         open={modalOpen}
         onClose={() => { setModalOpen(false); setEditDeal(null); }}
         clients={clients}
-        users={users}
         currentUserId={currentUserId}
         editDeal={editDeal}
       />

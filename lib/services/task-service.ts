@@ -1,5 +1,6 @@
 import { taskRepository } from "@/lib/repositories";
 import type { Task } from "@/types";
+import type { CreateTaskInput } from "@/lib/repositories/task-repository";
 
 export interface TaskGroups {
   atrasadas: Task[];
@@ -14,6 +15,18 @@ export interface TaskGroups {
 export class TaskService {
   async getAll(): Promise<Task[]> {
     return taskRepository.findAll();
+  }
+
+  async create(input: CreateTaskInput): Promise<Task> {
+    return taskRepository.create(input);
+  }
+
+  async update(id: string, input: Partial<CreateTaskInput>): Promise<Task> {
+    return taskRepository.update(id, input);
+  }
+
+  async delete(id: string): Promise<void> {
+    return taskRepository.delete(id);
   }
 
   async getGroups(): Promise<TaskGroups> {

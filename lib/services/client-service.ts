@@ -72,6 +72,10 @@ export class ClientService {
   async update(id: string, input: Partial<CreateClientInput>): Promise<Client> {
     return clientRepository.update(id, input);
   }
+
+  async delete(id: string): Promise<void> {
+    return clientRepository.delete(id);
+  }
 }
 
 export const clientService = new ClientService();

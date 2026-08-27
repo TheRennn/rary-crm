@@ -84,6 +84,10 @@ export class CommissionService {
     return commissionRepository.update(id, updateData);
   }
 
+  async delete(id: string): Promise<void> {
+    return commissionRepository.delete(id);
+  }
+
   async getStats(): Promise<CommissionStats> {
     const commissions = await this.getAll();
     const received = commissions.filter((c) => c.status === "PAGO");

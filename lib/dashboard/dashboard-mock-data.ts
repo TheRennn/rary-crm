@@ -105,7 +105,8 @@ function periodLabels(period: DashboardPeriod): string[] {
 
 function buildRevenueSeries(
   deals: Deal[],
-  period: DashboardPeriod
+  period: DashboardPeriod,
+  payments?: Payment[]
 ): SeriesPoint[] {
   const labels = periodLabels(period);
   const count = periodPointCount(period);
@@ -113,10 +114,10 @@ function buildRevenueSeries(
   const totalMs = end.getTime() - start.getTime();
   const bucketMs = totalMs / count;
 
-  const concluded = deals.filter((d) => d.status === "CONCLUIDA");
+  const paid = deals.filter((d) => d.status === "CONCLUIDA" || d.paymentStatus === "PAGO");
   const buckets = new Array(count).fill(0);
 
-  for (const deal of concluded) {
+  for (const deal of paid) {
     const dealTime = new Date(deal.createdAt).getTime();
     const idx = Math.min(
       Math.floor((dealTime - start.getTime()) / bucketMs),
@@ -124,6 +125,22 @@ function buildRevenueSeries(
     );
     if (idx >= 0 && idx < count) {
       buckets[idx] += deal.value;
+    }
+  }
+
+  if (payments) {
+    const standalonePaid = payments.filter(
+      (p) => p.status === "PAGO" && !p.dealId
+    );
+    for (const payment of standalonePaid) {
+      const paymentTime = new Date(payment.dueDate).getTime();
+      const idx = Math.min(
+        Math.floor((paymentTime - start.getTime()) / bucketMs),
+        count - 1
+      );
+      if (idx >= 0 && idx < count) {
+        buckets[idx] += payment.value;
+      }
     }
   }
 
@@ -206,14 +223,28 @@ function getPreviousPeriodRange(period: DashboardPeriod): { start: Date; end: Da
   };
 }
 
-function sumDealValues(deals: Deal[], start: Date, end: Date): number {
-  return deals
+function sumDealValues(deals: Deal[], start: Date, end: Date, payments?: Payment[]): number {
+  let total = deals
     .filter((d) => {
-      if (d.status !== "CONCLUIDA") return false;
+      if (d.status !== "CONCLUIDA" && d.paymentStatus !== "PAGO") return false;
       const t = new Date(d.createdAt).getTime();
       return t >= start.getTime() && t <= end.getTime();
     })
     .reduce((sum, d) => sum + d.value, 0);
+
+  if (payments) {
+    const standalonePaid = payments.filter(
+      (p) => p.status === "PAGO" && !p.dealId
+    );
+    total += standalonePaid
+      .filter((p) => {
+        const t = new Date(p.dueDate).getTime();
+        return t >= start.getTime() && t <= end.getTime();
+      })
+      .reduce((sum, p) => sum + p.value, 0);
+  }
+
+  return total;
 }
 
 function countDeals(deals: Deal[], start: Date, end: Date): number {
@@ -225,7 +256,7 @@ function countDeals(deals: Deal[], start: Date, end: Date): number {
 
 function countConcludedDeals(deals: Deal[], start: Date, end: Date): number {
   return deals.filter((d) => {
-    if (d.status !== "CONCLUIDA") return false;
+    if (d.status !== "CONCLUIDA" && d.paymentStatus !== "PAGO") return false;
     const t = new Date(d.createdAt).getTime();
     return t >= start.getTime() && t <= end.getTime();
   }).length;
@@ -238,8 +269,8 @@ export function buildKpisForPeriod(
   const { start, end } = getPeriodRange(period);
   const { start: prevStart, end: prevEnd } = getPreviousPeriodRange(period);
 
-  const revenue = sumDealValues(data.deals, start, end);
-  const prevRevenue = sumDealValues(data.deals, prevStart, prevEnd);
+  const revenue = sumDealValues(data.deals, start, end, data.payments);
+  const prevRevenue = sumDealValues(data.deals, prevStart, prevEnd, data.payments);
   const revenueDelta = computeDelta(revenue, prevRevenue);
 
   const totalDeals = countDeals(data.deals, start, end);
@@ -266,7 +297,7 @@ export function buildKpisForPeriod(
   const sparklineFromSeries = (series: SeriesPoint[]): number[] =>
     series.map((p) => p.value);
 
-  const revenueSeries = buildRevenueSeries(data.deals, period);
+  const revenueSeries = buildRevenueSeries(data.deals, period, data.payments);
   const salesSeries = buildSalesSeries(data.deals, period);
 
   return {
@@ -323,7 +354,6 @@ export function buildMetricsForPeriod(
   period: DashboardPeriod,
   data: DashboardMetricInput
 ): ChartMetrics {
-  const concluded = data.deals.filter((d) => d.status === "CONCLUIDA");
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -338,7 +368,7 @@ export function buildMetricsForPeriod(
   ).length;
 
   return {
-    revenue: buildRevenueSeries(data.deals, period),
+    revenue: buildRevenueSeries(data.deals, period, data.payments),
     sales: buildSalesSeries(data.deals, period),
     clients: buildClientSeries(data.clients, period),
     clientDistribution: [
@@ -386,7 +416,7 @@ function buildPipeline(deals: Deal[]): PipelineData {
 
   const totalValue = stages.reduce((sum, s) => sum + s.value, 0);
   const totalCount = stages.reduce((sum, s) => sum + s.count, 0);
-  const concludedCount = deals.filter((d) => d.status === "CONCLUIDA").length;
+  const concludedCount = deals.filter((d) => d.status === "CONCLUIDA" || d.paymentStatus === "PAGO").length;
   const totalCountAll = deals.length;
   const conversion =
     totalCountAll > 0
@@ -405,7 +435,7 @@ function buildPerformance(deals: Deal[]): PerformanceRow[] {
       grouped[rid] = { count: 0, concluded: 0 };
     }
     grouped[rid].count += 1;
-    if (deal.status === "CONCLUIDA") {
+    if (deal.status === "CONCLUIDA" || deal.paymentStatus === "PAGO") {
       grouped[rid].concluded += 1;
     }
   }

@@ -6,7 +6,6 @@ import {
   followUpService,
   paymentService,
   taskService,
-  userService,
 } from "@/lib/services";
 import { clientRepository } from "@/lib/repositories";
 
@@ -17,10 +16,7 @@ export default async function ClienteDetailPage({
 }: PageProps<"/clientes/[id]">) {
   const { id } = await params;
 
-  const [client, users] = await Promise.all([
-    clientService.getById(id),
-    userService.getAllUsers(),
-  ]);
+  const client = await clientService.getById(id);
 
   if (!client) {
     notFound();
@@ -36,12 +32,11 @@ export default async function ClienteDetailPage({
 
   const clientTasks = tasks.filter((task) => task.clientId === id);
   const clientFollowUps = followUps.filter((followUp) => followUp.clientId === id);
-  const responsibleName = users.find((user) => user.id === client.responsibleId)?.name ?? "—";
 
   return (
     <ClientDetail
       client={client}
-      responsibleName={responsibleName}
+      responsibleName="—"
       timeline={timeline}
       purchases={purchases}
       payments={payments}

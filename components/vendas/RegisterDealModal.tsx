@@ -18,7 +18,6 @@ export interface RegisterDealModalProps {
   open: boolean;
   onClose: () => void;
   clients: { id: string; name: string; code: string }[];
-  users: { id: string; name: string }[];
   currentUserId?: string;
   editDeal?: Deal | null;
 }
@@ -37,7 +36,6 @@ export function RegisterDealModal({
   open,
   onClose,
   clients,
-  users,
   currentUserId,
   editDeal,
 }: RegisterDealModalProps) {
@@ -86,7 +84,6 @@ export function RegisterDealModal({
     value: c.id,
     label: `${c.code} — ${c.name}`,
   }));
-  const userOptions = users.map((u) => ({ value: u.id, label: u.name }));
 
   function handleClientSelect(selectedId: string) {
     setClientId(selectedId);
@@ -240,7 +237,7 @@ export function RegisterDealModal({
         <Select
           id="deal-responsavel"
           label="Responsável"
-          options={userOptions}
+          options={currentUserId ? [{ value: currentUserId, label: "Eu mesmo" }] : []}
           placeholder="Selecione o responsável"
           value={responsibleId}
           onChange={(e) => setResponsibleId(e.target.value)}

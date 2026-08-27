@@ -19,12 +19,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const ROLE_LABELS: Record<string, string> = {
-  ADMIN: "Administrador",
-  GERENTE: "Gerente",
-  VENDEDOR: "Vendedor",
-};
-
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
@@ -80,9 +74,7 @@ export default async function DashboardPage() {
 
   const data: DashboardData = {
     ...buildDashboardData(input),
-    user: user
-      ? { name: user.name.split(" ")[0], role: ROLE_LABELS[user.role] ?? user.role }
-      : null,
+    user: user ? { name: user.name.split(" ")[0] } : null,
   };
 
   return <DashboardClient data={data} />;

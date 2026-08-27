@@ -12,15 +12,6 @@ export class UserService {
     return userRepository.findCurrent(authUser, serverClient);
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return userRepository.findAll();
-  }
-
-  async getNameById(id: string): Promise<string> {
-    const users = await this.getAllUsers();
-    return users.find((u) => u.id === id)?.name ?? id;
-  }
-
   async getActivities(): Promise<Activity[]> {
     return userRepository.findActivities();
   }

@@ -232,6 +232,12 @@ export class ClientRepository {
     if (error) throw error;
     return rowToClient(data);
   }
+
+  async delete(id: string): Promise<void> {
+    const supabase = await createUniversalClient();
+    const { error } = await supabase.from("clients").delete().eq("id", id);
+    if (error) throw error;
+  }
 }
 
 export const clientRepository = new ClientRepository();

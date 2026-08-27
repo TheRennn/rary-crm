@@ -17,7 +17,8 @@ import { IconPlus, IconCheck, IconEdit, IconTrash } from "@/components/icons";
 export interface TaskBoardProps {
   groups: TaskGroups;
   clients: { value: string; label: string }[];
-  users: { value: string; label: string }[];
+  onDelete?: (task: Task) => void;
+  onToggleComplete?: (task: Task) => void;
 }
 
 const sectionOrder: Array<{ key: keyof TaskGroups; status: TaskStatus }> = [
@@ -27,19 +28,11 @@ const sectionOrder: Array<{ key: keyof TaskGroups; status: TaskStatus }> = [
   { key: "concluidas", status: "CONCLUIDA" },
 ];
 
-export function TaskBoard({ groups, clients, users }: TaskBoardProps) {
+export function TaskBoard({ groups, clients, onDelete, onToggleComplete }: TaskBoardProps) {
   const { toast } = useToast();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [drawerKey, setDrawerKey] = useState(0);
-
-  function toggleComplete(task: Task) {
-    toast({
-      title: task.completed ? "Tarefa reaberta" : "Tarefa concluída",
-      message: task.title,
-      variant: task.completed ? "info" : "success",
-    });
-  }
 
   function openNew() {
     setEditing(null);
@@ -94,7 +87,7 @@ export function TaskBoard({ groups, clients, users }: TaskBoardProps) {
                         <div className="flex items-start gap-2.5">
                           <button
                             type="button"
-                            onClick={() => toggleComplete(task)}
+                            onClick={() => onToggleComplete?.(task)}
                             aria-label={task.completed ? "Reverter tarefa" : "Concluir tarefa"}
                             className={cn(
                               "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
@@ -124,7 +117,7 @@ export function TaskBoard({ groups, clients, users }: TaskBoardProps) {
                               {
                                 label: "Concluir",
                                 icon: <IconCheck className="h-4 w-4" />,
-                                onClick: () => toggleComplete(task),
+                                onClick: () => onToggleComplete?.(task),
                               },
                               {
                                 label: "Editar / definir prazo",
@@ -134,12 +127,7 @@ export function TaskBoard({ groups, clients, users }: TaskBoardProps) {
                               {
                                 label: "Excluir",
                                 icon: <IconTrash className="h-4 w-4" />,
-                                onClick: () =>
-                                  toast({
-                                    title: "Exclusão não disponível",
-                                    message: "Chega com o backend real.",
-                                    variant: "warning",
-                                  }),
+                                onClick: () => onDelete?.(task),
                                 danger: true,
                               },
                             ]}
@@ -166,7 +154,6 @@ export function TaskBoard({ groups, clients, users }: TaskBoardProps) {
         onClose={() => setDrawerOpen(false)}
         task={editing}
         clients={clients}
-        users={users}
       />
     </div>
   );

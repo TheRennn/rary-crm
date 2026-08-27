@@ -22,6 +22,7 @@ export interface GoalsViewProps {
   goals: Goal[];
   currents: GoalCurrents;
   onEdit?: (goal: Goal) => void;
+  onDelete?: (goal: Goal) => void;
 }
 
 const GOAL_TYPES: GoalTargetType[] = ["CLIENTES", "FATURAMENTO", "VENDAS"];
@@ -47,7 +48,7 @@ const GOAL_META: Record<
   },
 };
 
-export function GoalsView({ goals, currents, onEdit }: GoalsViewProps) {
+export function GoalsView({ goals, currents, onEdit, onDelete }: GoalsViewProps) {
   const { toast } = useToast();
   const sorted = useMemo(
     () =>
@@ -160,9 +161,7 @@ export function GoalsView({ goals, currents, onEdit }: GoalsViewProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() =>
-                        toast({ title: "Exclusão não disponível", message: `Exclusão de meta chega com o backend real.`, variant: "warning" })
-                      }
+                      onClick={() => onDelete?.(goal)}
                       className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-danger/10 hover:text-danger"
                       title="Excluir meta"
                     >

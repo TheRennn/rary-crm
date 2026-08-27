@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PaymentsContent } from "@/components/pagamentos/PaymentsContent";
+import { RegisterPaymentModal } from "@/components/pagamentos/RegisterPaymentModal";
 import { CommissionsContent } from "./CommissionsContent";
 import { PedidosContent } from "./PedidosContent";
 import { GoalsView } from "./GoalsView";
@@ -22,6 +23,10 @@ export interface FinanceiroContentProps {
   orders: Order[];
   goals: Goal[];
   clients: string[];
+  onDeleteCommission?: (commission: Commission) => void;
+  onDeleteOrder?: (order: Order) => void;
+  onDeleteGoal?: (goal: Goal) => void;
+  onDeletePayment?: (payment: Payment) => void;
 }
 
 type FinanceiroProfile = "administracao" | "representante";
@@ -96,6 +101,10 @@ export function FinanceiroContent({
   orders: initialOrders,
   goals: initialGoals,
   clients,
+  onDeleteCommission,
+  onDeleteOrder,
+  onDeleteGoal,
+  onDeletePayment,
 }: FinanceiroContentProps) {
   const [profile, setProfile] = useState<FinanceiroProfile>("administracao");
   const [adminTab, setAdminTab] = useState<AdminTab>("receber");
@@ -106,9 +115,11 @@ export function FinanceiroContent({
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [editCommission, setEditCommission] = useState<Commission | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
+  const [editPayment, setEditPayment] = useState<Payment | null>(null);
   const { toast } = useToast();
 
   const active = PROFILES.find((option) => option.id === profile)!;
@@ -142,11 +153,7 @@ export function FinanceiroContent({
       setGoalOpen(true);
       return;
     }
-    toast({
-      title: "Novo recebimento",
-      message: "Lançamento de recebimentos estará disponível no próximo sprint.",
-      variant: "info",
-    });
+    setPaymentOpen(true);
   }
 
   return (
@@ -207,9 +214,9 @@ export function FinanceiroContent({
             onChange={(id) => setAdminTab(id as AdminTab)}
           />
           {adminTab === "receber" ? (
-            <PaymentsContent key="payments" payments={payments} stats={paymentStats} />
+            <PaymentsContent key="payments" payments={payments} stats={paymentStats} onDelete={onDeletePayment} onEdit={(p) => { setEditPayment(p); setPaymentOpen(true); }} />
           ) : (
-            <GoalsView key="goals" goals={goals} currents={currents} onEdit={(g) => { setEditGoal(g); setGoalOpen(true); }} />
+            <GoalsView key="goals" goals={goals} currents={currents} onEdit={(g) => { setEditGoal(g); setGoalOpen(true); }} onDelete={onDeleteGoal} />
           )}
         </div>
       ) : (
@@ -224,9 +231,9 @@ export function FinanceiroContent({
             onChange={(id) => setRepTab(id as RepTab)}
           />
           {repTab === "comissoes" ? (
-            <CommissionsContent key="commissions" commissions={commissions} onEdit={(c) => { setEditCommission(c); setCommissionOpen(true); }} />
+            <CommissionsContent key="commissions" commissions={commissions} onEdit={(c) => { setEditCommission(c); setCommissionOpen(true); }} onDelete={onDeleteCommission} />
           ) : (
-            <PedidosContent key="orders" orders={orders} onEdit={(o) => { setEditOrder(o); setOrderOpen(true); }} />
+            <PedidosContent key="orders" orders={orders} onEdit={(o) => { setEditOrder(o); setOrderOpen(true); }} onDelete={onDeleteOrder} />
           )}
         </div>
       )}
@@ -272,6 +279,16 @@ export function FinanceiroContent({
             setGoals((prev) => [goal, ...prev]);
           }
           setEditGoal(null);
+        }}
+      />
+      <RegisterPaymentModal
+        open={paymentOpen}
+        onClose={() => { setPaymentOpen(false); setEditPayment(null); }}
+        existingClients={[]}
+        editPayment={editPayment}
+        onCreated={(payment) => {
+          setPaymentOpen(false);
+          setEditPayment(null);
         }}
       />
     </div>

@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { useToast } from "@/components/ui/Toast";
+import { followUpService } from "@/lib/services";
 import { FOLLOW_UP_TYPE_LABELS, FOLLOW_UP_STATUS_LABELS } from "@/lib/constants";
 import type { FollowUpStatus, FollowUpType } from "@/types";
 
@@ -16,6 +17,7 @@ export interface NewFollowUpModalProps {
   onClose: () => void;
   clientId?: string;
   clientName?: string;
+  onCreated?: () => void;
 }
 
 const typeOptions = (Object.keys(FOLLOW_UP_TYPE_LABELS) as FollowUpType[]).map((type) => ({
@@ -28,24 +30,49 @@ const statusOptions = (Object.keys(FOLLOW_UP_STATUS_LABELS) as FollowUpStatus[])
   label: FOLLOW_UP_STATUS_LABELS[status],
 }));
 
-export function NewFollowUpModal({ open, onClose, clientId, clientName }: NewFollowUpModalProps) {
+export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreated }: NewFollowUpModalProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
 
-    // TODO: sprint seguinte — persistência real via backend.
-    setTimeout(() => {
-      setSaving(false);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const type = (formData.get("fu-tipo") as FollowUpType) || "LIGACAO";
+    const status = (formData.get("fu-status") as FollowUpStatus) || "HOJE";
+    const date = formData.get("fu-data") as string;
+    const time = formData.get("fu-hora") as string;
+    const subject = formData.get("fu-assunto") as string;
+
+    try {
+      await followUpService.create({
+        clientId: clientId ?? "",
+        clientName: clientName ?? "",
+        responsibleId: "",
+        type,
+        date,
+        time,
+        status,
+        subject: subject || undefined,
+      });
       toast({
         title: "Follow-up agendado",
         message: clientName ? `Follow-up com ${clientName}.` : "Follow-up criado.",
         variant: "success",
       });
+      onCreated?.();
       onClose();
-    }, 600);
+    } catch {
+      toast({
+        title: "Erro ao salvar",
+        message: "Não foi possível agendar o follow-up. Tente novamente.",
+        variant: "error",
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -65,11 +92,12 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName }: NewFol
     >
       <form id="followup-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         {!clientId && (
-          <Input id="fu-cliente" label="Cliente" placeholder="Buscar cliente" required />
+          <Input id="fu-cliente" name="fu-cliente" label="Cliente" placeholder="Buscar cliente" required />
         )}
         <div className="grid grid-cols-2 gap-4">
           <Select
             id="fu-tipo"
+            name="fu-tipo"
             label="Tipo"
             options={typeOptions}
             placeholder="Selecione"
@@ -78,6 +106,7 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName }: NewFol
           />
           <Select
             id="fu-status"
+            name="fu-status"
             label="Status"
             options={statusOptions}
             placeholder="Selecione"
@@ -86,11 +115,12 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName }: NewFol
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <DatePicker id="fu-data" label="Data" required />
-          <Input id="fu-hora" label="Horário" type="time" required />
+          <DatePicker id="fu-data" name="fu-data" label="Data" required />
+          <Input id="fu-hora" name="fu-hora" label="Horário" type="time" required />
         </div>
         <Textarea
           id="fu-assunto"
+          name="fu-assunto"
           label="Assunto"
           placeholder="Motivo do contato, pauta..."
           rows={3}

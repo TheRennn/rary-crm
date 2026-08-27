@@ -1,5 +1,6 @@
 import { paymentRepository } from "@/lib/repositories";
 import type { Payment } from "@/types";
+import type { CreatePaymentInput } from "@/lib/repositories/payment-repository";
 
 export interface PaymentStats {
   received: number;
@@ -23,8 +24,16 @@ export class PaymentService {
     return paymentRepository.findByClient(clientId);
   }
 
+  async create(input: CreatePaymentInput): Promise<Payment> {
+    return paymentRepository.create(input);
+  }
+
   async update(id: string, input: Partial<Omit<Payment, "id">>): Promise<Payment> {
     return paymentRepository.update(id, input);
+  }
+
+  async delete(id: string): Promise<void> {
+    return paymentRepository.delete(id);
   }
 
   async getStats(): Promise<PaymentStats> {

@@ -32,6 +32,7 @@ import {
 export interface PedidosContentProps {
   orders: Order[];
   onEdit?: (order: Order) => void;
+  onDelete?: (order: Order) => void;
 }
 
 const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((status) => ({
@@ -55,7 +56,7 @@ const TYPE_TONES: Record<OrderType, BadgeTone> = {
   BONIFICACAO: "warning",
 };
 
-export function PedidosContent({ orders, onEdit }: PedidosContentProps) {
+export function PedidosContent({ orders, onEdit, onDelete }: PedidosContentProps) {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [type, setType] = useState("TODOS");
@@ -240,8 +241,7 @@ export function PedidosContent({ orders, onEdit }: PedidosContentProps) {
               label: "Excluir",
               icon: <IconTrash className="h-4 w-4" />,
               danger: true,
-              onClick: () =>
-                toast({ title: "Exclusão não disponível", message: `${order.code} — exclusão chega com o backend real.`, variant: "warning" }),
+              onClick: () => onDelete?.(order),
             },
           ]}
         />

@@ -15,6 +15,8 @@ function rowToFollowUp(row: Record<string, unknown>): FollowUp {
   };
 }
 
+export type CreateFollowUpInput = Omit<FollowUp, "id">;
+
 export class FollowUpRepository {
   async findAll(): Promise<FollowUp[]> {
     const supabase = await createUniversalClient();
@@ -25,6 +27,50 @@ export class FollowUpRepository {
 
     if (error || !data) return [];
     return data.map(rowToFollowUp);
+  }
+
+  async create(input: CreateFollowUpInput): Promise<FollowUp> {
+    const supabase = await createUniversalClient();
+    const id = `fu-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
+
+    const row = {
+      id,
+      client_id: input.clientId,
+      client_name: input.clientName,
+      responsible_id: input.responsibleId,
+      type: input.type,
+      date: input.date,
+      time: input.time,
+      status: input.status,
+      subject: input.subject ?? null,
+    };
+
+    const { error: insertError } = await supabase.from("follow_ups").insert(row);
+    if (insertError) throw insertError;
+    return { id, ...input };
+  }
+
+  async update(id: string, input: Partial<CreateFollowUpInput>): Promise<FollowUp> {
+    const supabase = await createUniversalClient();
+    const row: Record<string, unknown> = {};
+    if (input.clientId !== undefined) row.client_id = input.clientId;
+    if (input.clientName !== undefined) row.client_name = input.clientName;
+    if (input.responsibleId !== undefined) row.responsible_id = input.responsibleId;
+    if (input.type !== undefined) row.type = input.type;
+    if (input.date !== undefined) row.date = input.date;
+    if (input.time !== undefined) row.time = input.time;
+    if (input.status !== undefined) row.status = input.status;
+    if (input.subject !== undefined) row.subject = input.subject ?? null;
+
+    const { data, error } = await supabase.from("follow_ups").update(row).eq("id", id).select().single();
+    if (error) throw error;
+    return rowToFollowUp(data);
+  }
+
+  async delete(id: string): Promise<void> {
+    const supabase = await createUniversalClient();
+    const { error } = await supabase.from("follow_ups").delete().eq("id", id);
+    if (error) throw error;
   }
 }
 

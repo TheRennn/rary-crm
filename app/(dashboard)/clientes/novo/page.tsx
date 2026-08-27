@@ -9,14 +9,10 @@ export default async function NovoClientePage() {
 
   if (!authUser) redirect("/login");
 
-  const [currentUser, users] = await Promise.all([
-    userService.getCurrentUser(authUser, supabase),
-    userService.getAllUsers(),
-  ]);
+  const currentUser = await userService.getCurrentUser(authUser, supabase);
 
   return (
     <ClientForm
-      users={users.map((u) => ({ id: u.id, name: u.name }))}
       currentUserId={currentUser?.id ?? ""}
     />
   );

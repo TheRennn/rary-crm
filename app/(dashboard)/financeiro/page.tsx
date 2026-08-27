@@ -5,7 +5,7 @@ import {
   goalService,
   clientService,
 } from "@/lib/services";
-import { FinanceiroContent } from "@/components/financeiro/FinanceiroContent";
+import { FinanceiroContentClient } from "@/components/financeiro/FinanceiroContentClient";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export default async function FinanceiroPage() {
   ]);
 
   return (
-    <FinanceiroContent
+    <FinanceiroContentClient
       payments={payments}
       paymentStats={paymentStats}
       commissions={commissions}

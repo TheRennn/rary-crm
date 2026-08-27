@@ -18,6 +18,8 @@ import type { PaymentStats } from "@/lib/services";
 export interface PaymentsContentProps {
   payments: Payment[];
   stats: PaymentStats;
+  onDelete?: (payment: Payment) => void;
+  onEdit?: (payment: Payment) => void;
 }
 
 const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((status) => ({
@@ -25,7 +27,7 @@ const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).ma
   label: PAYMENT_STATUS_LABELS[status],
 }));
 
-export function PaymentsContent({ payments, stats }: PaymentsContentProps) {
+export function PaymentsContent({ payments, stats, onDelete, onEdit }: PaymentsContentProps) {
   const { toast } = useToast();
   const [status, setStatus] = useState("TODOS");
 
@@ -98,15 +100,13 @@ export function PaymentsContent({ payments, stats }: PaymentsContentProps) {
             {
               label: "Editar",
               icon: <IconEdit className="h-4 w-4" />,
-              onClick: () =>
-                toast({ title: "Edição em breve", message: `${payment.description} — edição será liberada no próximo sprint.`, variant: "info" }),
+              onClick: () => onEdit?.(payment),
             },
             {
               label: "Excluir",
               icon: <IconTrash className="h-4 w-4" />,
               danger: true,
-              onClick: () =>
-                toast({ title: "Exclusão não disponível", message: `${payment.description} — exclusão chega com o backend real.`, variant: "warning" }),
+              onClick: () => onDelete?.(payment),
             },
           ]}
         />

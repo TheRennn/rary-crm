@@ -13,6 +13,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { EventDetails } from "@/components/events/EventDetails";
+import { calendarService } from "@/lib/services";
 import type { CalendarEvent, CalendarEventType } from "@/types";
 import { cn, monthLabel } from "@/lib/utils";
 import {
@@ -90,14 +91,35 @@ export function CalendarContent({ events }: CalendarContentProps) {
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   }, [events]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const title = formData.get("evt-titulo") as string;
+    const type = (formData.get("evt-tipo") as CalendarEventType) || "COMPROMISSO";
+    const date = formData.get("evt-data") as string;
+    const time = formData.get("evt-hora") as string;
+    const duration = (formData.get("evt-duracao") as string) || "30 min";
+    const description = formData.get("evt-desc") as string;
+
+    try {
+      const created = await calendarService.create({
+        title,
+        type,
+        date,
+        time,
+        duration,
+        description: description || undefined,
+      });
       setNewOpen(false);
-      toast({ title: "Compromisso criado", message: "Evento adicionado (mock).", variant: "success" });
-    }, 600);
+      toast({ title: "Compromisso criado", message: `${created.title} em ${created.date}`, variant: "success" });
+    } catch {
+      toast({ title: "Erro ao criar", message: "Não foi possível criar o compromisso.", variant: "error" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

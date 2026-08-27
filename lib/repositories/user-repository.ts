@@ -5,25 +5,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 type AuthUser = { id: string; email?: string; user_metadata?: Record<string, unknown> };
 
 export class UserRepository {
-  async findAll(): Promise<User[]> {
-    const supabase = await createUniversalClient();
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .order("name");
-
-    if (error || !data) return [];
-
-    return data.map((row: Record<string, unknown>) => ({
-      id: row.id as string,
-      name: row.name as string,
-      email: row.email as string,
-      role: row.role as string,
-      companyId: (row.company_id as string) ?? "",
-      phone: (row.phone as string) ?? "",
-    }));
-  }
-
   async findCurrent(authUser?: AuthUser | null, serverClient?: SupabaseClient): Promise<User | null> {
     if (!authUser?.id) return null;
 

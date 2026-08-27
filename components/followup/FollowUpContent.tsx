@@ -27,10 +27,12 @@ export interface FollowUpContentProps {
     proximos: FollowUp[];
     concluidos: FollowUp[];
   };
-  responsibleNames: Record<string, string>;
+  onDelete?: (followUp: FollowUp) => void;
+  onComplete?: (followUp: FollowUp) => void;
+  onEdit?: (followUp: FollowUp) => void;
 }
 
-export function FollowUpContent({ groups, responsibleNames }: FollowUpContentProps) {
+export function FollowUpContent({ groups, onDelete, onComplete, onEdit }: FollowUpContentProps) {
   const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -48,7 +50,7 @@ export function FollowUpContent({ groups, responsibleNames }: FollowUpContentPro
       {
         key: "responsavel",
         header: "Responsável",
-        render: (followUp) => <span className="text-muted">{responsibleNames[followUp.responsibleId] ?? followUp.responsibleId}</span>,
+        render: (followUp) => <span className="text-muted">{followUp.responsibleId || "—"}</span>,
       },
       {
         key: "tipo",
@@ -92,20 +94,17 @@ export function FollowUpContent({ groups, responsibleNames }: FollowUpContentPro
               {
                 label: "Concluir",
                 icon: <IconCheck className="h-4 w-4" />,
-                onClick: () =>
-                  toast({ title: "Follow-up concluído", message: followUp.clientName, variant: "success" }),
+                onClick: () => onComplete?.(followUp),
               },
               {
                 label: "Editar",
                 icon: <IconEdit className="h-4 w-4" />,
-                onClick: () =>
-                  toast({ title: "Edição em breve", variant: "info" }),
+                onClick: () => onEdit?.(followUp),
               },
               {
                 label: "Excluir",
                 icon: <IconTrash className="h-4 w-4" />,
-                onClick: () =>
-                  toast({ title: "Exclusão não disponível", message: "Chega com o backend real.", variant: "warning" }),
+                onClick: () => onDelete?.(followUp),
                 danger: true,
               },
             ]}

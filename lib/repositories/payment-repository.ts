@@ -16,6 +16,8 @@ function rowToPayment(row: Record<string, unknown>): Payment {
   };
 }
 
+export type CreatePaymentInput = Omit<Payment, "id">;
+
 export class PaymentRepository {
   async findAll(): Promise<Payment[]> {
     const supabase = await createUniversalClient();
@@ -40,6 +42,28 @@ export class PaymentRepository {
     return data.map(rowToPayment);
   }
 
+  async create(input: CreatePaymentInput): Promise<Payment> {
+    const supabase = await createUniversalClient();
+    const id = `pay-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
+
+    const row = {
+      id,
+      client_id: input.clientId,
+      deal_id: input.dealId ?? null,
+      purchase_id: input.purchaseId ?? null,
+      client_name: input.clientName,
+      description: input.description,
+      value: input.value,
+      due_date: input.dueDate,
+      status: input.status,
+      method: input.method,
+    };
+
+    const { error: insertError } = await supabase.from("payments").insert(row);
+    if (insertError) throw insertError;
+    return { id, ...input };
+  }
+
   async update(id: string, input: Partial<Omit<Payment, "id">>): Promise<Payment> {
     const supabase = await createUniversalClient();
     const row: Record<string, unknown> = {};
@@ -54,6 +78,12 @@ export class PaymentRepository {
     const { data, error } = await supabase.from("payments").update(row).eq("id", id).select().single();
     if (error) throw error;
     return rowToPayment(data);
+  }
+
+  async delete(id: string): Promise<void> {
+    const supabase = await createUniversalClient();
+    const { error } = await supabase.from("payments").delete().eq("id", id);
+    if (error) throw error;
   }
 }
 

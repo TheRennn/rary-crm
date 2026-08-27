@@ -22,6 +22,10 @@ export class GoalService {
   async update(id: string, input: Partial<CreateGoalInput>): Promise<Goal> {
     return goalRepository.update(id, input);
   }
+
+  async delete(id: string): Promise<void> {
+    return goalRepository.delete(id);
+  }
 }
 
 export const goalService = new GoalService();

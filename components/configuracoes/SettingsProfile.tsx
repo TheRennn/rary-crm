@@ -11,14 +11,8 @@ import { stripMask } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 export interface SettingsProfileProps {
-  user: { id: string; name: string; email: string; role: string; phone?: string } | null;
+  user: { id: string; name: string; email: string; phone?: string } | null;
 }
-
-const roleLabel: Record<string, string> = {
-  ADMIN: "Administrador",
-  GERENTE: "Gerente",
-  VENDEDOR: "Vendedor",
-};
 
 export function SettingsProfile({ user }: SettingsProfileProps) {
   const router = useRouter();
@@ -44,7 +38,7 @@ export function SettingsProfile({ user }: SettingsProfileProps) {
 
       toast({ title: "Perfil atualizado", message: "Suas informações foram salvas com sucesso.", variant: "success" });
       router.refresh();
-    } catch (err) {
+    } catch {
       toast({ title: "Erro ao salvar", message: "Não foi possível atualizar o perfil.", variant: "error" });
     } finally {
       setSaving(false);
@@ -56,13 +50,6 @@ export function SettingsProfile({ user }: SettingsProfileProps) {
       <CardHeader
         title="Perfil"
         description="Suas informações pessoais"
-        action={
-          user?.role && (
-            <span className="rounded-full border border-brand-500/25 bg-brand-500/10 px-2.5 py-0.5 text-xs font-medium text-brand-300">
-              {roleLabel[user.role] ?? user.role}
-            </span>
-          )
-        }
       />
       <CardContent>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">

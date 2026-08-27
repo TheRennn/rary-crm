@@ -1,10 +1,10 @@
 "use client";
 
 import type { Client } from "@/types";
+import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { useToast } from "@/components/ui/Toast";
 import { NewFollowUpModal } from "@/components/followup/NewFollowUpModal";
 import { CLIENT_STATUS_LABELS, CLIENT_STATUS_TONES } from "@/lib/constants";
 import { formatDocument } from "@/lib/utils";
@@ -17,7 +17,7 @@ export interface ClientHeaderProps {
 }
 
 export function ClientHeader({ client, responsibleName }: ClientHeaderProps) {
-  const { toast } = useToast();
+  const router = useRouter();
   const [followUpOpen, setFollowUpOpen] = useState(false);
 
   const primaryContact =
@@ -61,9 +61,7 @@ export function ClientHeader({ client, responsibleName }: ClientHeaderProps) {
       <div className="flex items-center gap-2 lg:ml-auto">
         <Button
           variant="secondary"
-          onClick={() =>
-            toast({ title: "Edição em breve", message: "Edição chega no próximo sprint.", variant: "info" })
-          }
+          onClick={() => router.push(`/clientes/${client.id}/editar`)}
         >
           <IconEdit className="h-4 w-4" />
           Editar

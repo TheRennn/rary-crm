@@ -30,8 +30,8 @@ import {
 
 export interface ClientListProps {
   clients: Client[];
-  users: { id: string; name: string }[];
   initialQuery?: string;
+  onDelete?: (client: Client) => void;
 }
 
 const statusOptions = [
@@ -73,19 +73,13 @@ const periodOptions = [
   { value: "MAIS_30", label: "Mais de 30 dias" },
 ];
 
-export function ClientList({ clients, users, initialQuery = "" }: ClientListProps) {
+export function ClientList({ clients, initialQuery = "", onDelete }: ClientListProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [query, setQuery] = useState(initialQuery);
   const [status, setStatus] = useState("TODOS");
   const [segment, setSegment] = useState("TODOS");
   const [period, setPeriod] = useState("TODOS");
-  const [responsible, setResponsible] = useState("TODOS");
-
-  const responsibleOptions = users.map((user) => ({
-    value: user.id,
-    label: user.name,
-  }));
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -103,7 +97,6 @@ export function ClientList({ clients, users, initialQuery = "" }: ClientListProp
       }
       if (status !== "TODOS" && client.status !== status) return false;
       if (segment !== "TODOS" && client.segment !== segment) return false;
-      if (responsible !== "TODOS" && client.responsibleId !== responsible) return false;
       if (period !== "TODOS") {
         const contact = new Date(client.lastContactAt).getTime();
         const days = (now - contact) / 86400000;
@@ -113,22 +106,10 @@ export function ClientList({ clients, users, initialQuery = "" }: ClientListProp
       }
       return true;
     });
-  }, [clients, query, status, segment, period, responsible]);
-
-  function handleDelete(client: Client) {
-    toast({
-      title: "Exclusão não disponível",
-      message: `${client.name} — exclusão chega com o backend real.`,
-      variant: "warning",
-    });
-  }
+  }, [clients, query, status, segment, period]);
 
   function handleEdit(client: Client) {
-    toast({
-      title: "Edição em breve",
-      message: `${client.name} — edição será liberada no próximo sprint.`,
-      variant: "info",
-    });
+    router.push(`/clientes/${client.id}/editar`);
   }
 
   const columns: TableColumn<Client>[] = [
@@ -230,7 +211,7 @@ export function ClientList({ clients, users, initialQuery = "" }: ClientListProp
             {
               label: "Excluir",
               icon: <IconTrash className="h-4 w-4" />,
-              onClick: () => handleDelete(client),
+              onClick: () => onDelete?.(client),
               danger: true,
             },
           ]}
@@ -260,7 +241,7 @@ export function ClientList({ clients, users, initialQuery = "" }: ClientListProp
           onChange={setQuery}
           placeholder="Buscar por nome, empresa, código ou decisor..."
         />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Filter
             label="Status"
             options={statusOptions}
@@ -278,12 +259,6 @@ export function ClientList({ clients, users, initialQuery = "" }: ClientListProp
             options={periodOptions}
             value={period}
             onChange={setPeriod}
-          />
-          <Filter
-            label="Responsável"
-            options={responsibleOptions}
-            value={responsible}
-            onChange={setResponsible}
           />
         </div>
       </div>

@@ -71,6 +71,10 @@ export class OrderService {
     }
     return orderRepository.update(id, payload as Partial<Omit<Order, "id">>);
   }
+
+  async delete(id: string): Promise<void> {
+    return orderRepository.delete(id);
+  }
 }
 
 export const orderService = new OrderService();
