@@ -53,9 +53,9 @@ export function SettingsProfile({ user }: SettingsProfileProps) {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.resend({
         email: user.email,
-        options: { shouldCreateUser: false },
+        type: "signup",
       });
 
       if (error) throw error;

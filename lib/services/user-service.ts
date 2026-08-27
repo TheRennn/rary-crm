@@ -17,9 +17,9 @@ export class UserService {
   }
 
   async sendVerificationOtp(email: string, supabase: SupabaseClient) {
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.resend({
       email,
-      options: { shouldCreateUser: false },
+      type: "signup",
     });
     return { error };
   }

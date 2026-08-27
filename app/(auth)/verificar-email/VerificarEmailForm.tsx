@@ -109,9 +109,9 @@ export default function VerificarEmailForm() {
     setResending(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.resend({
       email,
-      options: { shouldCreateUser: false },
+      type: "signup",
     });
 
     setResending(false);
