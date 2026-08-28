@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { IconMail } from "@/components/icons";
 import { IconShieldCheck } from "@/components/ui/icons-additional";
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 const OTP_LENGTH = 6;
@@ -83,16 +82,22 @@ export default function VerificarEmailForm() {
     }
 
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
 
-    if (error) {
+    const res = await fetch("/api/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, token }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
       setLoading(false);
       toast({
         title: "Código inválido",
-        message: error.message === "Token has expired or is invalid"
+        message: data.error === "Código inválido ou expirado."
           ? "Código expirado ou inválido. Solicite um novo."
-          : error.message,
+          : data.error,
         variant: "error",
       });
       setOtp(new Array(OTP_LENGTH).fill(""));
@@ -108,16 +113,17 @@ export default function VerificarEmailForm() {
     if (cooldown > 0) return;
     setResending(true);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.resend({
-      email,
-      type: "signup",
+    const res = await fetch("/api/auth/send-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
     });
 
+    const data = await res.json();
     setResending(false);
 
-    if (error) {
-      toast({ title: "Erro ao reenviar", message: error.message, variant: "error" });
+    if (!res.ok) {
+      toast({ title: "Erro ao reenviar", message: data.error, variant: "error" });
       return;
     }
 

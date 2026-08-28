@@ -11,7 +11,6 @@ import { useToast } from "@/components/ui/Toast";
 import { IconMail, IconUser, IconBuilding, IconLayers, IconEye } from "@/components/icons";
 import { IconKey, IconEyeOff, IconBadgeCheck } from "@/components/ui/icons-additional";
 import { SEGMENTS } from "@/lib/constants";
-import { createClient } from "@/lib/supabase/client";
 
 const segmentOptions = SEGMENTS.map((segment) => ({ value: segment, label: segment }));
 
@@ -30,53 +29,22 @@ export default function CadastroPage() {
     event.preventDefault();
     setLoading(true);
 
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-          company,
-          segment,
-        },
-      },
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, name, company, segment }),
     });
 
-    if (error) {
+    const data = await res.json();
+
+    if (!res.ok) {
       setLoading(false);
       toast({
         title: "Erro ao criar conta",
-        message:
-          error.message === "User already registered"
-            ? "Este e-mail já está cadastrado."
-            : error.message,
+        message: data.error || "Tente novamente.",
         variant: "error",
       });
       return;
-    }
-
-    if (data.user) {
-      const companyId = `comp-${Date.now().toString(36)}`;
-
-      await supabase.from("companies").insert({
-        id: companyId,
-        name: company,
-        cnpj: "",
-        segment: segment || "Tecnologia",
-        city: "",
-        state: "",
-      });
-
-      await supabase.from("users").insert({
-        id: `usr-${data.user.id.slice(0, 8)}`,
-        auth_id: data.user.id,
-        name,
-        email,
-        role: "ADMIN",
-        company_id: companyId,
-        phone: "",
-      });
     }
 
     toast({

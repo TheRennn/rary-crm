@@ -15,11 +15,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect("/login");
   }
 
-  if (!user.email_confirmed_at) {
+  const appUser = await userService.getCurrentUser(user, supabase);
+
+  if (!appUser?.emailVerified) {
     redirect(`/verificar-email?email=${encodeURIComponent(user.email ?? "")}`);
   }
-
-  const appUser = await userService.getCurrentUser(user, supabase);
 
   let companyName = "Minha empresa";
   if (appUser?.companyId) {

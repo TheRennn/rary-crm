@@ -52,13 +52,13 @@ export function SettingsProfile({ user }: SettingsProfileProps) {
     setResendingVerification(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.resend({
-        email: user.email,
-        type: "signup",
+      const res = await fetch("/api/auth/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
       });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Erro ao enviar");
 
       toast({ title: "Código reenviado", message: "Verifique sua caixa de entrada.", variant: "success" });
       router.push(`/verificar-email?email=${encodeURIComponent(user.email)}`);

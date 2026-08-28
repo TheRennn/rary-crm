@@ -36,8 +36,6 @@ export async function proxy(request: NextRequest) {
 
   const isPublicPage = request.nextUrl.pathname === "/";
 
-  const isVerificarEmailPage = request.nextUrl.pathname.startsWith("/verificar-email");
-
   if (!user && !isAuthPage && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -45,21 +43,8 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && isAuthPage) {
-    if (!user.email_confirmed_at && !isVerificarEmailPage) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/verificar-email";
-      url.searchParams.set("email", user.email ?? "");
-      return NextResponse.redirect(url);
-    }
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
-
-  if (user && !user.email_confirmed_at && !isVerificarEmailPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/verificar-email";
-    url.searchParams.set("email", user.email ?? "");
     return NextResponse.redirect(url);
   }
 
