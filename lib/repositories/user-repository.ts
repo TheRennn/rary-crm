@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
 import type { Activity, User } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -67,12 +68,15 @@ export class UserRepository {
     };
   }
 
-  async findActivities(): Promise<Activity[]> {
+  async findActivities(userId?: string | null): Promise<Activity[]> {
     const supabase = await createUniversalClient();
-    const { data, error } = await supabase
-      .from("activities")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const uid = userId ?? await getUserIdFromUser();
+
+    let query = supabase.from("activities").select("*");
+    if (uid) {
+      query = query.eq("user_id", uid);
+    }
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error || !data) return [];
 

@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { Payment } from "@/types";
 
 function rowToPayment(row: Record<string, unknown>): Payment {
@@ -19,11 +20,16 @@ function rowToPayment(row: Record<string, unknown>): Payment {
 export type CreatePaymentInput = Omit<Payment, "id">;
 
 export class PaymentRepository {
-  async findAll(): Promise<Payment[]> {
+  async findAll(companyId?: string | null): Promise<Payment[]> {
     const supabase = await createUniversalClient();
+    const clientIds = await getClientIdsForCompany(companyId);
+
+    if (clientIds.length === 0) return [];
+
     const { data, error } = await supabase
       .from("payments")
       .select("*")
+      .in("client_id", clientIds)
       .order("due_date", { ascending: false });
 
     if (error || !data) return [];

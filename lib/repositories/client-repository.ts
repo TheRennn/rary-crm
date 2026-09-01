@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getCompanyIdFromUser } from "@/lib/supabase/auth";
 import { formatDocument, maskPhone, stripMask } from "@/lib/utils";
 import type { Client, TimelineEntry } from "@/types";
 
@@ -66,12 +67,15 @@ function rowToClient(row: Record<string, unknown>): Client {
 }
 
 export class ClientRepository {
-  async findAll(): Promise<Client[]> {
+  async findAll(companyId?: string | null): Promise<Client[]> {
     const supabase = await createUniversalClient();
-    const { data, error } = await supabase
-      .from("clients")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const cid = companyId ?? await getCompanyIdFromUser();
+
+    let query = supabase.from("clients").select("*");
+    if (cid) {
+      query = query.eq("company_id", cid);
+    }
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error || !data) return [];
     return data.map(rowToClient);
@@ -101,11 +105,15 @@ export class ClientRepository {
     return rowToClient(data);
   }
 
-  async findAllCodes(): Promise<string[]> {
+  async findAllCodes(companyId?: string | null): Promise<string[]> {
     const supabase = await createUniversalClient();
-    const { data, error } = await supabase
-      .from("clients")
-      .select("code");
+    const cid = companyId ?? await getCompanyIdFromUser();
+
+    let query = supabase.from("clients").select("code");
+    if (cid) {
+      query = query.eq("company_id", cid);
+    }
+    const { data, error } = await query;
 
     if (error || !data) return [];
     return data.map((row: Record<string, unknown>) => row.code as string);
@@ -129,8 +137,9 @@ export class ClientRepository {
     }));
   }
 
-  async create(input: CreateClientInput): Promise<Client> {
+  async create(input: CreateClientInput, companyId?: string | null): Promise<Client> {
     const supabase = await createUniversalClient();
+    const cid = companyId ?? await getCompanyIdFromUser();
     const id = `clt-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const { data: existing } = await supabase
@@ -152,7 +161,7 @@ export class ClientRepository {
       name: input.name,
       cpf_cnpj: stripMask(input.cpfCnpj),
       type: input.type,
-      company_id: null,
+      company_id: cid ?? null,
       company_name: input.companyName,
       company_cnpj: stripMask(input.companyCnpj),
       segment: input.segment,
@@ -187,7 +196,7 @@ export class ClientRepository {
       name: input.name,
       cpfCnpj: input.cpfCnpj,
       type: input.type,
-      companyId: "",
+      companyId: cid ?? "",
       companyName: input.companyName,
       companyCnpj: input.companyCnpj,
       segment: input.segment,

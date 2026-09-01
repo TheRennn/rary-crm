@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
 import type { Goal } from "@/types";
 
 function rowToGoal(row: Record<string, unknown>): Goal {
@@ -14,23 +15,28 @@ function rowToGoal(row: Record<string, unknown>): Goal {
 }
 
 export class GoalRepository {
-  async findAll(): Promise<Goal[]> {
+  async findAll(userId?: string | null): Promise<Goal[]> {
     const supabase = await createUniversalClient();
-    const { data, error } = await supabase
-      .from("goals")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const uid = userId ?? await getUserIdFromUser();
+
+    let query = supabase.from("goals").select("*");
+    if (uid) {
+      query = query.eq("user_id", uid);
+    }
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error || !data) return [];
     return data.map(rowToGoal);
   }
 
-  async create(input: Omit<Goal, "id">): Promise<Goal> {
+  async create(input: Omit<Goal, "id">, userId?: string | null): Promise<Goal> {
     const supabase = await createUniversalClient();
+    const uid = userId ?? await getUserIdFromUser();
     const id = `goal-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const row = {
       id,
+      user_id: uid ?? null,
       target_type: input.targetType,
       target_value: input.targetValue,
       period: input.period,

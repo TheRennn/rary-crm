@@ -1,5 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
-import { stripMask } from "@/lib/utils";
+import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { Deal, Purchase } from "@/types";
 
 export interface CreateDealInput {
@@ -41,11 +41,16 @@ function rowToPurchase(row: Record<string, unknown>): Purchase {
 }
 
 export class DealRepository {
-  async findAll(): Promise<Deal[]> {
+  async findAll(companyId?: string | null): Promise<Deal[]> {
     const supabase = await createUniversalClient();
+    const clientIds = await getClientIdsForCompany(companyId);
+
+    if (clientIds.length === 0) return [];
+
     const { data, error } = await supabase
       .from("deals")
       .select("*")
+      .in("client_id", clientIds)
       .order("created_at", { ascending: false });
 
     if (error || !data) return [];

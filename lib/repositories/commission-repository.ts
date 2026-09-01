@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
 import type { Commission } from "@/types";
 
 export type CreateCommissionInput = Omit<Commission, "id">;
@@ -20,23 +21,28 @@ function rowToCommission(row: Record<string, unknown>): Commission {
 }
 
 export class CommissionRepository {
-  async findAll(): Promise<Commission[]> {
+  async findAll(userId?: string | null): Promise<Commission[]> {
     const supabase = await createUniversalClient();
-    const { data, error } = await supabase
-      .from("commissions")
-      .select("*")
-      .order("due_date", { ascending: false });
+    const uid = userId ?? await getUserIdFromUser();
+
+    let query = supabase.from("commissions").select("*");
+    if (uid) {
+      query = query.eq("user_id", uid);
+    }
+    const { data, error } = await query.order("due_date", { ascending: false });
 
     if (error || !data) return [];
     return data.map(rowToCommission);
   }
 
-  async create(input: CreateCommissionInput): Promise<Commission> {
+  async create(input: CreateCommissionInput, userId?: string | null): Promise<Commission> {
     const supabase = await createUniversalClient();
+    const uid = userId ?? await getUserIdFromUser();
     const id = `com-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const row = {
       id,
+      user_id: uid ?? null,
       company_name: input.companyName,
       period: input.period,
       rate: input.rate,

@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { Order } from "@/types";
 
 function rowToOrder(row: Record<string, unknown>): Order {
@@ -19,11 +20,16 @@ function rowToOrder(row: Record<string, unknown>): Order {
 }
 
 export class OrderRepository {
-  async findAll(): Promise<Order[]> {
+  async findAll(companyId?: string | null): Promise<Order[]> {
     const supabase = await createUniversalClient();
+    const clientIds = await getClientIdsForCompany(companyId);
+
+    if (clientIds.length === 0) return [];
+
     const { data, error } = await supabase
       .from("orders")
       .select("*")
+      .in("client_id", clientIds)
       .order("date", { ascending: false });
 
     if (error || !data) return [];

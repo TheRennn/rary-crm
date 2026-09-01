@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
 import type { Notification } from "@/types";
 
 function rowToNotification(row: Record<string, unknown>): Notification {
@@ -13,12 +14,15 @@ function rowToNotification(row: Record<string, unknown>): Notification {
 }
 
 export class NotificationRepository {
-  async findAll(): Promise<Notification[]> {
+  async findAll(userId?: string | null): Promise<Notification[]> {
     const supabase = await createUniversalClient();
-    const { data, error } = await supabase
-      .from("notifications")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const uid = userId ?? await getUserIdFromUser();
+
+    let query = supabase.from("notifications").select("*");
+    if (uid) {
+      query = query.eq("user_id", uid);
+    }
+    const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error || !data) return [];
     return data.map(rowToNotification);

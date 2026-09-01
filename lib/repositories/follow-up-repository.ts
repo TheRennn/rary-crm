@@ -1,4 +1,6 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
+import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { FollowUp } from "@/types";
 
 function rowToFollowUp(row: Record<string, unknown>): FollowUp {
@@ -18,12 +20,26 @@ function rowToFollowUp(row: Record<string, unknown>): FollowUp {
 export type CreateFollowUpInput = Omit<FollowUp, "id">;
 
 export class FollowUpRepository {
-  async findAll(): Promise<FollowUp[]> {
+  async findAll(companyId?: string | null): Promise<FollowUp[]> {
     const supabase = await createUniversalClient();
-    const { data, error } = await supabase
-      .from("follow_ups")
-      .select("*")
-      .order("date", { ascending: false });
+    const [clientIds, userId] = await Promise.all([
+      getClientIdsForCompany(companyId),
+      getUserIdFromUser(),
+    ]);
+
+    let query = supabase.from("follow_ups").select("*");
+
+    if (clientIds.length > 0 && userId) {
+      query = query.or(`client_id.in.(${clientIds.join(",")}),responsible_id.eq.${userId}`);
+    } else if (clientIds.length > 0) {
+      query = query.in("client_id", clientIds);
+    } else if (userId) {
+      query = query.eq("responsible_id", userId);
+    } else {
+      return [];
+    }
+
+    const { data, error } = await query.order("date", { ascending: false });
 
     if (error || !data) return [];
     return data.map(rowToFollowUp);

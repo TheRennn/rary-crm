@@ -1,4 +1,6 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
+import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { Task } from "@/types";
 
 function rowToTask(row: Record<string, unknown>): Task {
@@ -19,12 +21,26 @@ function rowToTask(row: Record<string, unknown>): Task {
 export type CreateTaskInput = Omit<Task, "id">;
 
 export class TaskRepository {
-  async findAll(): Promise<Task[]> {
+  async findAll(companyId?: string | null): Promise<Task[]> {
     const supabase = await createUniversalClient();
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("*")
-      .order("due_date", { ascending: false });
+    const [clientIds, userId] = await Promise.all([
+      getClientIdsForCompany(companyId),
+      getUserIdFromUser(),
+    ]);
+
+    let query = supabase.from("tasks").select("*");
+
+    if (clientIds.length > 0 && userId) {
+      query = query.or(`client_id.in.(${clientIds.join(",")}),responsible_id.eq.${userId}`);
+    } else if (clientIds.length > 0) {
+      query = query.in("client_id", clientIds);
+    } else if (userId) {
+      query = query.eq("responsible_id", userId);
+    } else {
+      return [];
+    }
+
+    const { data, error } = await query.order("due_date", { ascending: false });
 
     if (error || !data) return [];
     return data.map(rowToTask);
