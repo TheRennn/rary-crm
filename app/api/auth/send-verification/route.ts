@@ -105,7 +105,7 @@ export async function POST(request: Request) {
 
     // Enviar e-mail via Resend
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const from = process.env.RESEND_FROM || "RARY <noreply@raryservice.com>";
+    const from = process.env.RESEND_FROM || "RARY <onboarding@resend.dev>";
     const { error: emailError } = await resend.emails.send({
       from,
       to: email,
