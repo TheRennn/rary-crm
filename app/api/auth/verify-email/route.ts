@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   try {
@@ -13,12 +13,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Código deve ter 6 dígitos." }, { status: 400 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    let supabase;
+    try {
+      supabase = createAdminClient();
+    } catch {
+      return NextResponse.json({ error: "Configuração incompleta." }, { status: 500 });
+    }
 
-    // Buscar token válido (não usado e não expirado)
     const { data: tokenRow, error: tokenError } = await supabase
       .from("verification_tokens")
       .select("*")
@@ -31,19 +32,14 @@ export async function POST(request: Request) {
       .single();
 
     if (tokenError || !tokenRow) {
-      return NextResponse.json(
-        { error: "Código inválido ou expirado." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Código inválido ou expirado." }, { status: 400 });
     }
 
-    // Marcar token como usado
     await supabase
       .from("verification_tokens")
       .update({ used: true })
       .eq("id", tokenRow.id);
 
-    // Buscar o auth_id do usuário
     const { data: users, error: listError } = await supabase.auth.admin.listUsers();
     if (listError) {
       return NextResponse.json({ error: "Erro interno." }, { status: 500 });
@@ -54,7 +50,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
     }
 
-    // Atualizar email_verified na tabela users
     const { error: updateError } = await supabase
       .from("users")
       .update({ email_verified: true })

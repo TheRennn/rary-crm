@@ -129,3 +129,14 @@ BEGIN
     ALTER TABLE payments ADD COLUMN attachment_name text;
   END IF;
 END $$;
+
+-- =============================================
+-- 4. RLS para verification_tokens (service role bypass)
+-- =============================================
+ALTER TABLE verification_tokens ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS verification_tokens_service_role ON verification_tokens;
+CREATE POLICY verification_tokens_service_role ON verification_tokens
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);

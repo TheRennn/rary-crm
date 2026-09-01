@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -22,7 +20,9 @@ function verificationEmailHtml(code: string): string {
         </td></tr>
         <tr><td style="padding:0 32px 32px;text-align:center;">
           <h2 style="margin:0 0 12px;font-size:18px;font-weight:600;color:#18181b;">Verifique seu e-mail</h2>
-          <p style="margin:0 0 24px;font-size:14px;color:#71717a;line-height:1.5;">Use o código abaixo para confirmar seu cadastro. Expira em <strong>15 minutos</strong>.</p>
+          <p style="margin:0 0 24px;font-size:14px;color:#71717a;line-height:1.5;">
+            Use o código abaixo para confirmar seu cadastro. Expira em <strong>15 minutos</strong>.
+          </p>
           <div style="background-color:#f4f4f5;border-radius:8px;padding:16px 24px;margin-bottom:24px;">
             <span style="font-size:32px;font-weight:700;color:#18181b;letter-spacing:8px;font-family:monospace;">${code}</span>
           </div>
@@ -43,13 +43,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Campos obrigatórios faltando." }, { status: 400 });
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    let supabase;
+    try {
+      supabase = createAdminClient();
+    } catch {
+      return NextResponse.json({ error: "Configuração incompleta." }, { status: 500 });
+    }
 
-    // Criar usuário via Admin API (sem enviar e-mail do Supabase)
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
@@ -63,10 +64,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: createError.message }, { status: 500 });
     }
 
-    // Criar empresa e usuário na tabela users
     const companyId = `comp-${Date.now().toString(36)}`;
 
-    await supabaseAdmin.from("companies").insert({
+    await supabase.from("companies").insert({
       id: companyId,
       name: company,
       cnpj: "",
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       state: "",
     });
 
-    await supabaseAdmin.from("users").insert({
+    await supabase.from("users").insert({
       id: `usr-${newUser.user.id.slice(0, 8)}`,
       auth_id: newUser.user.id,
       name,
@@ -85,27 +85,25 @@ export async function POST(request: Request) {
       phone: "",
     });
 
-    // Gerar e salvar OTP
     const token = generateOtp();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-    await supabaseAdmin.from("verification_tokens").insert({
+    await supabase.from("verification_tokens").insert({
       email,
       token,
       expires_at: expiresAt,
     });
 
-    // Enviar e-mail via Resend
-    const from = process.env.RESEND_FROM || "RARY <onboarding@resend.dev>";
-    const { error: emailError } = await resend.emails.send({
-      from,
-      to: email,
-      subject: "Seu código de verificação - RARY",
-      html: verificationEmailHtml(token),
-    });
-
-    if (emailError) {
-      return NextResponse.json({ error: "Erro ao enviar e-mail de verificação." }, { status: 500 });
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
+      const resend = new Resend(resendApiKey);
+      const from = process.env.RESEND_FROM || "RARY <onboarding@resend.dev>";
+      await resend.emails.send({
+        from,
+        to: email,
+        subject: "Seu código de verificação - RARY",
+        html: verificationEmailHtml(token),
+      });
     }
 
     return NextResponse.json({ ok: true });
