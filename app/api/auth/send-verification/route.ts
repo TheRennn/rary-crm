@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -106,6 +104,7 @@ export async function POST(request: Request) {
     }
 
     // Enviar e-mail via Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const from = process.env.RESEND_FROM || "RARY <noreply@raryservice.com>";
     const { error: emailError } = await resend.emails.send({
       from,
