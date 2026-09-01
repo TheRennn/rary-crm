@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { IconMail } from "@/components/icons";
 import { IconShieldCheck } from "@/components/ui/icons-additional";
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 const OTP_LENGTH = 6;
 
@@ -133,15 +133,25 @@ export default function VerificarEmailForm() {
     inputRefs.current[0]?.focus();
   }
 
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
   return (
     <AuthShell
       title="Verificar seu e-mail"
       description="Enviamos um código de verificação para o seu e-mail. Digite o código abaixo para confirmar sua conta."
       footer={
         <>
-          <Link href="/login" className="font-medium text-brand-400 hover:text-brand-300">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="font-medium text-brand-400 hover:text-brand-300"
+          >
             Voltar para o login
-          </Link>
+          </button>
         </>
       }
     >
