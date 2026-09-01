@@ -14,6 +14,8 @@ function rowToPayment(row: Record<string, unknown>): Payment {
     dueDate: row.due_date as string,
     status: row.status as Payment["status"],
     method: (row.method as string) ?? "",
+    attachmentUrl: (row.attachment_url as string) ?? undefined,
+    attachmentName: (row.attachment_name as string) ?? undefined,
   };
 }
 
@@ -63,6 +65,8 @@ export class PaymentRepository {
       due_date: input.dueDate,
       status: input.status,
       method: input.method,
+      attachment_url: input.attachmentUrl ?? null,
+      attachment_name: input.attachmentName ?? null,
     };
 
     const { error: insertError } = await supabase.from("payments").insert(row);
@@ -80,6 +84,8 @@ export class PaymentRepository {
     if (input.dueDate !== undefined) row.due_date = input.dueDate;
     if (input.status !== undefined) row.status = input.status;
     if (input.method !== undefined) row.method = input.method;
+    if (input.attachmentUrl !== undefined) row.attachment_url = input.attachmentUrl ?? null;
+    if (input.attachmentName !== undefined) row.attachment_name = input.attachmentName ?? null;
 
     const { data, error } = await supabase.from("payments").update(row).eq("id", id).select().single();
     if (error) throw error;

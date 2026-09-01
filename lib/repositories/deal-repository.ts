@@ -10,6 +10,7 @@ export interface CreateDealInput {
   status: Deal["status"];
   paymentStatus: Deal["paymentStatus"];
   responsibleId: string;
+  deliveryDeadline?: string;
 }
 
 function rowToDeal(row: Record<string, unknown>): Deal {
@@ -24,6 +25,7 @@ function rowToDeal(row: Record<string, unknown>): Deal {
     status: row.status as Deal["status"],
     paymentStatus: row.payment_status as Deal["paymentStatus"],
     responsibleId: (row.responsible_id as string) ?? "",
+    deliveryDeadline: (row.delivery_deadline as string) ?? undefined,
   };
 }
 
@@ -108,6 +110,7 @@ export class DealRepository {
       status: input.status,
       payment_status: input.paymentStatus,
       responsible_id: input.responsibleId,
+      delivery_deadline: input.deliveryDeadline ?? null,
       created_at: new Date().toISOString(),
     };
 
@@ -125,6 +128,7 @@ export class DealRepository {
       status: input.status,
       paymentStatus: input.paymentStatus,
       responsibleId: input.responsibleId,
+      deliveryDeadline: input.deliveryDeadline,
     };
   }
 
@@ -138,6 +142,7 @@ export class DealRepository {
     if (input.status !== undefined) row.status = input.status;
     if (input.paymentStatus !== undefined) row.payment_status = input.paymentStatus;
     if (input.responsibleId !== undefined) row.responsible_id = input.responsibleId;
+    if (input.deliveryDeadline !== undefined) row.delivery_deadline = input.deliveryDeadline ?? null;
 
     const { data, error } = await supabase.from("deals").update(row).eq("id", id).select().single();
     if (error) throw error;

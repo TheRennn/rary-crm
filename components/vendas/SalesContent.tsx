@@ -24,8 +24,9 @@ import {
 import type { PaymentStatus } from "@/types";
 import { useToast } from "@/components/ui/Toast";
 import { Dropdown } from "@/components/ui/Dropdown";
-import { IconTrendingUp, IconPlus, IconEdit, IconTrash } from "@/components/icons";
+import { IconTrendingUp, IconPlus, IconEdit, IconTrash, IconFileText } from "@/components/icons";
 import type { DealStats } from "@/lib/services";
+import { generateDealPDF } from "@/lib/pdf-generator";
 
 export interface SalesContentProps {
   deals: Deal[];
@@ -127,6 +128,18 @@ export function SalesContent({
       ),
     },
     {
+      key: "prazo-entrega",
+      header: "Prazo entrega",
+      render: (deal) =>
+        deal.deliveryDeadline ? (
+          <span className="text-muted">
+            {new Date(deal.deliveryDeadline + "T00:00:00").toLocaleDateString("pt-BR")}
+          </span>
+        ) : (
+          <span className="text-muted-2">—</span>
+        ),
+    },
+    {
       key: "acoes",
       header: "Ações",
       className: "w-10",
@@ -136,6 +149,14 @@ export function SalesContent({
           triggerClassName="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-3"
           trigger={<span className="text-muted">•••</span>}
           items={[
+            {
+              label: "Gerar PDF",
+              icon: <IconFileText className="h-4 w-4" />,
+              onClick: () => {
+                const clientName = clientNames[deal.clientId] ?? "Cliente";
+                generateDealPDF(deal, clientName);
+              },
+            },
             {
               label: "Editar",
               icon: <IconEdit className="h-4 w-4" />,

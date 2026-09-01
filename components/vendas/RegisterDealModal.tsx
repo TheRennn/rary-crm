@@ -55,6 +55,7 @@ export function RegisterDealModal({
   const [status, setStatus] = useState<DealStatus>("ORCAMENTO");
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("PENDENTE");
   const [responsibleId, setResponsibleId] = useState("");
+  const [deliveryDeadline, setDeliveryDeadline] = useState("");
 
   useEffect(() => {
     if (editDeal && open) {
@@ -67,6 +68,7 @@ export function RegisterDealModal({
       setStatus(editDeal.status);
       setPaymentStatus(editDeal.paymentStatus);
       setResponsibleId(editDeal.responsibleId);
+      setDeliveryDeadline(editDeal.deliveryDeadline ?? "");
     } else if (!open) {
       setClientId("");
       setClientCode("");
@@ -77,6 +79,7 @@ export function RegisterDealModal({
       setStatus("ORCAMENTO");
       setPaymentStatus("PENDENTE");
       setResponsibleId("");
+      setDeliveryDeadline("");
     }
   }, [editDeal, open, clients]);
 
@@ -143,6 +146,7 @@ export function RegisterDealModal({
         status,
         paymentStatus,
         responsibleId: responsibleId || currentUserId || "",
+        deliveryDeadline: deliveryDeadline || undefined,
       };
 
       if (isEditing) {
@@ -186,6 +190,7 @@ export function RegisterDealModal({
     setStatus("ORCAMENTO");
     setPaymentStatus("PENDENTE");
     setResponsibleId("");
+    setDeliveryDeadline("");
     onClose();
   }
 
@@ -278,6 +283,13 @@ export function RegisterDealModal({
             value={paymentStatus}
             onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
             required
+          />
+          <Input
+            id="deal-prazo-entrega"
+            label="Prazo de entrega"
+            type="date"
+            value={deliveryDeadline}
+            onChange={(e) => setDeliveryDeadline(e.target.value)}
           />
         </div>
 

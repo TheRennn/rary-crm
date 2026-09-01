@@ -1,10 +1,16 @@
 import { CalendarContent } from "@/components/calendario/CalendarContent";
-import { calendarService } from "@/lib/services";
+import { calendarService, dealService, clientService } from "@/lib/services";
 
 export const dynamic = "force-dynamic";
 
 export default async function CalendarioPage() {
-  const events = await calendarService.getAll();
+  const [events, deals, clients] = await Promise.all([
+    calendarService.getAll(),
+    dealService.getAll(),
+    clientService.getAll(),
+  ]);
 
-  return <CalendarContent events={events} />;
+  const clientNames = Object.fromEntries(clients.map((c) => [c.id, c.companyName]));
+
+  return <CalendarContent events={events} deals={deals} clientNames={clientNames} />;
 }

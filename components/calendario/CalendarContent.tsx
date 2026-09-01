@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { EventDetails } from "@/components/events/EventDetails";
 import { calendarService } from "@/lib/services";
-import type { CalendarEvent, CalendarEventType } from "@/types";
+import type { CalendarEvent, CalendarEventType, Deal } from "@/types";
 import { cn, monthLabel } from "@/lib/utils";
 import {
   CALENDAR_EVENT_TYPE_LABELS,
@@ -24,6 +24,8 @@ import { IconChevronLeft, IconChevronRight, IconCalendar, IconCalendarPlus } fro
 
 export interface CalendarContentProps {
   events: CalendarEvent[];
+  deals?: Deal[];
+  clientNames?: Record<string, string>;
 }
 
 const typeOptions = (Object.keys(CALENDAR_EVENT_TYPE_LABELS) as CalendarEventType[]).map((type) => ({
@@ -40,7 +42,7 @@ function toISOLocal(date: Date): string {
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export function CalendarContent({ events }: CalendarContentProps) {
+export function CalendarContent({ events, deals = [], clientNames = {} }: CalendarContentProps) {
   const { toast } = useToast();
   const [view, setView] = useState<"mes" | "agenda">("mes");
   const [cursor, setCursor] = useState(() => {
@@ -51,16 +53,33 @@ export function CalendarContent({ events }: CalendarContentProps) {
   const [newOpen, setNewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const allEvents = useMemo(() => {
+    const deadlineEvents: CalendarEvent[] = deals
+      .filter((d) => d.deliveryDeadline && d.status !== "CANCELADA")
+      .map((d) => ({
+        id: `deadline-${d.id}`,
+        title: `Entrega: ${d.product} — ${clientNames[d.clientId] ?? ""}`,
+        type: "PRAZO_ENTREGA" as CalendarEventType,
+        date: d.deliveryDeadline!,
+        time: "00:00",
+        duration: "dia inteiro",
+        clientId: d.clientId,
+        clientName: clientNames[d.clientId],
+        description: `Prazo de entrega para ${d.code}`,
+      }));
+    return [...events, ...deadlineEvents];
+  }, [events, deals, clientNames]);
+
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
-    for (const event of events) {
+    for (const event of allEvents) {
       const key = event.date.slice(0, 10);
       const list = map.get(key) ?? [];
       list.push(event);
       map.set(key, list);
     }
     return map;
-  }, [events]);
+  }, [allEvents]);
 
   const calendar = useMemo(() => {
     const year = cursor.getFullYear();
@@ -86,10 +105,10 @@ export function CalendarContent({ events }: CalendarContentProps) {
 
   const agenda = useMemo(() => {
     const todayISO = toISOLocal(new Date());
-    return events
+    return allEvents
       .filter((event) => event.date.slice(0, 10) >= todayISO)
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-  }, [events]);
+  }, [allEvents]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -345,6 +364,7 @@ const toneBg: Record<CalendarEventType, string> = {
   TAREFA: "rgba(251,191,36,0.14)",
   VENCIMENTO: "rgba(248,113,113,0.14)",
   COMPROMISSO: "rgba(138,138,149,0.14)",
+  PRAZO_ENTREGA: "rgba(16,185,129,0.14)",
 };
 
 const toneText: Record<CalendarEventType, string> = {
@@ -353,4 +373,5 @@ const toneText: Record<CalendarEventType, string> = {
   TAREFA: "#fcd34d",
   VENCIMENTO: "#fca5a5",
   COMPROMISSO: "#a1a1aa",
+  PRAZO_ENTREGA: "#6ee7b7",
 };

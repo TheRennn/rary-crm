@@ -65,7 +65,8 @@ export type CalendarEventType =
   | "REUNIAO"
   | "TAREFA"
   | "VENCIMENTO"
-  | "COMPROMISSO";
+  | "COMPROMISSO"
+  | "PRAZO_ENTREGA";
 
 export interface User {
   id: string;
@@ -134,6 +135,7 @@ export interface Deal {
   status: DealStatus;
   paymentStatus: PaymentStatus;
   responsibleId: string;
+  deliveryDeadline?: string;
 }
 
 export interface Purchase {
@@ -158,6 +160,8 @@ export interface Payment {
   dueDate: string;
   status: PaymentStatus;
   method: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
 }
 
 export type CommissionPaymentMethod = "A_VISTA" | "BOLETO" | "CARTAO";

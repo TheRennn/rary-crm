@@ -1,5 +1,4 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
-import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { CalendarEvent } from "@/types";
 
 function rowToEvent(row: Record<string, unknown>): CalendarEvent {
@@ -19,16 +18,12 @@ function rowToEvent(row: Record<string, unknown>): CalendarEvent {
 export type CreateCalendarEventInput = Omit<CalendarEvent, "id">;
 
 export class CalendarRepository {
-  async findAll(companyId?: string | null): Promise<CalendarEvent[]> {
+  async findAll(_companyId?: string | null): Promise<CalendarEvent[]> {
     const supabase = await createUniversalClient();
-    const clientIds = await getClientIdsForCompany(companyId);
-
-    if (clientIds.length === 0) return [];
 
     const { data, error } = await supabase
       .from("calendar_events")
       .select("*")
-      .in("client_id", clientIds)
       .order("date", { ascending: true });
 
     if (error || !data) return [];

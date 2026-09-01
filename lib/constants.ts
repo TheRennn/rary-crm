@@ -183,6 +183,7 @@ export const CALENDAR_EVENT_TYPE_LABELS: Record<CalendarEventType, string> = {
   TAREFA: "Tarefa",
   VENCIMENTO: "Vencimento",
   COMPROMISSO: "Compromisso",
+  PRAZO_ENTREGA: "Prazo de entrega",
 };
 
 export const CALENDAR_EVENT_TYPE_TONES: Record<CalendarEventType, BadgeTone> = {
@@ -191,6 +192,7 @@ export const CALENDAR_EVENT_TYPE_TONES: Record<CalendarEventType, BadgeTone> = {
   TAREFA: "warning",
   VENCIMENTO: "danger",
   COMPROMISSO: "neutral",
+  PRAZO_ENTREGA: "success",
 };
 
 export const NOTIFICATION_TYPE_LABELS: Record<Notification["type"], string> = {

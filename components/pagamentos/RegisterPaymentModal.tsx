@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -8,8 +8,9 @@ import { MaskedInput } from "@/components/ui/MaskedInput";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
 import { paymentService } from "@/lib/services";
-import { formatCurrency, maskCurrency, parseCurrency } from "@/lib/utils";
+import { formatCurrency, parseCurrency } from "@/lib/utils";
 import { PAYMENT_STATUS_LABELS } from "@/lib/constants";
+import { createUniversalClient } from "@/lib/supabase/universal";
 import type { Payment, PaymentStatus } from "@/types";
 
 export interface RegisterPaymentModalProps {
@@ -45,6 +46,10 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
   const [method, setMethod] = useState("PIX");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [attachmentName, setAttachmentName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editPayment && open) {
@@ -54,6 +59,8 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
       setDueDate(editPayment.dueDate.slice(0, 10));
       setStatus(editPayment.status);
       setMethod(editPayment.method || "PIX");
+      setAttachmentUrl(editPayment.attachmentUrl ?? "");
+      setAttachmentName(editPayment.attachmentName ?? "");
     } else if (!open) {
       reset();
     }
@@ -67,9 +74,29 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
     setStatus("PENDENTE");
     setMethod("PIX");
     setError(null);
+    setAttachmentFile(null);
+    setAttachmentUrl("");
+    setAttachmentName("");
   }
 
   const clientOptions = existingClients.map((c) => ({ value: c.id, label: c.name }));
+
+  async function uploadAttachment(): Promise<{ url: string; name: string } | null> {
+    if (!attachmentFile) return null;
+    try {
+      const supabase = await createUniversalClient();
+      const ext = attachmentFile.name.split(".").pop() ?? "bin";
+      const path = `attachments/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("payments")
+        .upload(path, attachmentFile);
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from("payments").getPublicUrl(path);
+      return { url: urlData.publicUrl, name: attachmentFile.name };
+    } catch {
+      return null;
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,6 +108,17 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
     try {
       const selectedClient = existingClients.find((c) => c.id === clientId);
 
+      let finalAttachmentUrl = attachmentUrl;
+      let finalAttachmentName = attachmentName;
+
+      if (attachmentFile) {
+        const uploaded = await uploadAttachment();
+        if (uploaded) {
+          finalAttachmentUrl = uploaded.url;
+          finalAttachmentName = uploaded.name;
+        }
+      }
+
       if (isEditing) {
         const updated = await paymentService.update(editPayment.id, {
           clientId,
@@ -90,6 +128,8 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
           dueDate,
           status,
           method,
+          attachmentUrl: finalAttachmentUrl || undefined,
+          attachmentName: finalAttachmentName || undefined,
         });
         onCreated(updated);
         toast({ title: "Pagamento atualizado", message: `${updated.description} — ${formatCurrency(updated.value)}`, variant: "success" });
@@ -102,6 +142,8 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
           dueDate,
           status,
           method,
+          attachmentUrl: finalAttachmentUrl || undefined,
+          attachmentName: finalAttachmentName || undefined,
         });
         onCreated(created);
         toast({ title: "Pagamento registrado", message: `${created.description} — ${formatCurrency(created.value)}`, variant: "success" });
@@ -189,6 +231,47 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
             onChange={(e) => setMethod(e.target.value)}
             required
           />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-foreground">
+            Nota / Recibo / Comprovante (PDF ou imagem)
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              setAttachmentFile(file);
+              if (file) setAttachmentName(file.name);
+            }}
+          />
+          {attachmentName ? (
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2">
+              <span className="truncate text-sm text-foreground">{attachmentName}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setAttachmentFile(null);
+                  setAttachmentUrl("");
+                  setAttachmentName("");
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                className="ml-auto text-xs text-danger hover:underline"
+              >
+                Remover
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full rounded-lg border border-dashed border-border bg-surface-2 px-4 py-3 text-sm text-muted transition-colors hover:border-brand-500/40 hover:text-foreground"
+            >
+              Clique para anexar arquivo (PDF, JPG ou PNG)
+            </button>
+          )}
         </div>
       </form>
     </Modal>

@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import type { Payment, PaymentStatus } from "@/types";
 import { cn, formatCurrency, formatDate, isOverdue, relativeLabel } from "@/lib/utils";
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_TONES } from "@/lib/constants";
-import { IconCreditCard, IconCheckCircle, IconAlertCircle, IconClock, IconEdit, IconTrash } from "@/components/icons";
+import { IconCreditCard, IconCheckCircle, IconAlertCircle, IconClock, IconEdit, IconTrash, IconFileText } from "@/components/icons";
 import type { PaymentStats } from "@/lib/services";
 
 export interface PaymentsContentProps {
@@ -86,6 +86,24 @@ export function PaymentsContent({ payments, stats, onDelete, onEdit }: PaymentsC
       key: "forma",
       header: "Forma de pagamento",
       render: (payment) => <span className="text-muted">{payment.method}</span>,
+    },
+    {
+      key: "anexo",
+      header: "Anexo",
+      render: (payment) =>
+        payment.attachmentUrl ? (
+          <a
+            href={payment.attachmentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-brand-300 hover:text-brand-200"
+          >
+            <IconFileText className="h-3.5 w-3.5" />
+            {payment.attachmentName ?? "Ver anexo"}
+          </a>
+        ) : (
+          <span className="text-muted-2">—</span>
+        ),
     },
     {
       key: "acoes",

@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   },
   description:
     "Organize clientes, vendas, pagamentos, tarefas e follow-ups em uma única plataforma.",
+  icons: {
+    icon: "/brand/rary-mark.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
