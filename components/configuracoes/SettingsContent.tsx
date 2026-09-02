@@ -58,7 +58,7 @@ export function SettingsContent({ user, company }: SettingsContentProps) {
           {active === "empresa" && <SettingsCompany company={company} />}
           {active === "notificacoes" && <SettingsNotifications />}
           {active === "integracoes" && <SettingsIntegrations />}
-          {active === "personalizacao" && <SettingsBranding />}
+          {active === "personalizacao" && <SettingsBranding companyId={company.id} />}
         </div>
       </div>
     </div>

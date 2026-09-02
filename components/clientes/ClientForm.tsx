@@ -21,7 +21,6 @@ import {
   IconBuilding,
   IconUsers,
   IconPhone,
-  IconMail,
   IconGlobe,
   IconLayers,
   IconTrendingUp,
@@ -37,6 +36,11 @@ export interface ClientFormProps {
 const typeOptions = [
   { value: "PESSOA_FISICA", label: "Pessoa física" },
   { value: "PESSOA_JURIDICA", label: "Pessoa jurídica" },
+];
+
+const kindOptions = [
+  { value: "CLIENTE", label: "Cliente" },
+  { value: "FORNECEDOR", label: "Fornecedor" },
 ];
 
 const segmentOptions = [
@@ -152,6 +156,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
   const [nome, setNome] = useState("");
   const [doc, setDoc] = useState("");
   const [tipo, setTipo] = useState("");
+  const [kind, setKind] = useState("CLIENTE");
   const [empresaNome, setEmpresaNome] = useState("");
   const [empresaCnpj, setEmpresaCnpj] = useState("");
   const [segmento, setSegmento] = useState("");
@@ -183,6 +188,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
       setNome(editClient.name);
       setDoc(editClient.cpfCnpj);
       setTipo(editClient.type);
+      setKind(editClient.kind ?? "CLIENTE");
       setEmpresaNome(editClient.companyName);
       setEmpresaCnpj(editClient.companyCnpj);
       setSegmento(editClient.segment);
@@ -218,6 +224,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
         name: nome,
         cpfCnpj: doc,
         type: (tipo || "PESSOA_FISICA") as "PESSOA_FISICA" | "PESSOA_JURIDICA",
+        kind: (kind || "CLIENTE") as "CLIENTE" | "FORNECEDOR",
         companyName: empresaNome,
         companyCnpj: empresaCnpj,
         segment: (segmento || "Tecnologia") as any,
@@ -326,6 +333,15 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               onChange={(e) => setTipo(e.target.value)}
               required
             />
+            <Select
+              id="cliente-kind"
+              label="Cadastro como"
+              options={kindOptions}
+              placeholder="Selecione"
+              value={kind}
+              onChange={(e) => setKind(e.target.value)}
+              required
+            />
           </div>
         </CardContent>
       </Card>
@@ -334,7 +350,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
       <Card>
         <CardHeader
           title="Empresa"
-          description="Dados da empresa do cliente"
+          description={tipo === "PESSOA_FISICA" ? "Dados da empresa do cliente (opcional para pessoa física)" : "Dados da empresa do cliente"}
           action={<IconBuilding className="h-5 w-5 text-muted-2" />}
         />
         <CardContent>
@@ -345,7 +361,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               placeholder="Razão social ou nome fantasia"
               value={empresaNome}
               onChange={(e) => setEmpresaNome(e.target.value)}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
             <MaskedInput
               id="empresa-cnpj"
@@ -354,7 +370,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               mask="cnpj"
               value={empresaCnpj}
               onChange={setEmpresaCnpj}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
             <Select
               id="empresa-segmento"
@@ -364,7 +380,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               icon={<IconLayers className="h-4 w-4" />}
               value={segmento}
               onChange={(e) => setSegmento(e.target.value)}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
             <Input
               id="empresa-cidade"
@@ -372,7 +388,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               placeholder="São Paulo"
               value={cidade}
               onChange={(e) => setCidade(e.target.value)}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
             <Select
               id="empresa-uf"
@@ -382,7 +398,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               icon={<IconGlobe className="h-4 w-4" />}
               value={uf}
               onChange={(e) => setUf(e.target.value)}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
           </div>
         </CardContent>
@@ -392,7 +408,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
       <Card>
         <CardHeader
           title="Decisor"
-          description="Pessoa responsável pelas decisões"
+          description={tipo === "PESSOA_FISICA" ? "Pessoa responsável pelas decisões (opcional para pessoa física)" : "Pessoa responsável pelas decisões"}
           action={<IconTarget className="h-5 w-5 text-muted-2" />}
         />
         <CardContent>
@@ -403,7 +419,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               placeholder="Nome completo"
               value={decisorNome}
               onChange={(e) => setDecisorNome(e.target.value)}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
             <Input
               id="decisor-cargo"
@@ -411,7 +427,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               placeholder="CEO, Diretor, Gerente..."
               value={decisorCargo}
               onChange={(e) => setDecisorCargo(e.target.value)}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
             <MaskedInput
               id="decisor-telefone"
@@ -420,7 +436,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               mask="phone"
               value={decisorTelefone}
               onChange={setDecisorTelefone}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
             <Input
               id="decisor-email"
@@ -429,7 +445,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               placeholder="decisor@empresa.com"
               value={decisorEmail}
               onChange={(e) => setDecisorEmail(e.target.value)}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
           </div>
         </CardContent>

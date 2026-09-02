@@ -14,6 +14,8 @@ function rowToPayment(row: Record<string, unknown>): Payment {
     dueDate: row.due_date as string,
     status: row.status as Payment["status"],
     method: (row.method as string) ?? "",
+    direction: (row.direction as Payment["direction"]) ?? "ENTRADA",
+    supplierName: (row.supplier_name as string) ?? undefined,
     attachmentUrl: (row.attachment_url as string) ?? undefined,
     attachmentName: (row.attachment_name as string) ?? undefined,
   };
@@ -50,6 +52,18 @@ export class PaymentRepository {
     return data.map(rowToPayment);
   }
 
+  async findByDeal(dealId: string): Promise<Payment[]> {
+    const supabase = await createUniversalClient();
+    const { data, error } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("deal_id", dealId)
+      .order("due_date", { ascending: false });
+
+    if (error || !data) return [];
+    return data.map(rowToPayment);
+  }
+
   async create(input: CreatePaymentInput): Promise<Payment> {
     const supabase = await createUniversalClient();
     const id = `pay-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
@@ -65,6 +79,8 @@ export class PaymentRepository {
       due_date: input.dueDate,
       status: input.status,
       method: input.method,
+      direction: input.direction ?? "ENTRADA",
+      supplier_name: input.supplierName ?? "",
       attachment_url: input.attachmentUrl ?? null,
       attachment_name: input.attachmentName ?? null,
     };
@@ -84,6 +100,8 @@ export class PaymentRepository {
     if (input.dueDate !== undefined) row.due_date = input.dueDate;
     if (input.status !== undefined) row.status = input.status;
     if (input.method !== undefined) row.method = input.method;
+    if (input.direction !== undefined) row.direction = input.direction;
+    if (input.supplierName !== undefined) row.supplier_name = input.supplierName;
     if (input.attachmentUrl !== undefined) row.attachment_url = input.attachmentUrl ?? null;
     if (input.attachmentName !== undefined) row.attachment_name = input.attachmentName ?? null;
 

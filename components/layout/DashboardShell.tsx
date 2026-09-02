@@ -9,15 +9,16 @@ import type { User } from "@/types";
 export interface DashboardShellProps {
   user: User | null;
   companyName: string;
+  companyLogoUrl?: string;
   children: ReactNode;
 }
 
-export function DashboardShell({ user, companyName, children }: DashboardShellProps) {
+export function DashboardShell({ user, companyName, companyLogoUrl, children }: DashboardShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
     <div className="min-h-dvh bg-background">
-      <Sidebar />
+      <Sidebar logoUrl={companyLogoUrl} />
       <MobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <div className="lg:pl-64">
         <Topbar user={user} companyName={companyName} onOpenMobileNav={() => setMobileNavOpen(true)} />

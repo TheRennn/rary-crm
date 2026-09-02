@@ -13,7 +13,7 @@ export interface FinanceiroContentClientProps {
   commissions: Commission[];
   orders: Order[];
   goals: Goal[];
-  clients: string[];
+  clients: { id: string; name: string }[];
 }
 
 export function FinanceiroContentClient({

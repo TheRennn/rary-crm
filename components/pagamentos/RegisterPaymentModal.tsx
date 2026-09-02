@@ -9,7 +9,7 @@ import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
 import { paymentService } from "@/lib/services";
 import { formatCurrency, parseCurrency } from "@/lib/utils";
-import { PAYMENT_STATUS_LABELS } from "@/lib/constants";
+import { PAYMENT_STATUS_LABELS, PAYMENT_DIRECTION_LABELS } from "@/lib/constants";
 import { createUniversalClient } from "@/lib/supabase/universal";
 import type { Payment, PaymentStatus } from "@/types";
 
@@ -35,6 +35,11 @@ const methodOptions = [
   { value: "Outro", label: "Outro" },
 ];
 
+const directionOptions = (Object.keys(PAYMENT_DIRECTION_LABELS) as ("ENTRADA" | "SAIDA")[]).map((d) => ({
+  value: d,
+  label: PAYMENT_DIRECTION_LABELS[d],
+}));
+
 export function RegisterPaymentModal({ open, onClose, existingClients, onCreated, editPayment }: RegisterPaymentModalProps) {
   const { toast } = useToast();
   const isEditing = !!editPayment;
@@ -44,6 +49,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<PaymentStatus>("PENDENTE");
   const [method, setMethod] = useState("PIX");
+  const [direction, setDirection] = useState<"ENTRADA" | "SAIDA">("ENTRADA");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
@@ -59,6 +65,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
       setDueDate(editPayment.dueDate.slice(0, 10));
       setStatus(editPayment.status);
       setMethod(editPayment.method || "PIX");
+      setDirection(editPayment.direction || "ENTRADA");
       setAttachmentUrl(editPayment.attachmentUrl ?? "");
       setAttachmentName(editPayment.attachmentName ?? "");
     } else if (!open) {
@@ -73,6 +80,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
     setDueDate("");
     setStatus("PENDENTE");
     setMethod("PIX");
+    setDirection("ENTRADA");
     setError(null);
     setAttachmentFile(null);
     setAttachmentUrl("");
@@ -128,6 +136,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
           dueDate,
           status,
           method,
+          direction,
           attachmentUrl: finalAttachmentUrl || undefined,
           attachmentName: finalAttachmentName || undefined,
         });
@@ -142,6 +151,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
           dueDate,
           status,
           method,
+          direction,
           attachmentUrl: finalAttachmentUrl || undefined,
           attachmentName: finalAttachmentName || undefined,
         });
@@ -229,6 +239,14 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
             options={methodOptions}
             value={method}
             onChange={(e) => setMethod(e.target.value)}
+            required
+          />
+          <Select
+            id="pay-direcao"
+            label="Direção"
+            options={directionOptions}
+            value={direction}
+            onChange={(e) => setDirection(e.target.value as "ENTRADA" | "SAIDA")}
             required
           />
         </div>

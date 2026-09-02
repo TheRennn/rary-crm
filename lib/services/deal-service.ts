@@ -1,4 +1,5 @@
 import { dealRepository } from "@/lib/repositories";
+import { paymentRepository } from "@/lib/repositories";
 import type { Deal, Purchase } from "@/types";
 import type { CreateDealInput } from "@/lib/repositories/deal-repository";
 
@@ -42,7 +43,27 @@ export class DealService {
   }
 
   async update(id: string, input: Partial<CreateDealInput>): Promise<Deal> {
-    return dealRepository.update(id, input);
+    const deal = await dealRepository.update(id, input);
+
+    if (input.status === "APROVADA") {
+      const existingPayments = await paymentRepository.findByDeal(id);
+      if (existingPayments.length === 0) {
+        const client = await dealRepository.findClientById(deal.clientId);
+        await paymentRepository.create({
+          clientId: deal.clientId,
+          dealId: deal.id,
+          clientName: client?.name ?? "",
+          description: `Recebimento: ${deal.product}`,
+          value: deal.value,
+          dueDate: new Date().toISOString(),
+          status: "PENDENTE",
+          method: deal.paymentMethod ?? "",
+          direction: "ENTRADA",
+        });
+      }
+    }
+
+    return deal;
   }
 
   async delete(id: string): Promise<void> {

@@ -5,6 +5,7 @@ export interface LogoProps {
   className?: string;
   showText?: boolean;
   size?: "sm" | "md" | "lg";
+  logoUrl?: string;
 }
 
 const markSizes = {
@@ -19,16 +20,24 @@ const textSizes = {
   lg: "text-lg",
 };
 
-export function Logo({ className, showText = true, size = "md" }: LogoProps) {
+export function Logo({ className, showText = true, size = "md", logoUrl }: LogoProps) {
   return (
     <span className={cn("flex items-center gap-2.5 select-none", className)}>
       <span
         className={cn(
-          "flex items-center justify-center bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 text-white shadow-lg shadow-brand-600/40 ring-1 ring-white/10",
+          "flex items-center justify-center bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 text-white shadow-lg shadow-brand-600/40 ring-1 ring-white/10 overflow-hidden",
           markSizes[size]
         )}
       >
-        <IconRary className="h-[62%] w-[62%]" />
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt="Logo da empresa"
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <IconRary className="h-[62%] w-[62%]" />
+        )}
       </span>
       {showText && (
         <span className={cn("flex flex-col", textSizes[size])}>

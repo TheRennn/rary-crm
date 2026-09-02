@@ -107,6 +107,7 @@ export interface Client {
   name: string;
   cpfCnpj: string;
   type: "PESSOA_FISICA" | "PESSOA_JURIDICA";
+  kind?: "CLIENTE" | "FORNECEDOR";
   companyId: string;
   companyName: string;
   companyCnpj: string;
@@ -134,6 +135,7 @@ export interface Deal {
   createdAt: string;
   status: DealStatus;
   paymentStatus: PaymentStatus;
+  paymentMethod?: string;
   responsibleId: string;
   deliveryDeadline?: string;
 }
@@ -160,6 +162,8 @@ export interface Payment {
   dueDate: string;
   status: PaymentStatus;
   method: string;
+  direction?: "ENTRADA" | "SAIDA";
+  supplierName?: string;
   attachmentUrl?: string;
   attachmentName?: string;
 }

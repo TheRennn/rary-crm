@@ -26,7 +26,7 @@ export default async function FinanceiroPage() {
       commissions={commissions}
       orders={orders}
       goals={goals}
-      clients={clients.map((client) => client.name)}
+      clients={clients.map((client) => ({ id: client.id, name: client.name }))}
     />
   );
 }

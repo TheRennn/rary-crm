@@ -23,17 +23,19 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // }
 
   let companyName = "Minha empresa";
+  let companyLogoUrl = "";
   if (appUser?.companyId) {
     const { data: company } = await supabase
       .from("companies")
-      .select("name")
+      .select("name, logo_url")
       .eq("id", appUser.companyId)
       .single();
     if (company?.name) companyName = company.name;
+    if (company?.logo_url) companyLogoUrl = company.logo_url;
   }
 
   return (
-    <DashboardShell user={appUser} companyName={companyName}>
+    <DashboardShell user={appUser} companyName={companyName} companyLogoUrl={companyLogoUrl}>
       {children}
     </DashboardShell>
   );

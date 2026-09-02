@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SalesContent } from "./SalesContent";
 import { useToast } from "@/components/ui/Toast";
 import { dealService } from "@/lib/services";
@@ -23,6 +23,10 @@ export function SalesContentClient({
 }: SalesContentClientProps) {
   const { toast } = useToast();
   const [deals, setDeals] = useState(initialDeals);
+
+  useEffect(() => {
+    setDeals(initialDeals);
+  }, [initialDeals]);
 
   async function handleDelete(deal: Deal) {
     try {

@@ -43,7 +43,7 @@ export const NAV_SECTIONS = [
     label: null,
     items: [
       { label: "Dashboard", href: ROUTES.dashboard, icon: "dashboard" },
-      { label: "Clientes", href: ROUTES.clientes, icon: "clientes" },
+      { label: "Cadastros", href: ROUTES.clientes, icon: "clientes" },
       { label: "Vendas", href: ROUTES.vendas, icon: "vendas" },
       { label: "Follow-up", href: ROUTES.followUp, icon: "followup" },
       { label: "Calendário", href: ROUTES.calendario, icon: "calendario" },
@@ -277,4 +277,21 @@ export const PAYMENT_METHODS = [
   "Cartão de débito",
   "Transferência",
   "Dinheiro",
+  "Link de pagamento",
+  "Parcelado",
 ] as const;
+
+export const PAYMENT_DIRECTION_LABELS: Record<"ENTRADA" | "SAIDA", string> = {
+  ENTRADA: "Entrada",
+  SAIDA: "Saída",
+};
+
+export const PAYMENT_DIRECTION_TONES: Record<"ENTRADA" | "SAIDA", BadgeTone> = {
+  ENTRADA: "success",
+  SAIDA: "danger",
+};
+
+export const CLIENT_KIND_LABELS: Record<"CLIENTE" | "FORNECEDOR", string> = {
+  CLIENTE: "Cliente",
+  FORNECEDOR: "Fornecedor",
+};

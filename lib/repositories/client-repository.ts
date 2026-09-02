@@ -7,6 +7,7 @@ export interface CreateClientInput {
   name: string;
   cpfCnpj: string;
   type: Client["type"];
+  kind?: Client["kind"];
   companyName: string;
   companyCnpj: string;
   segment: Client["segment"];
@@ -48,6 +49,7 @@ function rowToClient(row: Record<string, unknown>): Client {
     name: row.name as string,
     cpfCnpj: formatDocument((row.cpf_cnpj as string) ?? ""),
     type: row.type as Client["type"],
+    kind: (row.kind as Client["kind"]) ?? "CLIENTE",
     companyId: (row.company_id as string) ?? "",
     companyName: (row.company_name as string) ?? "",
     companyCnpj: formatDocument((row.company_cnpj as string) ?? ""),
@@ -161,6 +163,7 @@ export class ClientRepository {
       name: input.name,
       cpf_cnpj: stripMask(input.cpfCnpj),
       type: input.type,
+      kind: input.kind ?? "CLIENTE",
       company_id: cid ?? null,
       company_name: input.companyName,
       company_cnpj: stripMask(input.companyCnpj),
@@ -196,6 +199,7 @@ export class ClientRepository {
       name: input.name,
       cpfCnpj: input.cpfCnpj,
       type: input.type,
+      kind: input.kind ?? "CLIENTE",
       companyId: cid ?? "",
       companyName: input.companyName,
       companyCnpj: input.companyCnpj,

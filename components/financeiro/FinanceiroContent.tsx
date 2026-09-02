@@ -22,7 +22,7 @@ export interface FinanceiroContentProps {
   commissions: Commission[];
   orders: Order[];
   goals: Goal[];
-  clients: string[];
+  clients: { id: string; name: string }[];
   onDeleteCommission?: (commission: Commission) => void;
   onDeleteOrder?: (order: Order) => void;
   onDeleteGoal?: (goal: Goal) => void;
@@ -30,7 +30,7 @@ export interface FinanceiroContentProps {
 }
 
 type FinanceiroProfile = "administracao" | "representante";
-type AdminTab = "receber" | "metas";
+type AdminTab = "receber" | "pagar" | "metas";
 type RepTab = "comissoes" | "pedidos";
 
 const PROFILES: {
@@ -208,13 +208,16 @@ export function FinanceiroContent({
             label="Seção da administração"
             options={[
               { id: "receber", label: "Contas a receber" },
+              { id: "pagar", label: "Contas a pagar" },
               { id: "metas", label: "Metas" },
             ]}
             value={adminTab}
             onChange={(id) => setAdminTab(id as AdminTab)}
           />
           {adminTab === "receber" ? (
-            <PaymentsContent key="payments" payments={payments} stats={paymentStats} onDelete={onDeletePayment} onEdit={(p) => { setEditPayment(p); setPaymentOpen(true); }} />
+            <PaymentsContent key="payments" payments={payments.filter((p) => p.direction === "ENTRADA")} stats={paymentStats} onDelete={onDeletePayment} onEdit={(p) => { setEditPayment(p); setPaymentOpen(true); }} />
+          ) : adminTab === "pagar" ? (
+            <PaymentsContent key="payables" payments={payments.filter((p) => p.direction === "SAIDA")} stats={paymentStats} onDelete={onDeletePayment} onEdit={(p) => { setEditPayment(p); setPaymentOpen(true); }} />
           ) : (
             <GoalsView key="goals" goals={goals} currents={currents} onEdit={(g) => { setEditGoal(g); setGoalOpen(true); }} onDelete={onDeleteGoal} />
           )}
@@ -255,7 +258,7 @@ export function FinanceiroContent({
       <RegisterOrderModal
         open={orderOpen}
         onClose={() => { setOrderOpen(false); setEditOrder(null); }}
-        existingClients={clients}
+        existingClients={clients.map((c) => c.name)}
         existingCompanies={existingCompanies}
         editOrder={editOrder}
         onCreated={(order) => {
@@ -284,7 +287,7 @@ export function FinanceiroContent({
       <RegisterPaymentModal
         open={paymentOpen}
         onClose={() => { setPaymentOpen(false); setEditPayment(null); }}
-        existingClients={[]}
+        existingClients={clients}
         editPayment={editPayment}
         onCreated={(payment) => {
           setPaymentOpen(false);

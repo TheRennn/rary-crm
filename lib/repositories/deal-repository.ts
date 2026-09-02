@@ -9,6 +9,7 @@ export interface CreateDealInput {
   value: number;
   status: Deal["status"];
   paymentStatus: Deal["paymentStatus"];
+  paymentMethod?: string;
   responsibleId: string;
   deliveryDeadline?: string;
 }
@@ -24,6 +25,7 @@ function rowToDeal(row: Record<string, unknown>): Deal {
     createdAt: row.created_at as string,
     status: row.status as Deal["status"],
     paymentStatus: row.payment_status as Deal["paymentStatus"],
+    paymentMethod: (row.payment_method as string) ?? undefined,
     responsibleId: (row.responsible_id as string) ?? "",
     deliveryDeadline: (row.delivery_deadline as string) ?? undefined,
   };
@@ -83,6 +85,18 @@ export class DealRepository {
     return data.map(rowToPurchase);
   }
 
+  async findClientById(clientId: string): Promise<{ id: string; name: string } | null> {
+    const supabase = await createUniversalClient();
+    const { data, error } = await supabase
+      .from("clients")
+      .select("id, name")
+      .eq("id", clientId)
+      .single();
+
+    if (error || !data) return null;
+    return { id: data.id as string, name: data.name as string };
+  }
+
   async create(input: CreateDealInput): Promise<Deal> {
     const supabase = await createUniversalClient();
     const id = `deal-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
@@ -109,6 +123,7 @@ export class DealRepository {
       value: input.value,
       status: input.status,
       payment_status: input.paymentStatus,
+      payment_method: input.paymentMethod ?? "",
       responsible_id: input.responsibleId,
       delivery_deadline: input.deliveryDeadline ?? null,
       created_at: new Date().toISOString(),
@@ -141,6 +156,7 @@ export class DealRepository {
     if (input.value !== undefined) row.value = input.value;
     if (input.status !== undefined) row.status = input.status;
     if (input.paymentStatus !== undefined) row.payment_status = input.paymentStatus;
+    if (input.paymentMethod !== undefined) row.payment_method = input.paymentMethod;
     if (input.responsibleId !== undefined) row.responsible_id = input.responsibleId;
     if (input.deliveryDeadline !== undefined) row.delivery_deadline = input.deliveryDeadline ?? null;
 

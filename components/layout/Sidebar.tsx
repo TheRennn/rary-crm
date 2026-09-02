@@ -30,14 +30,14 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   config: IconSettings,
 };
 
-export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarContent({ onNavigate, logoUrl }: { onNavigate?: () => void; logoUrl?: string }) {
   const pathname = usePathname();
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center border-b border-border px-5">
         <Link href="/dashboard" onClick={onNavigate} aria-label="Ir para o dashboard">
-          <Logo />
+          <Logo logoUrl={logoUrl} />
         </Link>
       </div>
 
@@ -97,10 +97,10 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ logoUrl }: { logoUrl?: string }) {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-surface-0 lg:block">
-      <SidebarContent />
+      <SidebarContent logoUrl={logoUrl} />
     </aside>
   );
 }

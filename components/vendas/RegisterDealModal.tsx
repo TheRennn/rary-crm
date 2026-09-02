@@ -10,9 +10,9 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { dealService, clientService } from "@/lib/services";
-import { DEAL_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/constants";
+import { DEAL_STATUS_LABELS, PAYMENT_STATUS_LABELS, PAYMENT_METHODS } from "@/lib/constants";
 import type { Deal, DealStatus, PaymentStatus } from "@/types";
-import { formatCurrency, parseCurrency } from "@/lib/utils";
+import { parseCurrency } from "@/lib/utils";
 
 export interface RegisterDealModalProps {
   open: boolean;
@@ -30,6 +30,11 @@ const statusOptions = (Object.keys(DEAL_STATUS_LABELS) as DealStatus[]).map((s) 
 const paymentOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((s) => ({
   value: s,
   label: PAYMENT_STATUS_LABELS[s],
+}));
+
+const paymentMethodOptions = PAYMENT_METHODS.map((method) => ({
+  value: method,
+  label: method,
 }));
 
 export function RegisterDealModal({
@@ -54,6 +59,7 @@ export function RegisterDealModal({
   const [value, setValue] = useState("");
   const [status, setStatus] = useState<DealStatus>("ORCAMENTO");
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("PENDENTE");
+  const [paymentMethod, setPaymentMethod] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
   const [deliveryDeadline, setDeliveryDeadline] = useState("");
 
@@ -64,9 +70,10 @@ export function RegisterDealModal({
       setClientCode(found?.code ?? "");
       setProduct(editDeal.product);
       setDescription(editDeal.description ?? "");
-      setValue(editDeal.value > 0 ? formatCurrency(editDeal.value) : "");
+      setValue(editDeal.value > 0 ? editDeal.value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "");
       setStatus(editDeal.status);
       setPaymentStatus(editDeal.paymentStatus);
+      setPaymentMethod(editDeal.paymentMethod ?? "");
       setResponsibleId(editDeal.responsibleId);
       setDeliveryDeadline(editDeal.deliveryDeadline ?? "");
     } else if (!open) {
@@ -78,6 +85,7 @@ export function RegisterDealModal({
       setValue("");
       setStatus("ORCAMENTO");
       setPaymentStatus("PENDENTE");
+      setPaymentMethod("");
       setResponsibleId("");
       setDeliveryDeadline("");
     }
@@ -145,6 +153,7 @@ export function RegisterDealModal({
         value: parseCurrency(value),
         status,
         paymentStatus,
+        paymentMethod: paymentMethod || undefined,
         responsibleId: responsibleId || currentUserId || "",
         deliveryDeadline: deliveryDeadline || undefined,
       };
@@ -283,6 +292,14 @@ export function RegisterDealModal({
             value={paymentStatus}
             onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}
             required
+          />
+          <Select
+            id="deal-forma-pagamento"
+            label="Forma de pagamento"
+            options={paymentMethodOptions}
+            placeholder="Selecione"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
           />
           <Input
             id="deal-prazo-entrega"

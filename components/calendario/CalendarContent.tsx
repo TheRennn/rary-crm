@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { Filter } from "@/components/ui/Filter";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { EventDetails } from "@/components/events/EventDetails";
@@ -33,6 +34,11 @@ const typeOptions = (Object.keys(CALENDAR_EVENT_TYPE_LABELS) as CalendarEventTyp
   label: CALENDAR_EVENT_TYPE_LABELS[type],
 }));
 
+const filterOptions = [
+  { value: "TODOS", label: "Todos" },
+  ...typeOptions,
+];
+
 function toISOLocal(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -45,6 +51,7 @@ const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 export function CalendarContent({ events, deals = [], clientNames = {} }: CalendarContentProps) {
   const { toast } = useToast();
   const [view, setView] = useState<"mes" | "agenda">("mes");
+  const [filter, setFilter] = useState("TODOS");
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -67,8 +74,10 @@ export function CalendarContent({ events, deals = [], clientNames = {} }: Calend
         clientName: clientNames[d.clientId],
         description: `Prazo de entrega para ${d.code}`,
       }));
-    return [...events, ...deadlineEvents];
-  }, [events, deals, clientNames]);
+    const combined = [...events, ...deadlineEvents];
+    if (filter === "TODOS") return combined;
+    return combined.filter((e) => e.type === filter);
+  }, [events, deals, clientNames, filter]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -177,6 +186,15 @@ export function CalendarContent({ events, deals = [], clientNames = {} }: Calend
           </>
         }
       />
+
+      <div className="flex items-center gap-3">
+        <Filter
+          options={filterOptions}
+          value={filter}
+          onChange={setFilter}
+          className="w-full sm:w-56"
+        />
+      </div>
 
       {view === "mes" ? (
         <Card>
@@ -337,9 +355,10 @@ export function CalendarContent({ events, deals = [], clientNames = {} }: Calend
         }
       >
         <form id="event-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input id="evt-titulo" label="Título" placeholder="Ex.: Reunião de alinhamento" required />
+          <Input id="evt-titulo" name="evt-titulo" label="Título" placeholder="Ex.: Reunião de alinhamento" required />
           <Select
             id="evt-tipo"
+            name="evt-tipo"
             label="Tipo"
             options={typeOptions}
             placeholder="Selecione"
@@ -347,11 +366,11 @@ export function CalendarContent({ events, deals = [], clientNames = {} }: Calend
             defaultValue="COMPROMISSO"
           />
           <div className="grid grid-cols-2 gap-4">
-            <DatePicker id="evt-data" label="Data" required />
-            <Input id="evt-hora" label="Horário" type="time" required />
+            <DatePicker id="evt-data" name="evt-data" label="Data" required />
+            <Input id="evt-hora" name="evt-hora" label="Horário" type="time" required />
           </div>
-          <Input id="evt-duracao" label="Duração" placeholder="Ex.: 1 h" />
-          <Textarea id="evt-desc" label="Descrição" placeholder="Detalhes do compromisso..." rows={3} />
+          <Input id="evt-duracao" name="evt-duracao" label="Duração" placeholder="Ex.: 1 h" />
+          <Textarea id="evt-desc" name="evt-desc" label="Descrição" placeholder="Detalhes do compromisso..." rows={3} />
         </form>
       </Modal>
     </div>
