@@ -61,13 +61,30 @@ export async function POST(request: Request) {
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Buscar usuário no auth
-    const { data: users, error: listErr } = await supabase.auth.admin.listUsers();
-    if (listErr) {
-      return NextResponse.json({ error: "Erro ao acessar Supabase Auth." }, { status: 500 });
+    // Buscar usuário por email (listUsers pagina em 50 por padrão)
+    let authUser: { id: string } | null = null;
+    let page = 1;
+    const perPage = 1000;
+
+    while (true) {
+      const { data: pageData, error: listErr } = await supabase.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+      if (listErr) {
+        return NextResponse.json({ error: "Erro ao acessar Supabase Auth." }, { status: 500 });
+      }
+
+      const found = pageData.users.find((u) => u.email === email);
+      if (found) {
+        authUser = { id: found.id };
+        break;
+      }
+
+      if (pageData.users.length < perPage) break;
+      page++;
     }
 
-    const authUser = users.users.find((u) => u.email === email);
     if (!authUser) {
       return NextResponse.json({ ok: true });
     }

@@ -42,24 +42,19 @@ export default function LoginPage() {
       return;
     }
 
-    // Verificar se o e-mail foi verificado na tabela users
-    if (data.user) {
-      const { data: appUser } = await supabase
-        .from("users")
-        .select("email_verified")
-        .eq("auth_id", data.user.id)
-        .single();
-
-      if (!appUser?.email_verified) {
-        toast({
-          title: "E-mail não verificado",
-          message: "Verifique seu e-mail para acessar o painel.",
-          variant: "warning",
-        });
-        router.push(`/verificar-email?email=${encodeURIComponent(email)}`);
-        return;
-      }
-    }
+    // TODO: reativar quando dominio Resend estiver configurado
+    // if (data.user) {
+    //   const { data: appUser } = await supabase
+    //     .from("users")
+    //     .select("email_verified")
+    //     .eq("auth_id", data.user.id)
+    //     .single();
+    //   if (!appUser?.email_verified) {
+    //     toast({ title: "E-mail não verificado", message: "Verifique seu e-mail para acessar o painel.", variant: "warning" });
+    //     router.push(`/verificar-email?email=${encodeURIComponent(email)}`);
+    //     return;
+    //   }
+    // }
 
     toast({
       title: "Bem-vindo de volta!",
