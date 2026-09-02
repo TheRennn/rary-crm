@@ -15,3 +15,5 @@ export type { TaskGroups } from "./task-service";
 export { calendarService } from "./calendar-service";
 export { notificationService } from "./notification-service";
 export { userService } from "./user-service";
+export { productService } from "./product-service";
+export type { ProductStats } from "./product-service";

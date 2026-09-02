@@ -142,7 +142,7 @@ export function SalesContent({
     {
       key: "acoes",
       header: "Ações",
-      className: "w-10",
+      className: "w-14",
       render: (deal) => (
         <Dropdown
           align="right"

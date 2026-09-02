@@ -7,30 +7,35 @@ import { RegisterPaymentModal } from "@/components/pagamentos/RegisterPaymentMod
 import { CommissionsContent } from "./CommissionsContent";
 import { PedidosContent } from "./PedidosContent";
 import { GoalsView } from "./GoalsView";
+import { ProductsContent } from "./ProductsContent";
 import { RegisterCommissionModal } from "./RegisterCommissionModal";
 import { RegisterOrderModal } from "./RegisterOrderModal";
 import { RegisterGoalModal } from "./RegisterGoalModal";
+import { RegisterProductModal } from "./RegisterProductModal";
 import { cn } from "@/lib/utils";
 import { IconBuilding, IconUsers, IconPlus } from "@/components/icons";
 import { useToast } from "@/components/ui/Toast";
-import type { Commission, Goal, Order, Payment } from "@/types";
+import type { Commission, Goal, Order, Payment, Product } from "@/types";
 import type { PaymentStats } from "@/lib/services";
 
 export interface FinanceiroContentProps {
   payments: Payment[];
+  onPaymentsChange?: (payments: Payment[] | ((prev: Payment[]) => Payment[])) => void;
   paymentStats: PaymentStats;
   commissions: Commission[];
   orders: Order[];
   goals: Goal[];
+  products: Product[];
   clients: { id: string; name: string }[];
   onDeleteCommission?: (commission: Commission) => void;
   onDeleteOrder?: (order: Order) => void;
   onDeleteGoal?: (goal: Goal) => void;
   onDeletePayment?: (payment: Payment) => void;
+  onDeleteProduct?: (product: Product) => void;
 }
 
 type FinanceiroProfile = "administracao" | "representante";
-type AdminTab = "receber" | "pagar" | "metas";
+type AdminTab = "receber" | "pagar" | "metas" | "produtos";
 type RepTab = "comissoes" | "pedidos";
 
 const PROFILES: {
@@ -96,15 +101,18 @@ function TabToggle({
 
 export function FinanceiroContent({
   payments,
+  onPaymentsChange,
   paymentStats,
   commissions: initialCommissions,
   orders: initialOrders,
   goals: initialGoals,
+  products: initialProducts,
   clients,
   onDeleteCommission,
   onDeleteOrder,
   onDeleteGoal,
   onDeletePayment,
+  onDeleteProduct,
 }: FinanceiroContentProps) {
   const [profile, setProfile] = useState<FinanceiroProfile>("administracao");
   const [adminTab, setAdminTab] = useState<AdminTab>("receber");
@@ -112,14 +120,17 @@ export function FinanceiroContent({
   const [commissions, setCommissions] = useState<Commission[]>(initialCommissions);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
+  const [products, setProducts] = useState<Product[]>(initialProducts);
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [productOpen, setProductOpen] = useState(false);
   const [editCommission, setEditCommission] = useState<Commission | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
   const [editPayment, setEditPayment] = useState<Payment | null>(null);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
   const { toast } = useToast();
 
   const active = PROFILES.find((option) => option.id === profile)!;
@@ -141,7 +152,9 @@ export function FinanceiroContent({
         : "Registrar comissão"
       : adminTab === "metas"
         ? "Adicionar meta"
-        : "Novo recebimento";
+        : adminTab === "produtos"
+          ? "Cadastrar produto"
+          : "Novo recebimento";
 
   function handleCreate() {
     if (profile === "representante") {
@@ -151,6 +164,10 @@ export function FinanceiroContent({
     }
     if (adminTab === "metas") {
       setGoalOpen(true);
+      return;
+    }
+    if (adminTab === "produtos") {
+      setProductOpen(true);
       return;
     }
     setPaymentOpen(true);
@@ -210,6 +227,7 @@ export function FinanceiroContent({
               { id: "receber", label: "Contas a receber" },
               { id: "pagar", label: "Contas a pagar" },
               { id: "metas", label: "Metas" },
+              { id: "produtos", label: "Produtos" },
             ]}
             value={adminTab}
             onChange={(id) => setAdminTab(id as AdminTab)}
@@ -218,8 +236,10 @@ export function FinanceiroContent({
             <PaymentsContent key="payments" payments={payments.filter((p) => p.direction === "ENTRADA")} stats={paymentStats} onDelete={onDeletePayment} onEdit={(p) => { setEditPayment(p); setPaymentOpen(true); }} />
           ) : adminTab === "pagar" ? (
             <PaymentsContent key="payables" payments={payments.filter((p) => p.direction === "SAIDA")} stats={paymentStats} onDelete={onDeletePayment} onEdit={(p) => { setEditPayment(p); setPaymentOpen(true); }} />
-          ) : (
+          ) : adminTab === "metas" ? (
             <GoalsView key="goals" goals={goals} currents={currents} onEdit={(g) => { setEditGoal(g); setGoalOpen(true); }} onDelete={onDeleteGoal} />
+          ) : (
+            <ProductsContent key="products" products={products} onEdit={(p) => { setEditProduct(p); setProductOpen(true); }} onDelete={onDeleteProduct} />
           )}
         </div>
       ) : (
@@ -260,6 +280,7 @@ export function FinanceiroContent({
         onClose={() => { setOrderOpen(false); setEditOrder(null); }}
         existingClients={clients.map((c) => c.name)}
         existingCompanies={existingCompanies}
+        products={products}
         editOrder={editOrder}
         onCreated={(order) => {
           if (editOrder) {
@@ -290,8 +311,29 @@ export function FinanceiroContent({
         existingClients={clients}
         editPayment={editPayment}
         onCreated={(payment) => {
+          if (onPaymentsChange) {
+            if (editPayment) {
+              onPaymentsChange((prev) => prev.map((p) => p.id === payment.id ? payment : p));
+            } else {
+              onPaymentsChange((prev) => [payment, ...prev]);
+            }
+          }
           setPaymentOpen(false);
           setEditPayment(null);
+        }}
+      />
+      <RegisterProductModal
+        open={productOpen}
+        onClose={() => { setProductOpen(false); setEditProduct(null); }}
+        existingCompanies={existingCompanies}
+        editProduct={editProduct}
+        onCreated={(product) => {
+          if (editProduct) {
+            setProducts((prev) => prev.map((p) => p.id === product.id ? product : p));
+          } else {
+            setProducts((prev) => [product, ...prev]);
+          }
+          setEditProduct(null);
         }}
       />
     </div>

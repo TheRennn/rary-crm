@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { FinanceiroContent } from "./FinanceiroContent";
 import { useToast } from "@/components/ui/Toast";
-import { commissionService, orderService, goalService, paymentService } from "@/lib/services";
-import type { Commission, Order, Goal, Payment } from "@/types";
+import { commissionService, orderService, goalService, paymentService, productService } from "@/lib/services";
+import type { Commission, Order, Goal, Payment, Product } from "@/types";
 import type { PaymentStats } from "@/lib/services";
 
 export interface FinanceiroContentClientProps {
@@ -13,6 +13,7 @@ export interface FinanceiroContentClientProps {
   commissions: Commission[];
   orders: Order[];
   goals: Goal[];
+  products: Product[];
   clients: { id: string; name: string }[];
 }
 
@@ -22,13 +23,15 @@ export function FinanceiroContentClient({
   commissions: initialCommissions,
   orders: initialOrders,
   goals: initialGoals,
+  products: initialProducts,
   clients,
 }: FinanceiroContentClientProps) {
   const { toast } = useToast();
-  const [payments] = useState(initialPayments);
+  const [payments, setPayments] = useState(initialPayments);
   const [commissions, setCommissions] = useState(initialCommissions);
   const [orders, setOrders] = useState(initialOrders);
   const [goals, setGoals] = useState(initialGoals);
+  const [products, setProducts] = useState(initialProducts);
 
   async function handleDeleteCommission(commission: Commission) {
     try {
@@ -63,24 +66,38 @@ export function FinanceiroContentClient({
   async function handleDeletePayment(payment: Payment) {
     try {
       await paymentService.delete(payment.id);
+      setPayments((prev) => prev.filter((p) => p.id !== payment.id));
       toast({ title: "Pagamento excluído", message: `${payment.description} — ${payment.clientName}`, variant: "success" });
     } catch {
       toast({ title: "Erro ao excluir", message: "Não foi possível excluir o pagamento.", variant: "error" });
     }
   }
 
+  async function handleDeleteProduct(product: Product) {
+    try {
+      await productService.delete(product.id);
+      setProducts((prev) => prev.filter((p) => p.id !== product.id));
+      toast({ title: "Produto excluído", message: `${product.code} — ${product.name}`, variant: "success" });
+    } catch {
+      toast({ title: "Erro ao excluir", message: "Não foi possível excluir o produto.", variant: "error" });
+    }
+  }
+
   return (
     <FinanceiroContent
       payments={payments}
+      onPaymentsChange={setPayments}
       paymentStats={paymentStats}
       commissions={commissions}
       orders={orders}
       goals={goals}
+      products={products}
       clients={clients}
       onDeleteCommission={handleDeleteCommission}
       onDeleteOrder={handleDeleteOrder}
       onDeleteGoal={handleDeleteGoal}
       onDeletePayment={handleDeletePayment}
+      onDeleteProduct={handleDeleteProduct}
     />
   );
 }

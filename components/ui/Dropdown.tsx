@@ -1,13 +1,13 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
-import { IconChevronDown } from "@/components/icons";
 
 export interface DropdownItem {
   label: string;
@@ -33,11 +33,36 @@ export function Dropdown({
   menuClassName,
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+
+  const updatePosition = useCallback(() => {
+    if (!open || !containerRef.current || !menuRef.current) return;
+
+    const triggerRect = containerRef.current.getBoundingClientRect();
+    const menu = menuRef.current;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let top = triggerRect.bottom + 8;
+    let left = align === "right" ? triggerRect.right - menu.offsetWidth : triggerRect.left;
+
+    if (left + menu.offsetWidth > viewportWidth - 8) {
+      left = viewportWidth - menu.offsetWidth - 8;
+    }
+    if (left < 8) left = 8;
+
+    if (top + menu.offsetHeight > viewportHeight - 8) {
+      top = triggerRect.top - menu.offsetHeight - 8;
+    }
+
+    setMenuStyle({ position: "fixed", top, left, zIndex: 9999 });
+  }, [open, align]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
@@ -52,8 +77,20 @@ export function Dropdown({
     };
   }, []);
 
+  useEffect(() => {
+    if (open) {
+      updatePosition();
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
+      return () => {
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition, true);
+      };
+    }
+  }, [open, updatePosition]);
+
   return (
-    <div ref={ref} className="relative">
+    <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={(e) => {
@@ -68,17 +105,15 @@ export function Dropdown({
         aria-expanded={open}
       >
         {trigger}
-        <IconChevronDown
-          className={cn("h-3.5 w-3.5 text-muted-2 transition-transform", open && "rotate-180")}
-        />
       </button>
 
       {open && (
         <div
+          ref={menuRef}
           role="menu"
+          style={menuStyle}
           className={cn(
-            "absolute z-50 mt-2 min-w-[180px] overflow-hidden rounded-lg border border-border bg-surface-2 p-1 shadow-lg shadow-black/40",
-            align === "right" ? "right-0" : "left-0",
+            "min-w-[180px] overflow-hidden rounded-lg border border-border bg-surface-2 p-1 shadow-lg shadow-black/40",
             menuClassName
           )}
         >

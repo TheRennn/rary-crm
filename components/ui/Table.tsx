@@ -32,14 +32,14 @@ export function DataTable<T>({ columns, data, rowKey, empty, onRowClick }: Table
     return <>{empty}</>;
   }
   return (
-    <div className="w-full">
-      <table className="w-full border-collapse text-left text-sm">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full min-w-[800px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-border">
             {columns.map((col) => (
               <th
                 key={col.key}
-                className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-2"
+                className={cn("whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-2", col.className)}
               >
                 {col.header}
               </th>

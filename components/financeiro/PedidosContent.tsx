@@ -225,7 +225,7 @@ export function PedidosContent({ orders, onEdit, onDelete }: PedidosContentProps
     {
       key: "acoes",
       header: "Ações",
-      className: "w-10",
+      className: "w-14",
       render: (order) => (
         <Dropdown
           align="right"

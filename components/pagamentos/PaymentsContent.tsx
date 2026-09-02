@@ -30,11 +30,23 @@ const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).ma
 export function PaymentsContent({ payments, stats, onDelete, onEdit }: PaymentsContentProps) {
   const { toast } = useToast();
   const [status, setStatus] = useState("TODOS");
+  const [period, setPeriod] = useState("TODOS");
+
+  const periods = useMemo(
+    () => Array.from(new Set(payments.map((p) => p.dueDate.slice(0, 7)))).sort().reverse(),
+    [payments]
+  );
 
   const filtered = useMemo(() => {
-    if (status === "TODOS") return payments;
-    return payments.filter((payment) => payment.status === status);
-  }, [payments, status]);
+    return payments.filter((payment) => {
+      if (status !== "TODOS" && payment.status !== status) return false;
+      if (period !== "TODOS") {
+        const paymentMonth = payment.dueDate.slice(0, 7);
+        if (paymentMonth !== period) return false;
+      }
+      return true;
+    });
+  }, [payments, status, period]);
 
   const columns: TableColumn<Payment>[] = [
     {
@@ -108,7 +120,7 @@ export function PaymentsContent({ payments, stats, onDelete, onEdit }: PaymentsC
     {
       key: "acoes",
       header: "Ações",
-      className: "w-10",
+      className: "w-14",
       render: (payment) => (
         <Dropdown
           align="right"
@@ -166,12 +178,18 @@ export function PaymentsContent({ payments, stats, onDelete, onEdit }: PaymentsC
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface-1">
-        <div className="border-b border-border p-4">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border p-4">
           <Filter
             options={statusOptions}
             value={status}
             onChange={setStatus}
-            className="w-full sm:w-56"
+            className="w-full sm:w-44"
+          />
+          <Filter
+            options={periods.map((p) => ({ value: p, label: p }))}
+            value={period}
+            onChange={setPeriod}
+            className="w-full sm:w-36"
           />
         </div>
         <DataTable

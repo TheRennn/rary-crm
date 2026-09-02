@@ -84,7 +84,7 @@ export function FollowUpContent({ groups, onDelete, onComplete, onEdit }: Follow
       {
         key: "acao",
         header: "Ação",
-        className: "w-10",
+        className: "w-14",
         render: (followUp) => (
           <Dropdown
             align="right"

@@ -4,19 +4,21 @@ import {
   orderService,
   goalService,
   clientService,
+  productService,
 } from "@/lib/services";
 import { FinanceiroContentClient } from "@/components/financeiro/FinanceiroContentClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function FinanceiroPage() {
-  const [payments, paymentStats, commissions, orders, goals, clients] = await Promise.all([
-    paymentService.getAll(),
-    paymentService.getStats(),
-    commissionService.getAll(),
-    orderService.getAll(),
-    goalService.getAll(),
-    clientService.getAll(),
+  const [payments, paymentStats, commissions, orders, goals, clients, products] = await Promise.all([
+    paymentService.getAll().catch(() => []),
+    paymentService.getStats().catch(() => ({ received: 0, pending: 0, overdue: 0, totalForecast: 0, receivedCount: 0, pendingCount: 0, overdueCount: 0 })),
+    commissionService.getAll().catch(() => []),
+    orderService.getAll().catch(() => []),
+    goalService.getAll().catch(() => []),
+    clientService.getAll().catch(() => []),
+    productService.getAll().catch(() => []),
   ]);
 
   return (
@@ -26,6 +28,7 @@ export default async function FinanceiroPage() {
       commissions={commissions}
       orders={orders}
       goals={goals}
+      products={products}
       clients={clients.map((client) => ({ id: client.id, name: client.name }))}
     />
   );

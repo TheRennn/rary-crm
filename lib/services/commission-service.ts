@@ -18,17 +18,20 @@ export type CreateCommissionInput = Omit<
   dueDate?: string;
   method?: CommissionPaymentMethod;
   installmentsCount?: number;
+  oneMonthDelay?: boolean;
 };
 
 function buildInstallments(
   value: number,
   count: number,
-  startDate: string
+  startDate: string,
+  oneMonthDelay: boolean = false
 ): CommissionInstallment[] {
   const each = Math.round((value / count) * 100) / 100;
   return Array.from({ length: count }, (_, index) => {
     const due = new Date(startDate);
-    due.setMonth(due.getMonth() + index);
+    const delayMonths = oneMonthDelay ? 1 : 0;
+    due.setMonth(due.getMonth() + delayMonths + index);
     return {
       number: index + 1,
       dueDate: due.toISOString().slice(0, 10),
@@ -57,6 +60,7 @@ export class CommissionService {
     const dueDate = input.dueDate ?? new Date().toISOString().slice(0, 10);
     const paymentMethod = method;
     const installmentsCount = method === "A_VISTA" ? 1 : Math.max(1, Math.floor(input.installmentsCount ?? 1));
+    const oneMonthDelay = input.oneMonthDelay ?? false;
 
     const commission: Omit<Commission, "id"> = {
       ...input,
@@ -66,7 +70,8 @@ export class CommissionService {
       status: input.status ?? "PENDENTE",
       dueDate,
       method: paymentMethod,
-      installments: installmentsCount > 1 ? buildInstallments(value, installmentsCount, dueDate) : undefined,
+      installments: installmentsCount > 1 ? buildInstallments(value, installmentsCount, dueDate, oneMonthDelay) : undefined,
+      oneMonthDelay,
     };
     return commissionRepository.create(commission);
   }

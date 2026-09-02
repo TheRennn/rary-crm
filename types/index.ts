@@ -189,6 +189,7 @@ export interface Commission {
   method: CommissionPaymentMethod;
   installments?: CommissionInstallment[];
   notes?: string;
+  oneMonthDelay?: boolean;
 }
 
 export type OrderSource = "REPRESENTANTE" | "EMPRESA";
@@ -215,6 +216,40 @@ export interface Order {
   items: OrderItem[];
   total: number;
   status: PaymentStatus;
+}
+
+export type ProductCategory =
+  | "ELETRONICO"
+  | "MOVEIS"
+  | "VESTUARIO"
+  | "ALIMENTICIO"
+  | "FARMACEUTICO"
+  | "AUTOMOTIVO"
+  | "CONSTRUCAO"
+  | "ESCOLAR"
+  | "ESPORTIVO"
+  | "CASA"
+  | "SERVICO"
+  | "OUTRO";
+
+export type ProductUnit = "UN" | "KG" | "LT" | "MT" | "M2" | "M3" | "CX" | "PAR" | "DZ" | "PC";
+
+export interface Product {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  category: ProductCategory;
+  unit: ProductUnit;
+  unitValue: number;
+  costValue?: number;
+  discount?: number;
+  minStock?: number;
+  currentStock?: number;
+  companyId?: string;
+  companyName?: string;
+  active: boolean;
+  createdAt: string;
 }
 
 export type GoalTargetType = "CLIENTES" | "FATURAMENTO" | "VENDAS";

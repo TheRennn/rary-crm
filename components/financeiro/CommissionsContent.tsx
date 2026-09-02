@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { StatCard } from "@/components/ui/StatCard";
@@ -13,20 +12,63 @@ import type { Commission, PaymentStatus } from "@/types";
 import { cn, formatCurrency, formatDate, isOverdue, relativeLabel } from "@/lib/utils";
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_TONES, COMMISSION_METHOD_LABELS } from "@/lib/constants";
 import { IconInfo } from "@/components/ui/IconInfo";
+import { CommissionDetailModal } from "./CommissionDetailModal";
 import {
   IconCheckCircle,
   IconAlertCircle,
   IconClock,
   IconTrendingUp,
-  IconArrowRight,
   IconEdit,
   IconTrash,
+  IconEye,
 } from "@/components/icons";
 
 export interface CommissionsContentProps {
   commissions: Commission[];
   onEdit?: (commission: Commission) => void;
   onDelete?: (commission: Commission) => void;
+}
+
+const MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function formatPeriod(period: string): string {
+  if (!period) return "—";
+  const parts = period.split("-");
+  if (parts.length !== 2) return period;
+  const year = parts[0];
+  const monthIndex = parseInt(parts[1], 10) - 1;
+  if (isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) return period;
+  return `${MONTH_NAMES[monthIndex]}/${year.slice(2)}`;
+}
+
+function formatPeriodFull(period: string): string {
+  if (!period) return "—";
+  const parts = period.split("-");
+  if (parts.length !== 2) return period;
+  const year = parts[0];
+  const monthIndex = parseInt(parts[1], 10) - 1;
+  if (isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) return period;
+  return `${MONTH_NAMES[monthIndex]} ${year}`;
+}
+
+function getInstallmentValueInPeriod(commission: Commission, period: string): number {
+  if (!commission.installments || commission.installments.length === 0) {
+    return commission.period === period ? commission.value : 0;
+  }
+  return commission.installments
+    .filter((inst) => inst.dueDate.slice(0, 7) === period)
+    .reduce((acc, inst) => acc + inst.value, 0);
+}
+
+function getInstallmentStatusInPeriod(commission: Commission, period: string): PaymentStatus | null {
+  if (!commission.installments || commission.installments.length === 0) {
+    return commission.period === period ? commission.status : null;
+  }
+  const matching = commission.installments.filter((inst) => inst.dueDate.slice(0, 7) === period);
+  if (matching.length === 0) return null;
+  if (matching.some((inst) => inst.status === "ATRASADO")) return "ATRASADO";
+  if (matching.every((inst) => inst.status === "PAGO")) return "PAGO";
+  return "PENDENTE";
 }
 
 const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((status) => ({
@@ -50,18 +92,67 @@ function summarize(commissions: Commission[]) {
   };
 }
 
+function summarizeByPeriod(commissions: Commission[], period: string) {
+  let received = 0;
+  let receivedCount = 0;
+  let pending = 0;
+  let pendingCount = 0;
+  let overdue = 0;
+  let overdueCount = 0;
+
+  commissions.forEach((c) => {
+    const value = getInstallmentValueInPeriod(c, period);
+    if (value === 0) return;
+
+    const st = getInstallmentStatusInPeriod(c, period);
+    if (st === "PAGO") {
+      received += value;
+      receivedCount++;
+    } else if (st === "ATRASADO") {
+      overdue += value;
+      overdueCount++;
+    } else {
+      pending += value;
+      pendingCount++;
+    }
+  });
+
+  return {
+    received,
+    pending,
+    overdue,
+    totalForecast: pending + overdue,
+    receivedCount,
+    pendingCount,
+    overdueCount,
+  };
+}
+
 export function CommissionsContent({ commissions, onEdit, onDelete }: CommissionsContentProps) {
   const { toast } = useToast();
   const [status, setStatus] = useState("TODOS");
   const [period, setPeriod] = useState("TODOS");
   const [company, setCompany] = useState("TODOS");
+  const [detailOpen, setDetailOpen] = useState(false);
 
-  const stats = useMemo(() => summarize(commissions), [commissions]);
+  const periods = useMemo(() => {
+    const allPeriods = new Set<string>();
+    commissions.forEach((c) => {
+      if (c.period) allPeriods.add(c.period);
+      c.installments?.forEach((inst) => {
+        if (inst.dueDate) {
+          const month = inst.dueDate.slice(0, 7);
+          if (month) allPeriods.add(month);
+        }
+      });
+    });
+    return Array.from(allPeriods)
+      .filter((p) => /^\d{4}-\d{2}$/.test(p))
+      .sort()
+      .reverse()
+      .map((p) => ({ value: p, label: formatPeriod(p) }));
+  }, [commissions]);
 
-  const periods = useMemo(
-    () => Array.from(new Set(commissions.map((c) => c.period))).sort().reverse(),
-    [commissions]
-  );
   const companies = useMemo(
     () => Array.from(new Set(commissions.map((c) => c.companyName))),
     [commissions]
@@ -70,11 +161,21 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
   const filtered = useMemo(() => {
     return commissions.filter((commission) => {
       if (status !== "TODOS" && commission.status !== status) return false;
-      if (period !== "TODOS" && commission.period !== period) return false;
+      if (period !== "TODOS") {
+        const valueInPeriod = getInstallmentValueInPeriod(commission, period);
+        if (valueInPeriod === 0) return false;
+      }
       if (company !== "TODOS" && commission.companyName !== company) return false;
       return true;
     });
   }, [commissions, status, period, company]);
+
+  const stats = useMemo(() => {
+    if (period !== "TODOS") {
+      return summarizeByPeriod(filtered, period);
+    }
+    return summarize(filtered);
+  }, [filtered, period]);
 
   const companySummaries = useMemo(() => {
     return companies
@@ -96,17 +197,27 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
   }, [companies, commissions]);
 
   const filteredTotals = useMemo(() => {
+    if (period !== "TODOS") {
+      const receivable = filtered.reduce(
+        (acc, c) => acc + getInstallmentValueInPeriod(c, period),
+        0
+      );
+      const paid = filtered
+        .filter((c) => getInstallmentStatusInPeriod(c, period) === "PAGO")
+        .reduce((acc, c) => acc + getInstallmentValueInPeriod(c, period), 0);
+      return { receivable, paid, total: receivable + paid };
+    }
     const receivable = filtered
       .filter((c) => c.status === "PENDENTE" || c.status === "ATRASADO")
       .reduce((acc, c) => acc + c.value, 0);
     const paid = filtered.filter((c) => c.status === "PAGO").reduce((acc, c) => acc + c.value, 0);
     return { receivable, paid, total: receivable + paid };
-  }, [filtered]);
+  }, [filtered, period]);
 
   const columns: TableColumn<Commission>[] = [
     {
       key: "empresa",
-      header: "Empresa representada",
+      header: "Empresa",
       render: (commission) => (
         <span className="font-medium text-foreground">{commission.companyName}</span>
       ),
@@ -114,7 +225,9 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
     {
       key: "periodo",
       header: "Competência",
-      render: (commission) => <span className="text-muted">{commission.period}</span>,
+      render: (commission) => (
+        <span className="text-muted">{formatPeriod(commission.period)}</span>
+      ),
     },
     {
       key: "comissao",
@@ -127,27 +240,45 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
     },
     {
       key: "base",
-      header: "Base de cálculo",
+      header: "Base",
       render: (commission) => <span className="text-muted">{formatCurrency(commission.baseValue)}</span>,
     },
     {
       key: "valor",
       header: "A receber",
-      render: (commission) => (
-        <span className="font-semibold text-foreground">{formatCurrency(commission.value)}</span>
-      ),
+      render: (commission) => {
+        const value = period !== "TODOS"
+          ? getInstallmentValueInPeriod(commission, period)
+          : commission.value;
+        return (
+          <span className="font-semibold text-foreground">{formatCurrency(value)}</span>
+        );
+      },
     },
     {
       key: "vencimento",
       header: "Vencimento",
-      render: (commission) => (
-        <div>
-          <span className={cn("text-foreground/90", isOverdue(commission.dueDate) && commission.status !== "PAGO" && "text-danger")}>
-            {formatDate(commission.dueDate, { day: "2-digit", month: "short" })}
-          </span>
-          <span className="ml-1.5 text-xs text-muted-2">{relativeLabel(commission.dueDate)}</span>
-        </div>
-      ),
+      render: (commission) => {
+        let dueDate = commission.dueDate;
+        let statusForDate = commission.status;
+
+        if (period !== "TODOS" && commission.installments && commission.installments.length > 0) {
+          const inst = commission.installments.find((i) => i.dueDate.slice(0, 7) === period);
+          if (inst) {
+            dueDate = inst.dueDate;
+            statusForDate = inst.status;
+          }
+        }
+
+        return (
+          <div>
+            <span className={cn("text-foreground/90", isOverdue(dueDate) && statusForDate !== "PAGO" && "text-danger")}>
+              {formatDate(dueDate, { day: "2-digit", month: "short" })}
+            </span>
+            <span className="ml-1.5 text-xs text-muted-2">{relativeLabel(dueDate)}</span>
+          </div>
+        );
+      },
     },
     {
       key: "forma",
@@ -169,18 +300,24 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
     {
       key: "status",
       header: "Status",
-      render: (commission) => (
-        <Badge tone={PAYMENT_STATUS_TONES[commission.status]} dot>
-          {PAYMENT_STATUS_LABELS[commission.status]}
-        </Badge>
-      ),
+      render: (commission) => {
+        const st = period !== "TODOS"
+          ? getInstallmentStatusInPeriod(commission, period)
+          : commission.status;
+        if (!st) return <span className="text-muted-2">—</span>;
+        return (
+          <Badge tone={PAYMENT_STATUS_TONES[st]} dot>
+            {PAYMENT_STATUS_LABELS[st]}
+          </Badge>
+        );
+      },
     },
     {
       key: "obs",
-      header: "Observação",
+      header: "Obs",
       render: (commission) =>
         commission.notes ? (
-          <span className="block max-w-[220px] truncate text-muted" title={commission.notes}>
+          <span className="block max-w-[180px] truncate text-muted" title={commission.notes}>
             {commission.notes}
           </span>
         ) : (
@@ -189,8 +326,8 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
     },
     {
       key: "acoes",
-      header: "Ações",
-      className: "w-10",
+      header: "",
+      className: "w-14",
       render: (commission) => (
         <Dropdown
           align="right"
@@ -214,6 +351,8 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
     },
   ];
 
+  const periodLabel = period !== "TODOS" ? formatPeriodFull(period) : null;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -222,28 +361,28 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
           value={formatCurrency(stats.pending)}
           icon={<IconClock className="h-5 w-5" />}
           trend="up"
-          trendLabel={`${stats.pendingCount} comissões`}
+          trendLabel={periodLabel ? `${periodLabel} · ${stats.pendingCount} parcela(s)` : `${stats.pendingCount} comissões`}
         />
         <StatCard
           label="Recebido"
           value={formatCurrency(stats.received)}
           icon={<IconCheckCircle className="h-5 w-5" />}
           trend="neutral"
-          trendLabel={`${stats.receivedCount} comissões`}
+          trendLabel={periodLabel ? `${periodLabel} · ${stats.receivedCount} parcela(s)` : `${stats.receivedCount} comissões`}
         />
         <StatCard
           label="Em atraso"
           value={formatCurrency(stats.overdue)}
           icon={<IconAlertCircle className="h-5 w-5" />}
           trend="down"
-          trendLabel={`${stats.overdueCount} vencidas`}
+          trendLabel={periodLabel ? `${periodLabel} · ${stats.overdueCount} parcela(s)` : `${stats.overdueCount} vencidas`}
         />
         <StatCard
           label="Total previsto"
           value={formatCurrency(stats.totalForecast)}
           icon={<IconTrendingUp className="h-5 w-5" />}
           trend="neutral"
-          trendLabel="comissões a receber"
+          trendLabel={periodLabel ? "no período selecionado" : "comissões a receber"}
         />
       </div>
 
@@ -307,34 +446,38 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
       </section>
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface-1">
-        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center">
-          <div className="flex flex-1 flex-wrap items-center gap-3">
+        <div className="border-b border-border p-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Filter
               options={statusOptions}
               value={status}
               onChange={setStatus}
-              className="w-full sm:w-44"
+              className="w-full"
+              label="Status"
             />
             <Filter
-              options={periods.map((p) => ({ value: p, label: p }))}
+              options={periods}
               value={period}
               onChange={setPeriod}
-              className="w-full sm:w-40"
+              className="w-full"
+              label="Competência"
             />
             <Filter
               options={companies.map((c) => ({ value: c, label: c }))}
               value={company}
               onChange={setCompany}
-              className="w-full sm:w-56"
+              className="w-full"
+              label="Empresa"
             />
+            <button
+              type="button"
+              onClick={() => setDetailOpen(true)}
+              className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 text-sm font-medium text-brand-300 transition-colors hover:bg-brand-500/20 hover:text-brand-200"
+            >
+              <IconEye className="h-4 w-4" />
+              Ver tudo
+            </button>
           </div>
-          <Link
-            href="/financeiro"
-            className="inline-flex items-center gap-1 text-xs font-medium text-brand-300 transition-colors hover:text-brand-200"
-          >
-            Ver tudo
-            <IconArrowRight className="h-3.5 w-3.5" />
-          </Link>
         </div>
         <DataTable
           columns={columns}
@@ -349,6 +492,12 @@ export function CommissionsContent({ commissions, onEdit, onDelete }: Commission
           }
         />
       </div>
+
+      <CommissionDetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        commissions={commissions}
+      />
     </div>
   );
 }

@@ -10,6 +10,8 @@ import type {
   OrderSource,
   OrderType,
   PaymentStatus,
+  ProductCategory,
+  ProductUnit,
   TaskStatus,
 } from "@/types";
 
@@ -295,3 +297,39 @@ export const CLIENT_KIND_LABELS: Record<"CLIENTE" | "FORNECEDOR", string> = {
   CLIENTE: "Cliente",
   FORNECEDOR: "Fornecedor",
 };
+
+export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
+  ELETRONICO: "Eletrônico",
+  MOVEIS: "Móveis",
+  VESTUARIO: "Vestuário",
+  ALIMENTICIO: "Alimentício",
+  FARMACEUTICO: "Farmacêutico",
+  AUTOMOTIVO: "Automotivo",
+  CONSTRUCAO: "Construção",
+  ESCOLAR: "Escolar",
+  ESPORTIVO: "Esportivo",
+  CASA: "Casa",
+  SERVICO: "Serviço",
+  OUTRO: "Outro",
+};
+
+export const PRODUCT_CATEGORY_OPTIONS = Object.entries(PRODUCT_CATEGORY_LABELS).map(
+  ([value, label]) => ({ value: value as ProductCategory, label })
+);
+
+export const PRODUCT_UNIT_LABELS: Record<ProductUnit, string> = {
+  UN: "Unidade",
+  KG: "Quilograma",
+  LT: "Litro",
+  MT: "Metro",
+  M2: "Metro²",
+  M3: "Metro³",
+  CX: "Caixa",
+  PAR: "Par",
+  DZ: "Dúzia",
+  PC: "Peça",
+};
+
+export const PRODUCT_UNIT_OPTIONS = Object.entries(PRODUCT_UNIT_LABELS).map(
+  ([value, label]) => ({ value: value as ProductUnit, label })
+);

@@ -180,7 +180,7 @@ export function ClientList({ clients, initialQuery = "", onDelete }: ClientListP
     {
       key: "acoes",
       header: "Ações",
-      className: "w-10",
+      className: "w-14",
       render: (client) => (
         <Dropdown
           align="right"

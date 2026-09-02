@@ -15,8 +15,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { EventDetails } from "@/components/events/EventDetails";
 import { calendarService } from "@/lib/services";
-import type { CalendarEvent, CalendarEventType, Deal } from "@/types";
-import { cn, monthLabel } from "@/lib/utils";
+import type { CalendarEvent, CalendarEventType, Deal, Payment } from "@/types";
+import { cn, monthLabel, formatCurrency } from "@/lib/utils";
 import {
   CALENDAR_EVENT_TYPE_LABELS,
   CALENDAR_EVENT_TYPE_TONES,
@@ -26,6 +26,7 @@ import { IconChevronLeft, IconChevronRight, IconCalendar, IconCalendarPlus } fro
 export interface CalendarContentProps {
   events: CalendarEvent[];
   deals?: Deal[];
+  payments?: Payment[];
   clientNames?: Record<string, string>;
 }
 
@@ -48,7 +49,7 @@ function toISOLocal(date: Date): string {
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export function CalendarContent({ events, deals = [], clientNames = {} }: CalendarContentProps) {
+export function CalendarContent({ events, deals = [], payments = [], clientNames = {} }: CalendarContentProps) {
   const { toast } = useToast();
   const [view, setView] = useState<"mes" | "agenda">("mes");
   const [filter, setFilter] = useState("TODOS");
@@ -74,10 +75,27 @@ export function CalendarContent({ events, deals = [], clientNames = {} }: Calend
         clientName: clientNames[d.clientId],
         description: `Prazo de entrega para ${d.code}`,
       }));
-    const combined = [...events, ...deadlineEvents];
+
+    const paymentEvents: CalendarEvent[] = payments
+      .filter((p) => p.dueDate && p.status !== "PAGO" && p.status !== "CANCELADO")
+      .map((p) => ({
+        id: `payment-${p.id}`,
+        title: p.direction === "SAIDA"
+          ? `Pagar: ${p.description} — ${p.clientName}`
+          : `Receber: ${p.description} — ${p.clientName}`,
+        type: "VENCIMENTO" as CalendarEventType,
+        date: p.dueDate.slice(0, 10),
+        time: "00:00",
+        duration: "dia inteiro",
+        clientId: p.clientId,
+        clientName: p.clientName,
+        description: `${p.direction === "SAIDA" ? "Conta a pagar" : "Conta a receber"} — ${formatCurrency(p.value)}`,
+      }));
+
+    const combined = [...events, ...deadlineEvents, ...paymentEvents];
     if (filter === "TODOS") return combined;
     return combined.filter((e) => e.type === filter);
-  }, [events, deals, clientNames, filter]);
+  }, [events, deals, payments, clientNames, filter]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();

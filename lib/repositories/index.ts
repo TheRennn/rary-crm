@@ -14,6 +14,8 @@ export { calendarRepository } from "./calendar-repository";
 export type { CreateCalendarEventInput } from "./calendar-repository";
 export { notificationRepository } from "./notification-repository";
 export { userRepository } from "./user-repository";
+export { productRepository } from "./product-repository";
+export type { CreateProductInput } from "./product-repository";
 export type {
   ClientRepository,
   CreateClientInput,

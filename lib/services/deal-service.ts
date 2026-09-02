@@ -1,5 +1,5 @@
 import { dealRepository } from "@/lib/repositories";
-import { paymentRepository } from "@/lib/repositories";
+import { paymentRepository, commissionRepository } from "@/lib/repositories";
 import type { Deal, Purchase } from "@/types";
 import type { CreateDealInput } from "@/lib/repositories/deal-repository";
 
@@ -61,6 +61,21 @@ export class DealService {
           direction: "ENTRADA",
         });
       }
+
+      const now = new Date();
+      const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const client = await dealRepository.findClientById(deal.clientId);
+      await commissionRepository.create({
+        companyName: client?.name ?? "",
+        period,
+        rate: 0,
+        baseValue: deal.value,
+        value: deal.value,
+        status: "PENDENTE",
+        dueDate: now.toISOString().slice(0, 10),
+        method: "A_VISTA",
+        notes: `Venda ${deal.code} — ${deal.product}`,
+      });
     }
 
     return deal;

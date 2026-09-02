@@ -21,23 +21,23 @@ function HeroMiniDashboard() {
             aria-hidden="true"
             className="absolute -inset-4 rounded-3xl bg-gradient-to-b from-brand-500/20 via-brand-500/5 to-transparent opacity-60 blur-3xl transition-opacity duration-700 group-hover:opacity-100"
           />
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-surface-1/80 shadow-[0_20px_80px_-20px_rgba(124,58,237,0.25)] backdrop-blur-sm">
-            <div className="flex items-center gap-2 border-b border-white/[0.06] bg-surface-2/60 px-4 py-2.5">
+          <div className="relative overflow-hidden rounded-xl border border-white/[0.08] bg-surface-1/80 shadow-[0_20px_80px_-20px_rgba(124,58,237,0.25)] backdrop-blur-sm sm:rounded-2xl">
+            <div className="flex items-center gap-2 border-b border-white/[0.06] bg-surface-2/60 px-3 py-2 sm:px-4 sm:py-2.5">
               <div className="flex gap-1.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                <div className="h-2 w-2 rounded-full bg-white/10 sm:h-2.5 sm:w-2.5" />
+                <div className="h-2 w-2 rounded-full bg-white/10 sm:h-2.5 sm:w-2.5" />
+                <div className="h-2 w-2 rounded-full bg-white/10 sm:h-2.5 sm:w-2.5" />
               </div>
               <div className="flex flex-1 items-center justify-center">
-                <div className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-3 py-1">
-                  <IconRefresh className="h-2.5 w-2.5 text-muted" />
-                  <span className="text-[10px] text-muted">rary-crm.vercel.app/dashboard</span>
+                <div className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-2 py-1 sm:px-3">
+                  <IconRefresh className="h-2 w-2 text-muted sm:h-2.5 sm:w-2.5" />
+                  <span className="text-[9px] text-muted sm:text-[10px]">rary-crm.vercel.app/dashboard</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex h-[200px] sm:h-[280px]">
-              <div className="hidden w-40 border-r border-white/[0.06] bg-surface-2/40 p-3 sm:block">
+            <div className="flex h-[180px] sm:h-[280px]">
+              <div className="hidden w-36 border-r border-white/[0.06] bg-surface-2/40 p-3 lg:block lg:w-40">
                 <div className="mb-3 px-2">
                   <div className="flex items-center gap-2">
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700">
@@ -70,32 +70,32 @@ function HeroMiniDashboard() {
                 </div>
               </div>
 
-              <div className="flex-1 p-4 sm:p-5">
-                <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="flex-1 p-3 sm:p-5">
+                <div className="mb-3 grid grid-cols-2 gap-2 sm:mb-4 sm:grid-cols-4 sm:gap-3">
                   {[
                     { label: "Clientes", value: "342", change: "+12%", color: "text-brand-400", bg: "bg-brand-500/8", border: "border-brand-500/15" },
                     { label: "Vendas", value: "R$ 89k", change: "+8%", color: "text-emerald-400", bg: "bg-emerald-500/8", border: "border-emerald-500/15" },
                     { label: "Follow-ups", value: "28", change: "5 hoje", color: "text-amber-400", bg: "bg-amber-500/8", border: "border-amber-500/15" },
                     { label: "Pagamentos", value: "R$ 45k", change: "12 pendentes", color: "text-sky-400", bg: "bg-sky-500/8", border: "border-sky-500/15" },
                   ].map((kpi) => (
-                    <div key={kpi.label} className={`rounded-xl border ${kpi.border} ${kpi.bg} p-3 transition-all hover:scale-[1.02]`}>
-                      <div className="text-[10px] font-medium text-muted">{kpi.label}</div>
-                      <div className="mt-1.5 text-lg font-bold tracking-tight text-foreground sm:text-xl">{kpi.value}</div>
-                      <div className={`mt-1 text-[10px] font-medium ${kpi.color}`}>{kpi.change}</div>
+                    <div key={kpi.label} className={`rounded-lg border ${kpi.border} ${kpi.bg} p-2 transition-all hover:scale-[1.02] sm:rounded-xl sm:p-3`}>
+                      <div className="text-[9px] font-medium text-muted sm:text-[10px]">{kpi.label}</div>
+                      <div className="mt-1 text-base font-bold tracking-tight text-foreground sm:mt-1.5 sm:text-xl">{kpi.value}</div>
+                      <div className={`mt-0.5 text-[9px] font-medium ${kpi.color} sm:mt-1 sm:text-[10px]`}>{kpi.change}</div>
                     </div>
                   ))}
                 </div>
 
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-                  <div className="mb-2.5 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-foreground">Visão Geral</span>
-                    <span className="text-[9px] text-muted">Últimos 7 dias</span>
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2 sm:rounded-xl sm:p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-foreground sm:text-[11px]">Visão Geral</span>
+                    <span className="text-[8px] text-muted sm:text-[9px]">Últimos 7 dias</span>
                   </div>
-                  <div className="flex items-end gap-1.5" style={{ height: "60px" }}>
+                  <div className="flex items-end gap-1 sm:gap-1.5" style={{ height: "40px" }}>
                     {[35, 52, 45, 68, 42, 75, 60, 48, 72, 55, 65, 80].map((h, i) => (
                       <div key={i} className="group/bar flex flex-1 flex-col items-center gap-1">
                         <div
-                          className="w-full rounded-t-md bg-gradient-to-t from-brand-600/80 to-brand-400/80 transition-all duration-300 group-hover/bar:from-brand-500 group-hover/bar:to-brand-300 group-hover/bar:shadow-[0_0_12px_rgba(124,58,237,0.4)]"
+                          className="w-full rounded-t-sm bg-gradient-to-t from-brand-600/80 to-brand-400/80 transition-all duration-300 group-hover/bar:from-brand-500 group-hover/bar:to-brand-300 group-hover/bar:shadow-[0_0_12px_rgba(124,58,237,0.4)] sm:rounded-t-md"
                           style={{ height: `${h}%` }}
                         />
                       </div>

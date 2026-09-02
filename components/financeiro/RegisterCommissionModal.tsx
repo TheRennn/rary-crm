@@ -40,6 +40,7 @@ export function RegisterCommissionModal({
   const [method, setMethod] = useState<CommissionPaymentMethod>("A_VISTA");
   const [installmentsCount, setInstallmentsCount] = useState(1);
   const [notes, setNotes] = useState("");
+  const [oneMonthDelay, setOneMonthDelay] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +55,7 @@ export function RegisterCommissionModal({
       setMethod(editCommission.method);
       setInstallmentsCount(editCommission.installments?.length ?? 1);
       setNotes(editCommission.notes ?? "");
+      setOneMonthDelay(editCommission.oneMonthDelay ?? false);
     } else if (!open) {
       reset();
     }
@@ -81,6 +83,7 @@ export function RegisterCommissionModal({
     setMethod("A_VISTA");
     setInstallmentsCount(1);
     setNotes("");
+    setOneMonthDelay(false);
     setError(null);
   }
 
@@ -125,6 +128,7 @@ export function RegisterCommissionModal({
           status,
           method,
           notes: notes.trim() || undefined,
+          oneMonthDelay,
         });
         onCreated(updated);
         toast({
@@ -143,6 +147,7 @@ export function RegisterCommissionModal({
           method,
           installmentsCount: method === "A_VISTA" ? 1 : installmentsCountEffective,
           notes: notes.trim() || undefined,
+          oneMonthDelay,
         });
         onCreated(created);
         toast({
@@ -330,6 +335,22 @@ export function RegisterCommissionModal({
             className={inputClasses}
           />
         </div>
+
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2.5">
+          <input
+            id="cm-delay"
+            type="checkbox"
+            checked={oneMonthDelay}
+            onChange={(event) => setOneMonthDelay(event.target.checked)}
+            className="h-4 w-4 rounded border-border-strong bg-surface-1 text-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+          <label htmlFor="cm-delay" className="text-sm text-foreground">
+            Receber com 1 mês de atraso
+          </label>
+        </div>
+        <p className="text-xs text-muted">
+          Se ativado, o representante receberá 1 mês após a data de vencimento informada.
+        </p>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="cm-notes" className="text-xs font-medium text-muted">

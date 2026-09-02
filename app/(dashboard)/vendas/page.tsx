@@ -9,10 +9,10 @@ export default async function VendasPage() {
   const { data: { user: authUser } } = await supabase.auth.getUser();
 
   const [deals, stats, clients, currentUser] = await Promise.all([
-    dealService.getAll(),
-    dealService.getStats(),
-    clientService.getAll(),
-    authUser ? userService.getCurrentUser(authUser, supabase) : null,
+    dealService.getAll().catch(() => []),
+    dealService.getStats().catch(() => ({ total: 0, concludedCount: 0, totalValue: 0, averageTicket: 0, concludedValue: 0, pendingValue: 0, canceledValue: 0, byStatus: {}, byMonth: {} })),
+    clientService.getAll().catch(() => []),
+    authUser ? userService.getCurrentUser(authUser, supabase).catch(() => null) : null,
   ]);
 
   const clientMap = new Map(clients.map((client) => [client.id, client.companyName]));

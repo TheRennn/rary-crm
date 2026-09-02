@@ -8,7 +8,7 @@ import { IconPlus, IconX } from "@/components/icons";
 import { useToast } from "@/components/ui/Toast";
 import { orderService } from "@/lib/services";
 import { ORDER_TYPE_LABELS, ORDER_SOURCE_LABELS } from "@/lib/constants";
-import type { Order, OrderItem, OrderSource, OrderType, PaymentStatus } from "@/types";
+import type { Order, OrderItem, OrderSource, OrderType, PaymentStatus, Product } from "@/types";
 import { formatCurrency, cn, maskCurrency, parseCurrency } from "@/lib/utils";
 
 export interface RegisterOrderModalProps {
@@ -16,6 +16,7 @@ export interface RegisterOrderModalProps {
   onClose: () => void;
   existingClients: string[];
   existingCompanies: string[];
+  products?: Product[];
   onCreated: (order: Order) => void;
   editOrder?: Order | null;
 }
@@ -33,6 +34,7 @@ export function RegisterOrderModal({
   onClose,
   existingClients,
   existingCompanies,
+  products = [],
   onCreated,
   editOrder,
 }: RegisterOrderModalProps) {
@@ -361,7 +363,7 @@ export function RegisterOrderModal({
                   className={inputClasses}
                 />
                 <datalist id="od-products">
-                  {existingProductsSuggestions(items)}
+                  {productCatalogSuggestions(products, items)}
                 </datalist>
               </div>
               <div className="flex flex-col gap-1 sm:w-24">
@@ -428,14 +430,32 @@ export function RegisterOrderModal({
   );
 }
 
-function existingProductsSuggestions(items: DraftItem[]): ReactNode {
-  const known = items
+function productCatalogSuggestions(products: Product[], items: DraftItem[]): ReactNode {
+  const catalogOptions = products
+    .filter((p) => p.active)
+    .map((p) => ({
+      name: p.name,
+      label: p.code ? `${p.name} (${p.code})` : p.name,
+      value: p.unitValue,
+    }));
+
+  const typedProducts = items
     .map((item) => item.product)
     .filter((product): product is string => Boolean(product && product.trim()));
+
+  const allSuggestions = [...catalogOptions, ...typedProducts.map((p) => ({ name: p, label: p, value: undefined }))];
+
+  const seen = new Set<string>();
+  const unique = allSuggestions.filter((s) => {
+    if (seen.has(s.name)) return false;
+    seen.add(s.name);
+    return true;
+  });
+
   return (
     <>
-      {known.map((product, index) => (
-        <option key={`sug-${index}-${product}`} value={product} />
+      {unique.map((suggestion, index) => (
+        <option key={`sug-${index}-${suggestion.name}`} value={suggestion.name} />
       ))}
     </>
   );

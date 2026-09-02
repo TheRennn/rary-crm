@@ -40,15 +40,15 @@ export default async function DashboardPage() {
     notifications,
     activities,
   ] = await Promise.all([
-    userService.getCurrentUser(authUser, supabase),
-    clientService.getAll(),
-    dealService.getAll(),
-    paymentService.getAll(),
-    followUpService.getGroups(),
-    taskService.getGroups(),
-    calendarService.getAll(),
-    notificationService.getAll(),
-    userService.getActivities(),
+    userService.getCurrentUser(authUser, supabase).catch(() => null),
+    clientService.getAll().catch(() => []),
+    dealService.getAll().catch(() => []),
+    paymentService.getAll().catch(() => []),
+    followUpService.getGroups().catch(() => ({ hoje: [], atrasados: [], proximos: [], concluidos: [] })),
+    taskService.getGroups().catch(() => ({ atrasadas: [], hoje: [], proximas: [], concluidas: [] })),
+    calendarService.getAll().catch(() => []),
+    notificationService.getAll().catch(() => []),
+    userService.getActivities().catch(() => []),
   ]);
 
   const input: DashboardMetricInput = {

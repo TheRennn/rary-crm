@@ -17,6 +17,7 @@ function rowToCommission(row: Record<string, unknown>): Commission {
     method: row.method as Commission["method"],
     installments: (row.installments as Commission["installments"]) ?? undefined,
     notes: (row.notes as string) ?? undefined,
+    oneMonthDelay: (row.one_month_delay as boolean) ?? false,
   };
 }
 
@@ -53,6 +54,7 @@ export class CommissionRepository {
       method: input.method,
       installments: input.installments ?? null,
       notes: input.notes ?? null,
+      one_month_delay: input.oneMonthDelay ?? false,
     };
 
     const { error: insertError } = await supabase.from("commissions").insert(row);
@@ -74,6 +76,7 @@ export class CommissionRepository {
     if (input.method !== undefined) row.method = input.method;
     if (input.installments !== undefined) row.installments = input.installments ?? null;
     if (input.notes !== undefined) row.notes = input.notes ?? null;
+    if (input.oneMonthDelay !== undefined) row.one_month_delay = input.oneMonthDelay;
 
     const { data, error } = await supabase.from("commissions").update(row).eq("id", id).select().single();
     if (error) throw error;
