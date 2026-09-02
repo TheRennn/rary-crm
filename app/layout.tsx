@@ -27,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} h-full antialiased`}
     >
       <body
-        className="min-h-full bg-background text-foreground"
+        className="min-h-full overflow-x-hidden bg-background text-foreground"
         suppressHydrationWarning
       >
         <Providers>{children}</Providers>

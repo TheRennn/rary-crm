@@ -23,7 +23,7 @@ const price = formatCurrency(49.9);
 
 export function LandingPricing() {
   return (
-    <section id="precos" className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
+    <section id="precos" className="relative mx-auto max-w-6xl overflow-hidden px-4 py-20 sm:px-6 sm:py-24">
       <Reveal>
         <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
           <span className="text-xs font-semibold uppercase tracking-widest text-brand-500">

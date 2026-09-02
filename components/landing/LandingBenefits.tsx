@@ -18,7 +18,7 @@ const benefits = [
 
 export function LandingBenefits() {
   return (
-    <section id="beneficios" className="border-y border-brand-500/10 bg-surface-1/70">
+    <section id="beneficios" className="overflow-hidden border-y border-brand-500/10 bg-surface-1/70">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
         <div className="grid gap-6 lg:grid-cols-2">
           <Reveal>

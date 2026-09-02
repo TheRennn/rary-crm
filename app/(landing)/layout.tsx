@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function LandingLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col overflow-x-hidden">
       <LandingNav />
       <main className="flex-1">{children}</main>
       <LandingFooter />

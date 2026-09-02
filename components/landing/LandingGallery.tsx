@@ -146,7 +146,7 @@ const galleryItems = [
 
 export function LandingGallery() {
   return (
-    <section className="relative border-y border-white/[0.04] bg-surface-1/50">
+    <section className="relative overflow-hidden border-y border-white/[0.04] bg-surface-1/50">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-28">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">

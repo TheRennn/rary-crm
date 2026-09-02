@@ -29,7 +29,7 @@ export interface SectionProps {
 
 export function Section({ id, eyebrow, title, description, children }: SectionProps) {
   return (
-    <section id={id} className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
+    <section id={id} className="relative mx-auto max-w-6xl overflow-hidden px-4 py-20 sm:px-6 sm:py-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
         <Reveal>
           {eyebrow && (
