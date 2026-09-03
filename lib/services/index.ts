@@ -17,3 +17,5 @@ export { notificationService } from "./notification-service";
 export { userService } from "./user-service";
 export { productService } from "./product-service";
 export type { ProductStats } from "./product-service";
+export { recebimentoService } from "./recebimento-service";
+export type { RecebimentoStats } from "./recebimento-service";

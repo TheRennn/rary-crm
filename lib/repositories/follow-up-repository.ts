@@ -51,9 +51,9 @@ export class FollowUpRepository {
 
     const row = {
       id,
-      client_id: input.clientId,
+      client_id: input.clientId || null,
       client_name: input.clientName,
-      responsible_id: input.responsibleId,
+      responsible_id: input.responsibleId || null,
       type: input.type,
       date: input.date,
       time: input.time,

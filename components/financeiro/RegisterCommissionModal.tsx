@@ -152,11 +152,11 @@ export function RegisterCommissionModal({
         });
         onCreated(created);
         toast({
-          title: "Comissão registrada",
+          title: "Comissão e pedido registrados",
           message:
             created.installments && created.installments.length > 1
-              ? `${created.installments.length}x de ${formatCurrency(created.installments[0].value)} de ${created.companyName} — competência ${created.period}.`
-              : `${formatCurrency(created.value)} de ${created.companyName} — competência ${created.period}.`,
+              ? `${created.installments.length}x de ${formatCurrency(created.installments[0].value)} — pedido gerado automaticamente.`
+              : `${formatCurrency(created.value)} — pedido gerado automaticamente.`,
           variant: "success",
         });
       }

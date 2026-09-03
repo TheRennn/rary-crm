@@ -16,10 +16,13 @@ export function FinancialWidget({ data }: FinancialWidgetProps) {
           <IconBuilding className="h-4 w-4 text-brand-400" />
           <h3 className="text-sm font-semibold text-foreground">Financeiro</h3>
         </div>
-        <p className="text-xs text-muted">Registre comissões e pedidos para ver dados financeiros.</p>
+        <p className="text-xs text-muted">Registre comissões, pedidos e recebimentos para ver dados financeiros.</p>
       </div>
     );
   }
+
+  const totalPending = data.pendingCommissions + data.pendingOrders + data.pendingRecebimentos;
+  const totalPaid = data.paidCommissions + data.paidOrders + data.paidRecebimentos;
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface-1 p-4">
@@ -28,7 +31,7 @@ export function FinancialWidget({ data }: FinancialWidgetProps) {
         <h3 className="text-sm font-semibold text-foreground">Financeiro</h3>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div className="flex flex-col gap-1 rounded-lg bg-surface-2 p-3">
           <div className="flex items-center gap-1.5 text-[11px] text-muted">
             <IconTrendingUp className="h-3 w-3" />
@@ -38,7 +41,7 @@ export function FinancialWidget({ data }: FinancialWidgetProps) {
             {formatCurrency(data.totalCommissions)}
           </span>
           <span className="text-[11px] text-muted">
-            {data.companiesCount} empresa(s)
+            {formatCurrency(data.pendingCommissions)} pendente(s)
           </span>
         </div>
         <div className="flex flex-col gap-1 rounded-lg bg-surface-2 p-3">
@@ -53,21 +56,33 @@ export function FinancialWidget({ data }: FinancialWidgetProps) {
             {formatCurrency(data.pendingOrders)} pendente(s)
           </span>
         </div>
+        <div className="flex flex-col gap-1 rounded-lg bg-surface-2 p-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted">
+            <IconCheckCircle className="h-3 w-3" />
+            Recebimentos
+          </div>
+          <span className="text-sm font-bold tabular-nums text-foreground">
+            {formatCurrency(data.totalRecebimentos)}
+          </span>
+          <span className="text-[11px] text-muted">
+            {formatCurrency(data.pendingRecebimentos)} pendente(s)
+          </span>
+        </div>
       </div>
 
-      {data.topCompanies.length > 0 && (
+      {data.pendingByCompany.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-medium text-muted">Top empresas</span>
-          {data.topCompanies.map((company) => (
+          <span className="text-[11px] font-medium text-muted">Pendentes por empresa</span>
+          {data.pendingByCompany.slice(0, 5).map((item) => (
             <div
-              key={company.name}
+              key={item.name}
               className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2"
             >
               <span className="truncate text-xs font-medium text-foreground">
-                {company.name}
+                {item.name}
               </span>
-              <span className="ml-2 shrink-0 text-xs font-bold tabular-nums text-foreground">
-                {formatCurrency(company.total)}
+              <span className="ml-2 shrink-0 text-xs font-bold tabular-nums text-warning">
+                {formatCurrency(item.pending)}
               </span>
             </div>
           ))}
@@ -76,10 +91,10 @@ export function FinancialWidget({ data }: FinancialWidgetProps) {
 
       <div className="flex items-center justify-between text-[11px]">
         <span className="text-muted">
-          A receber: <span className="font-medium text-warning">{formatCurrency(data.pendingCommissions)}</span>
+          A receber: <span className="font-medium text-warning">{formatCurrency(totalPending)}</span>
         </span>
         <span className="text-muted">
-          Recebido: <span className="font-medium text-success">{formatCurrency(data.paidCommissions)}</span>
+          Recebido: <span className="font-medium text-success">{formatCurrency(totalPaid)}</span>
         </span>
       </div>
     </div>

@@ -16,6 +16,8 @@ export { notificationRepository } from "./notification-repository";
 export { userRepository } from "./user-repository";
 export { productRepository } from "./product-repository";
 export type { CreateProductInput } from "./product-repository";
+export { recebimentoRepository } from "./recebimento-repository";
+export type { CreateRecebimentoInput } from "./recebimento-repository";
 export type {
   ClientRepository,
   CreateClientInput,

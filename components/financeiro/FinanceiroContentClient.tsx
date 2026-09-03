@@ -4,15 +4,17 @@ import { useState } from "react";
 import { FinanceiroContent } from "./FinanceiroContent";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useToast } from "@/components/ui/Toast";
-import { commissionService, orderService, goalService, paymentService, productService } from "@/lib/services";
-import type { Commission, Order, Goal, Payment, Product } from "@/types";
-import type { PaymentStats } from "@/lib/services";
+import { commissionService, orderService, recebimentoService, goalService, paymentService, productService } from "@/lib/services";
+import type { Commission, Order, Recebimento, Goal, Payment, Product } from "@/types";
+import type { PaymentStats, RecebimentoStats } from "@/lib/services";
 
 export interface FinanceiroContentClientProps {
   payments: Payment[];
   paymentStats: PaymentStats;
   commissions: Commission[];
   orders: Order[];
+  recebimentos: Recebimento[];
+  recebimentoStats: RecebimentoStats;
   goals: Goal[];
   products: Product[];
   clients: { id: string; name: string }[];
@@ -21,6 +23,7 @@ export interface FinanceiroContentClientProps {
 type DeleteTarget =
   | { type: "commission"; item: Commission }
   | { type: "order"; item: Order }
+  | { type: "recebimento"; item: Recebimento }
   | { type: "goal"; item: Goal }
   | { type: "payment"; item: Payment }
   | { type: "product"; item: Product }
@@ -31,6 +34,8 @@ export function FinanceiroContentClient({
   paymentStats,
   commissions: initialCommissions,
   orders: initialOrders,
+  recebimentos: initialRecebimentos,
+  recebimentoStats,
   goals: initialGoals,
   products: initialProducts,
   clients,
@@ -39,6 +44,7 @@ export function FinanceiroContentClient({
   const [payments, setPayments] = useState(initialPayments);
   const [commissions, setCommissions] = useState(initialCommissions);
   const [orders, setOrders] = useState(initialOrders);
+  const [recebimentos, setRecebimentos] = useState(initialRecebimentos);
   const [goals, setGoals] = useState(initialGoals);
   const [products, setProducts] = useState(initialProducts);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
@@ -56,6 +62,11 @@ export function FinanceiroContentClient({
         return {
           title: "Excluir pedido",
           description: `Deseja excluir o pedido ${target.item.code} — ${target.item.clientName}?`,
+        };
+      case "recebimento":
+        return {
+          title: "Excluir recebimento",
+          description: `Deseja excluir o recebimento de ${target.item.companyName} — ${target.item.product}?`,
         };
       case "goal":
         return {
@@ -89,6 +100,11 @@ export function FinanceiroContentClient({
           await orderService.delete(deleteTarget.item.id);
           setOrders((prev) => prev.filter((o) => o.id !== deleteTarget.item.id));
           toast({ title: "Pedido excluído", message: `${deleteTarget.item.code} — ${deleteTarget.item.clientName}`, variant: "success" });
+          break;
+        case "recebimento":
+          await recebimentoService.delete(deleteTarget.item.id);
+          setRecebimentos((prev) => prev.filter((r) => r.id !== deleteTarget.item.id));
+          toast({ title: "Recebimento excluído", message: `${deleteTarget.item.companyName} — ${deleteTarget.item.product}`, variant: "success" });
           break;
         case "goal":
           await goalService.delete(deleteTarget.item.id);
@@ -124,11 +140,14 @@ export function FinanceiroContentClient({
         paymentStats={paymentStats}
         commissions={commissions}
         orders={orders}
+        recebimentos={recebimentos}
+        recebimentoStats={recebimentoStats}
         goals={goals}
         products={products}
         clients={clients}
         onDeleteCommission={(c) => setDeleteTarget({ type: "commission", item: c })}
         onDeleteOrder={(o) => setDeleteTarget({ type: "order", item: o })}
+        onDeleteRecebimento={(r) => setDeleteTarget({ type: "recebimento", item: r })}
         onDeleteGoal={(g) => setDeleteTarget({ type: "goal", item: g })}
         onDeletePayment={(p) => setDeleteTarget({ type: "payment", item: p })}
         onDeleteProduct={(p) => setDeleteTarget({ type: "product", item: p })}

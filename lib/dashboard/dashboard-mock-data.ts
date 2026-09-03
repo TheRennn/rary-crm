@@ -8,6 +8,7 @@ import type {
   Notification,
   Order,
   Payment,
+  Recebimento,
   Task,
 } from "@/types";
 import type {
@@ -41,6 +42,7 @@ export interface DashboardMetricInput {
   activities: Activity[];
   commissions?: Commission[];
   orders?: Order[];
+  recebimentos?: Recebimento[];
 }
 
 function getPeriodRange(period: DashboardPeriod): { start: Date; end: Date } {
@@ -684,7 +686,8 @@ function buildActivities(data: DashboardMetricInput): Activity[] {
 
 function buildFinancialSummary(
   commissions: Commission[],
-  orders: Order[]
+  orders: Order[],
+  recebimentos: Recebimento[]
 ): FinancialSummary {
   const totalCommissions = commissions.reduce((acc, c) => acc + c.value, 0);
   const pendingCommissions = commissions
@@ -698,6 +701,17 @@ function buildFinancialSummary(
   const pendingOrders = orders
     .filter((o) => o.status === "PENDENTE" || o.status === "ATRASADO")
     .reduce((acc, o) => acc + o.total, 0);
+  const paidOrders = orders
+    .filter((o) => o.status === "PAGO")
+    .reduce((acc, o) => acc + o.total, 0);
+
+  const totalRecebimentos = recebimentos.reduce((acc, r) => acc + r.finalValue, 0);
+  const pendingRecebimentos = recebimentos
+    .filter((r) => r.status === "PENDENTE" || r.status === "ATRASADO")
+    .reduce((acc, r) => acc + r.finalValue, 0);
+  const paidRecebimentos = recebimentos
+    .filter((r) => r.status === "PAGO")
+    .reduce((acc, r) => acc + r.finalValue, 0);
 
   const companyMap = new Map<string, number>();
   commissions.forEach((c) => {
@@ -706,11 +720,35 @@ function buildFinancialSummary(
   orders.forEach((o) => {
     companyMap.set(o.companyName, (companyMap.get(o.companyName) ?? 0) + o.total);
   });
+  recebimentos.forEach((r) => {
+    companyMap.set(r.companyName, (companyMap.get(r.companyName) ?? 0) + r.finalValue);
+  });
 
   const topCompanies = Array.from(companyMap.entries())
     .map(([name, total]) => ({ name, total }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
+
+  const pendingByCompanyMap = new Map<string, number>();
+  commissions
+    .filter((c) => c.status === "PENDENTE" || c.status === "ATRASADO")
+    .forEach((c) => {
+      pendingByCompanyMap.set(c.companyName, (pendingByCompanyMap.get(c.companyName) ?? 0) + c.value);
+    });
+  orders
+    .filter((o) => o.status === "PENDENTE" || o.status === "ATRASADO")
+    .forEach((o) => {
+      pendingByCompanyMap.set(o.companyName, (pendingByCompanyMap.get(o.companyName) ?? 0) + o.total);
+    });
+  recebimentos
+    .filter((r) => r.status === "PENDENTE" || r.status === "ATRASADO")
+    .forEach((r) => {
+      pendingByCompanyMap.set(r.companyName, (pendingByCompanyMap.get(r.companyName) ?? 0) + r.finalValue);
+    });
+
+  const pendingByCompany = Array.from(pendingByCompanyMap.entries())
+    .map(([name, pending]) => ({ name, pending }))
+    .sort((a, b) => b.pending - a.pending);
 
   return {
     totalCommissions,
@@ -718,8 +756,13 @@ function buildFinancialSummary(
     paidCommissions,
     totalOrders,
     pendingOrders,
+    paidOrders,
+    totalRecebimentos,
+    pendingRecebimentos,
+    paidRecebimentos,
     companiesCount: companyMap.size,
     topCompanies,
+    pendingByCompany,
   };
 }
 
@@ -778,7 +821,7 @@ export function buildDashboardData(data: DashboardMetricInput): DashboardData {
     deals: data.deals,
     payments: data.payments,
     tasks: data.tasks,
-    financial: buildFinancialSummary(data.commissions ?? [], data.orders ?? []),
+    financial: buildFinancialSummary(data.commissions ?? [], data.orders ?? [], data.recebimentos ?? []),
   };
 }
 

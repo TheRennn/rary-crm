@@ -208,8 +208,10 @@ export function RegisterOrderModal({
         });
         onCreated(created);
         toast({
-          title: "Pedido adicionado",
-          message: `${created.code} · ${created.clientName} — ${ORDER_TYPE_LABELS[created.type]}`,
+          title: source === "REPRESENTANTE" ? "Pedido e comissão registrados" : "Pedido adicionado",
+          message: source === "REPRESENTANTE"
+            ? `${created.code} · comissão gerada automaticamente.`
+            : `${created.code} · ${created.clientName} — ${ORDER_TYPE_LABELS[created.type]}`,
           variant: "success",
         });
       }

@@ -147,6 +147,28 @@ export interface Deal {
   installmentValue?: number;
 }
 
+export interface Recebimento {
+  id: string;
+  clientId?: string;
+  clientName: string;
+  responsibleId?: string;
+  companyName: string;
+  product: string;
+  description?: string;
+  value: number;
+  entryEnabled: boolean;
+  entryType?: EntryType;
+  entryValue?: number;
+  shippingEnabled: boolean;
+  shippingValue?: number;
+  installments: number;
+  installmentValue: number;
+  finalValue: number;
+  status: PaymentStatus;
+  date?: string;
+  createdAt: string;
+}
+
 export interface Purchase {
   id: string;
   clientId: string;

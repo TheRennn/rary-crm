@@ -157,8 +157,13 @@ export interface FinancialSummary {
   paidCommissions: number;
   totalOrders: number;
   pendingOrders: number;
+  paidOrders: number;
+  totalRecebimentos: number;
+  pendingRecebimentos: number;
+  paidRecebimentos: number;
   companiesCount: number;
   topCompanies: { name: string; total: number }[];
+  pendingByCompany: { name: string; pending: number }[];
 }
 
 export interface DashboardData {

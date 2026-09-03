@@ -54,7 +54,27 @@ export class OrderService {
       status: input.status ?? "PENDENTE",
       source: input.source ?? "REPRESENTANTE",
     };
-    return orderRepository.create(order);
+    const created = await orderRepository.create(order);
+
+    if (input.source === "REPRESENTANTE" && input.companyName) {
+      try {
+        const { commissionService } = await import("@/lib/services");
+        await commissionService.create({
+          companyName: input.companyName,
+          period: input.period,
+          rate: 0,
+          baseValue: total,
+          dueDate: input.date || new Date().toISOString().slice(0, 10),
+          status: input.status ?? "PENDENTE",
+          method: "A_VISTA",
+          notes: `Pedido ${created.code} — gerado automaticamente`,
+        });
+      } catch {
+        // Comissão auxiliar falha silenciosamente — pedido já foi criado
+      }
+    }
+
+    return created;
   }
 
   async update(id: string, input: Partial<Omit<Order, "id" | "total" | "items"> & { items: Omit<OrderItem, "id">[] }>): Promise<Order> {

@@ -4,19 +4,18 @@ import { useState, type ReactNode } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PaymentsContent } from "@/components/pagamentos/PaymentsContent";
 import { RegisterPaymentModal } from "@/components/pagamentos/RegisterPaymentModal";
-import { CommissionsContent } from "./CommissionsContent";
-import { PedidosContent } from "./PedidosContent";
+import { RepresentanteContent } from "./RepresentanteContent";
 import { GoalsView } from "./GoalsView";
 import { ProductsContent } from "./ProductsContent";
 import { RegisterCommissionModal } from "./RegisterCommissionModal";
 import { RegisterOrderModal } from "./RegisterOrderModal";
+import { RegisterRecebimentoModal } from "./RegisterRecebimentoModal";
 import { RegisterGoalModal } from "./RegisterGoalModal";
 import { RegisterProductModal } from "./RegisterProductModal";
 import { cn } from "@/lib/utils";
 import { IconBuilding, IconUsers, IconPlus } from "@/components/icons";
-import { useToast } from "@/components/ui/Toast";
-import type { Commission, Goal, Order, Payment, Product } from "@/types";
-import type { PaymentStats } from "@/lib/services";
+import type { Commission, Goal, Order, Payment, Product, Recebimento } from "@/types";
+import type { PaymentStats, RecebimentoStats } from "@/lib/services";
 
 export interface FinanceiroContentProps {
   payments: Payment[];
@@ -24,11 +23,14 @@ export interface FinanceiroContentProps {
   paymentStats: PaymentStats;
   commissions: Commission[];
   orders: Order[];
+  recebimentos: Recebimento[];
+  recebimentoStats: RecebimentoStats;
   goals: Goal[];
   products: Product[];
   clients: { id: string; name: string }[];
   onDeleteCommission?: (commission: Commission) => void;
   onDeleteOrder?: (order: Order) => void;
+  onDeleteRecebimento?: (recebimento: Recebimento) => void;
   onDeleteGoal?: (goal: Goal) => void;
   onDeletePayment?: (payment: Payment) => void;
   onDeleteProduct?: (product: Product) => void;
@@ -36,7 +38,6 @@ export interface FinanceiroContentProps {
 
 type FinanceiroProfile = "administracao" | "representante";
 type AdminTab = "receber" | "pagar" | "metas" | "produtos";
-type RepTab = "comissoes" | "pedidos";
 
 const PROFILES: {
   id: FinanceiroProfile;
@@ -48,13 +49,13 @@ const PROFILES: {
     id: "administracao",
     label: "Administração",
     icon: <IconBuilding className="h-3.5 w-3.5" />,
-    description: "Contas a receber, metas e recebimentos dos clientes",
+    description: "Contas a receber, metas e produtos",
   },
   {
     id: "representante",
     label: "Representante",
     icon: <IconUsers className="h-3.5 w-3.5" />,
-    description: "Comissões e pedidos de cada empresa representada",
+    description: "Comissões, pedidos e recebimentos integrados",
   },
 ];
 
@@ -105,38 +106,46 @@ export function FinanceiroContent({
   paymentStats,
   commissions: initialCommissions,
   orders: initialOrders,
+  recebimentos: initialRecebimentos,
+  recebimentoStats,
   goals: initialGoals,
   products: initialProducts,
   clients,
   onDeleteCommission,
   onDeleteOrder,
+  onDeleteRecebimento,
   onDeleteGoal,
   onDeletePayment,
   onDeleteProduct,
 }: FinanceiroContentProps) {
   const [profile, setProfile] = useState<FinanceiroProfile>("administracao");
   const [adminTab, setAdminTab] = useState<AdminTab>("receber");
-  const [repTab, setRepTab] = useState<RepTab>("comissoes");
   const [commissions, setCommissions] = useState<Commission[]>(initialCommissions);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const [recebimentos, setRecebimentos] = useState<Recebimento[]>(initialRecebimentos);
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
+  const [recebimentoOpen, setRecebimentoOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [productOpen, setProductOpen] = useState(false);
   const [editCommission, setEditCommission] = useState<Commission | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [editRecebimento, setEditRecebimento] = useState<Recebimento | null>(null);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
   const [editPayment, setEditPayment] = useState<Payment | null>(null);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const { toast } = useToast();
 
   const active = PROFILES.find((option) => option.id === profile)!;
 
   const existingCompanies = Array.from(
-    new Set(commissions.map((c) => c.companyName))
+    new Set([
+      ...commissions.map((c) => c.companyName),
+      ...orders.map((o) => o.companyName),
+      ...recebimentos.map((r) => r.companyName),
+    ])
   );
 
   const currents = {
@@ -147,9 +156,7 @@ export function FinanceiroContent({
 
   const actionLabel =
     profile === "representante"
-      ? repTab === "pedidos"
-        ? "Adicionar pedido"
-        : "Registrar comissão"
+      ? "Novo registro"
       : adminTab === "metas"
         ? "Adicionar meta"
         : adminTab === "produtos"
@@ -158,8 +165,7 @@ export function FinanceiroContent({
 
   function handleCreate() {
     if (profile === "representante") {
-      if (repTab === "pedidos") setOrderOpen(true);
-      else setCommissionOpen(true);
+      setRecebimentoOpen(true);
       return;
     }
     if (adminTab === "metas") {
@@ -243,22 +249,18 @@ export function FinanceiroContent({
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          <TabToggle
-            label="Seção do representante"
-            options={[
-              { id: "comissoes", label: "Comissões" },
-              { id: "pedidos", label: "Pedidos" },
-            ]}
-            value={repTab}
-            onChange={(id) => setRepTab(id as RepTab)}
-          />
-          {repTab === "comissoes" ? (
-            <CommissionsContent key="commissions" commissions={commissions} onEdit={(c) => { setEditCommission(c); setCommissionOpen(true); }} onDelete={onDeleteCommission} />
-          ) : (
-            <PedidosContent key="orders" orders={orders} onEdit={(o) => { setEditOrder(o); setOrderOpen(true); }} onDelete={onDeleteOrder} />
-          )}
-        </div>
+        <RepresentanteContent
+          commissions={commissions}
+          orders={orders}
+          recebimentos={recebimentos}
+          existingCompanies={existingCompanies}
+          onEditCommission={(c) => { setEditCommission(c); setCommissionOpen(true); }}
+          onEditOrder={(o) => { setEditOrder(o); setOrderOpen(true); }}
+          onEditRecebimento={(r) => { setEditRecebimento(r); setRecebimentoOpen(true); }}
+          onDeleteCommission={onDeleteCommission}
+          onDeleteOrder={onDeleteOrder}
+          onDeleteRecebimento={onDeleteRecebimento}
+        />
       )}
 
       <RegisterCommissionModal
@@ -290,6 +292,13 @@ export function FinanceiroContent({
           }
           setEditOrder(null);
         }}
+      />
+      <RegisterRecebimentoModal
+        open={recebimentoOpen}
+        onClose={() => { setRecebimentoOpen(false); setEditRecebimento(null); }}
+        clients={clients}
+        existingCompanies={existingCompanies}
+        editRecebimento={editRecebimento}
       />
       <RegisterGoalModal
         open={goalOpen}

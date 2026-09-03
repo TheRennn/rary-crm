@@ -13,6 +13,7 @@ import {
   followUpService,
   notificationService,
   orderService,
+  recebimentoService,
   paymentService,
   taskService,
   userService,
@@ -43,6 +44,7 @@ export default async function DashboardPage() {
     activities,
     commissions,
     orders,
+    recebimentos,
   ] = await Promise.all([
     userService.getCurrentUser(authUser, supabase).catch(() => null),
     clientService.getAll().catch(() => []),
@@ -55,6 +57,7 @@ export default async function DashboardPage() {
     userService.getActivities().catch(() => []),
     commissionService.getAll().catch(() => []),
     orderService.getAll().catch(() => []),
+    recebimentoService.getAll().catch(() => []),
   ]);
 
   const input: DashboardMetricInput = {
@@ -78,6 +81,7 @@ export default async function DashboardPage() {
     activities,
     commissions,
     orders,
+    recebimentos,
   };
 
   const data: DashboardData = {
