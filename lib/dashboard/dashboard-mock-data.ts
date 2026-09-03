@@ -31,6 +31,26 @@ export const ORGANIZATIONS: DashboardOrganization[] = [
   { id: "org-rary", name: "RARY Labs", tagline: "Workspace principal" },
 ];
 
+function dashboardTodayStr(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function followUpIsOverdue(f: FollowUp): boolean {
+  if (f.status === "CONCLUIDO") return false;
+  return f.date.slice(0, 10) < dashboardTodayStr();
+}
+
+function followUpIsToday(f: FollowUp): boolean {
+  if (f.status === "CONCLUIDO") return false;
+  return f.date.slice(0, 10) === dashboardTodayStr();
+}
+
+function followUpIsNext(f: FollowUp): boolean {
+  if (f.status === "CONCLUIDO") return false;
+  return f.date.slice(0, 10) > dashboardTodayStr();
+}
+
 export interface DashboardMetricInput {
   clients: Client[];
   deals: Deal[];
@@ -565,9 +585,7 @@ function buildInsights(
 }
 
 function buildAttention(data: DashboardMetricInput): AttentionItem[] {
-  const overdueFollowUps = data.followUps.filter(
-    (followUp) => followUp.status === "ATRASADO"
-  ).length;
+  const overdueFollowUps = data.followUps.filter(followUpIsOverdue).length;
   const overduePayments = data.payments.filter(
     (payment) => payment.status === "ATRASADO"
   ).length;
@@ -790,12 +808,10 @@ export function buildDashboardData(data: DashboardMetricInput): DashboardData {
   const overdueTaskList = data.tasks.filter((task) => task.status === "ATRASADA");
   const todayTaskList = data.tasks.filter((task) => task.status === "HOJE");
 
-  const followUpsToday = data.followUps.filter((followUp) => followUp.status === "HOJE");
-  const followUpsOverdue = data.followUps.filter(
-    (followUp) => followUp.status === "ATRASADO"
-  );
+  const followUpsToday = data.followUps.filter(followUpIsToday);
+  const followUpsOverdue = data.followUps.filter(followUpIsOverdue);
   const followUpsNext = data.followUps
-    .filter((followUp) => followUp.status === "PROXIMO")
+    .filter(followUpIsNext)
     .slice(0, 2);
 
   return {

@@ -31,7 +31,8 @@ export class FollowUpService {
 
   async getGroups(): Promise<FollowUpGroups> {
     const all = await this.getAll();
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
     function computeGroup(f: FollowUp): keyof FollowUpGroups {
       if (f.status === "CONCLUIDO") return "concluidos";

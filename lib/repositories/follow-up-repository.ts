@@ -29,7 +29,7 @@ export class FollowUpRepository {
 
     let query = supabase.from("follow_ups").select("*");
 
-    const conditions: string[] = ["client_id.is.null"];
+    const conditions: string[] = [];
 
     if (clientIds.length > 0) {
       conditions.push(`client_id.in.(${clientIds.join(",")})`);
@@ -38,11 +38,9 @@ export class FollowUpRepository {
       conditions.push(`responsible_id.eq.${userId}`);
     }
 
-    if (conditions.length > 0) {
-      query = query.or(conditions.join(","));
-    } else {
-      return [];
-    }
+    if (conditions.length === 0) return [];
+
+    query = query.or(conditions.join(","));
 
     const { data, error } = await query.order("date", { ascending: false });
 
@@ -54,6 +52,8 @@ export class FollowUpRepository {
     const supabase = await createUniversalClient();
     const id = `fu-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
+    const responsibleId = input.responsibleId || (await getUserIdFromUser()) || null;
+
     const dateTime = input.date.includes("T")
       ? input.date
       : `${input.date}T${input.time || "09:00"}:00`;
@@ -62,7 +62,7 @@ export class FollowUpRepository {
       id,
       client_id: input.clientId || null,
       client_name: input.clientName,
-      responsible_id: input.responsibleId || null,
+      responsible_id: responsibleId,
       type: input.type,
       date: dateTime,
       time: input.time,
