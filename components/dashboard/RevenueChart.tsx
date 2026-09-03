@@ -56,7 +56,8 @@ export function RevenueChart({ data, heading }: RevenueChartProps) {
         data={data[metric]}
         color={active.color}
         formatValue={active.format}
-        height={220}
+        height="auto"
+        className="h-[180px] sm:h-[200px] lg:h-[220px]"
       />
     </DashboardWidget>
   );

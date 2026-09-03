@@ -14,7 +14,7 @@ interface BarChartProps {
   formatValue: (value: number) => string;
   color?: string;
   className?: string;
-  height?: number;
+  height?: number | "auto";
 }
 
 export function BarChart({
@@ -41,45 +41,54 @@ export function BarChart({
   return (
     <div
       ref={containerRef}
-      className={cn("relative w-full select-none", className)}
-      style={{ height }}
+      className={cn("relative flex w-full select-none flex-col", className)}
+      style={height !== "auto" ? { height } : undefined}
       onMouseMove={handleMove}
       onMouseLeave={() => setActive(null)}
     >
-      <div className="flex h-full items-end gap-[6px]">
-        {data.map((point, index) => {
-          const pct = Math.max((point.value / max) * 100, 4);
-          const isHighlight = highlight(index);
-          return (
-            <div key={`${point.label}-${index}`} className="group relative flex-1">
-              {active === index && (
+      <div className="min-h-0 flex-1">
+        <div className="flex h-full items-end gap-[4px] sm:gap-[6px]">
+          {data.map((point, index) => {
+            const pct = Math.max((point.value / max) * 100, 4);
+            const isHighlight = highlight(index);
+            return (
+              <div key={`${point.label}-${index}`} className="group relative min-w-0 flex-1">
+                {active === index && (
+                  <div
+                    className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-surface-2/95 px-2.5 py-1.5 text-center shadow-xl shadow-black/40 backdrop-blur"
+                  >
+                    <p className="text-[10px] font-medium text-muted">{point.label}</p>
+                    <p className="text-xs font-semibold text-foreground">
+                      {formatValue(point.value)}
+                    </p>
+                  </div>
+                )}
                 <div
-                  className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-surface-2/95 px-2.5 py-1.5 text-center shadow-xl shadow-black/40 backdrop-blur"
-                >
-                  <p className="text-[10px] font-medium text-muted">{point.label}</p>
-                  <p className="text-xs font-semibold text-foreground">
-                    {formatValue(point.value)}
-                  </p>
-                </div>
-              )}
-              <div
-                className="dash-bar animate-bar-rise w-full cursor-pointer rounded-t-md transition-colors"
-                style={{
-                  height: `${pct}%`,
-                  background: isHighlight
-                    ? `linear-gradient(to top, ${color}, color-mix(in srgb, ${color} 55%, var(--surface-1)))`
-                    : "var(--border-strong)",
-                  minHeight: 8,
-                  animationDelay: `${index * 40}ms`,
-                }}
-              />
-            </div>
-          );
-        })}
+                  className="dash-bar animate-bar-rise w-full cursor-pointer rounded-t-md transition-colors"
+                  style={{
+                    height: `${pct}%`,
+                    background: isHighlight
+                      ? `linear-gradient(to top, ${color}, color-mix(in srgb, ${color} 55%, var(--surface-1)))`
+                      : "var(--border-strong)",
+                    minHeight: 8,
+                    animationDelay: `${index * 40}ms`,
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div className="mt-2 flex justify-between gap-2 text-[10px] text-muted-2">
-        {selectTickIndices(data.length, 7).map((index) => (
-          <span key={`${data[index].label}-${index}`} className="whitespace-nowrap">
+      <div className="mt-2 flex min-h-0 shrink-0 items-center justify-between gap-1 text-[10px] text-muted-2 sm:text-[11px]">
+        {selectTickIndices(data.length, 6).map((index, i, arr) => (
+          <span
+            key={`${data[index].label}-${index}`}
+            className={cn(
+              "min-w-0 flex-1 truncate text-center",
+              i === 0 && "text-left",
+              i === arr.length - 1 && "text-right"
+            )}
+          >
             {data[index].label}
           </span>
         ))}

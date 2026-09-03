@@ -16,7 +16,7 @@ export function SalesChart({ data, heading }: SalesChartProps) {
       title="Evolução de vendas"
       subtitle={`Vendas no período · ${heading}`}
     >
-      <BarChart data={data} formatValue={formatDashboardCurrency} color="var(--brand-primary)" height={200} />
+      <BarChart data={data} formatValue={formatDashboardCurrency} color="var(--brand-primary)" height="auto" className="h-[160px] sm:h-[180px] lg:h-[200px]" />
     </DashboardWidget>
   );
 }

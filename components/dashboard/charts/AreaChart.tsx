@@ -14,7 +14,7 @@ interface AreaChartProps {
   color?: string;
   formatValue: (value: number) => string;
   className?: string;
-  height?: number;
+  height?: number | "auto";
 }
 
 const VIEW_WIDTH = 720;
@@ -51,7 +51,7 @@ export function AreaChart({
 
   const max = Math.max(...data.map((d) => d.value));
   const gridLines = [0.25, 0.5, 0.75, 1];
-  const tickIndices = useMemo(() => selectTickIndices(data.length, 8), [data.length]);
+  const tickIndices = useMemo(() => selectTickIndices(data.length, 6), [data.length]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setMounted(true));
@@ -70,7 +70,7 @@ export function AreaChart({
     <div
       ref={containerRef}
       className={cn("relative w-full select-none", className)}
-      style={{ height }}
+      style={height !== "auto" ? { height } : undefined}
       onMouseMove={handleMove}
       onMouseLeave={() => setActive(null)}
     >
@@ -155,14 +155,16 @@ export function AreaChart({
 
       {/* Eixo X */}
       <div
-        className="absolute inset-x-0 bottom-0 flex justify-between text-[10px] text-muted-2"
+        className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 text-[10px] text-muted-2 sm:text-[11px]"
         style={{ paddingTop: 6 }}
       >
-        {tickIndices.map((index) => (
+        {tickIndices.map((index, i, arr) => (
           <span
             key={`${data[index].label}-${index}`}
             className={cn(
-              "whitespace-nowrap",
+              "min-w-0 flex-1 truncate text-center",
+              i === 0 && "text-left",
+              i === arr.length - 1 && "text-right",
               active === index ? "font-semibold text-foreground" : ""
             )}
           >

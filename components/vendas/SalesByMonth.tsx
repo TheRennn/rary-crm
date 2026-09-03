@@ -18,20 +18,20 @@ export function SalesByMonth({ byMonth }: SalesByMonthData) {
             Nenhuma venda concluída ainda.
           </p>
         ) : (
-          <div className="flex h-40 items-end gap-3">
+          <div className="flex h-40 items-end gap-2 sm:gap-3">
             {entries.map(([month, value]) => (
-              <div key={month} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
-                <span className="text-[11px] font-medium text-muted">
+              <div key={month} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1 sm:gap-2">
+                <span className="min-w-0 truncate text-[10px] font-medium text-muted sm:text-[11px]">
                   {formatCurrency(value)}
                 </span>
                 <div
                   className={cn(
-                    "w-full max-w-[56px] rounded-t-md bg-gradient-to-t from-brand-700 to-brand-500 transition-all",
+                    "w-full rounded-t-md bg-gradient-to-t from-brand-700 to-brand-500 transition-all",
                     value === 0 && "h-1 bg-surface-3"
                   )}
                   style={{ height: `${Math.max((value / max) * 100, 4)}%` }}
                 />
-                <span className="text-[11px] text-muted-2">{month}</span>
+                <span className="min-w-0 truncate text-[10px] text-muted-2 sm:text-[11px]">{month}</span>
               </div>
             ))}
           </div>
