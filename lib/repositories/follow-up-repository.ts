@@ -49,13 +49,17 @@ export class FollowUpRepository {
     const supabase = await createUniversalClient();
     const id = `fu-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
+    const dateTime = input.date.includes("T")
+      ? input.date
+      : `${input.date}T${input.time || "09:00"}:00`;
+
     const row = {
       id,
       client_id: input.clientId || null,
       client_name: input.clientName,
       responsible_id: input.responsibleId || null,
       type: input.type,
-      date: input.date,
+      date: dateTime,
       time: input.time,
       status: input.status,
       subject: input.subject ?? null,
