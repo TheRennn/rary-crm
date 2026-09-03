@@ -20,6 +20,12 @@ export function FollowUpContentClient({ groups: initialGroups }: FollowUpContent
   const { toast } = useToast();
   const router = useRouter();
   const [groups, setGroups] = useState(initialGroups);
+  const [prevInitial, setPrevInitial] = useState(initialGroups);
+
+  if (prevInitial !== initialGroups) {
+    setPrevInitial(initialGroups);
+    setGroups(initialGroups);
+  }
 
   const refresh = useCallback(() => {
     router.refresh();
@@ -32,6 +38,14 @@ export function FollowUpContentClient({ groups: initialGroups }: FollowUpContent
     CONCLUIDO: "concluidos",
   };
 
+  function groupKeyFromDate(date: string): keyof FollowUpContentClientProps["groups"] {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const dateStr = date.slice(0, 10);
+    if (dateStr === todayStr) return "hoje";
+    if (dateStr < todayStr) return "atrasados";
+    return "proximos";
+  }
+
   function updateGroup(status: FollowUp["status"], updater: (items: FollowUp[]) => FollowUp[]) {
     const key = followUpStatusToGroup[status];
     setGroups((prev) => ({ ...prev, [key]: updater(prev[key]) }));
@@ -39,15 +53,16 @@ export function FollowUpContentClient({ groups: initialGroups }: FollowUpContent
 
   async function handleComplete(followUp: FollowUp) {
     try {
-      const newStatus = followUp.status === "CONCLUIDO" ? "HOJE" : "CONCLUIDO";
+      const isCompleting = followUp.status !== "CONCLUIDO";
+      const newStatus = isCompleting ? "CONCLUIDO" : "HOJE";
+      const targetKey = isCompleting ? "concluidos" : groupKeyFromDate(followUp.date);
       await followUpService.update(followUp.id, { status: newStatus });
       updateGroup(followUp.status, (items) => items.filter((f) => f.id !== followUp.id));
-      const newKey = followUpStatusToGroup[newStatus];
       setGroups((prev) => ({
         ...prev,
-        [newKey]: [{ ...followUp, status: newStatus }, ...prev[newKey]],
+        [targetKey]: [{ ...followUp, status: newStatus }, ...prev[targetKey]],
       }));
-      toast({ title: newStatus === "CONCLUIDO" ? "Follow-up concluído" : "Follow-up reaberto", message: followUp.clientName, variant: "success" });
+      toast({ title: isCompleting ? "Follow-up concluído" : "Follow-up reaberto", message: followUp.clientName, variant: "success" });
     } catch {
       toast({ title: "Erro", message: "Não foi possível atualizar o follow-up.", variant: "error" });
     }

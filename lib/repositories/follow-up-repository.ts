@@ -29,12 +29,17 @@ export class FollowUpRepository {
 
     let query = supabase.from("follow_ups").select("*");
 
-    if (clientIds.length > 0 && userId) {
-      query = query.or(`client_id.in.(${clientIds.join(",")}),responsible_id.eq.${userId}`);
-    } else if (clientIds.length > 0) {
-      query = query.in("client_id", clientIds);
-    } else if (userId) {
-      query = query.eq("responsible_id", userId);
+    const conditions: string[] = ["client_id.is.null"];
+
+    if (clientIds.length > 0) {
+      conditions.push(`client_id.in.(${clientIds.join(",")})`);
+    }
+    if (userId) {
+      conditions.push(`responsible_id.eq.${userId}`);
+    }
+
+    if (conditions.length > 0) {
+      query = query.or(conditions.join(","));
     } else {
       return [];
     }

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { TimeInput } from "@/components/ui/TimeInput";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -385,7 +386,7 @@ export function CalendarContent({ events, deals = [], payments = [], clientNames
           />
           <div className="grid grid-cols-2 gap-4">
             <DatePicker id="evt-data" name="evt-data" label="Data" required />
-            <Input id="evt-hora" name="evt-hora" label="Horário" type="time" required />
+            <TimeInput id="evt-hora" name="evt-hora" label="Horário" required />
           </div>
           <Input id="evt-duracao" name="evt-duracao" label="Duração" placeholder="Ex.: 1 h" />
           <Textarea id="evt-desc" name="evt-desc" label="Descrição" placeholder="Detalhes do compromisso..." rows={3} />

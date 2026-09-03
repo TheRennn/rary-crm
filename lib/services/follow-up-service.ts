@@ -31,12 +31,21 @@ export class FollowUpService {
 
   async getGroups(): Promise<FollowUpGroups> {
     const all = await this.getAll();
-    return {
-      hoje: all.filter((f) => f.status === "HOJE"),
-      atrasados: all.filter((f) => f.status === "ATRASADO"),
-      proximos: all.filter((f) => f.status === "PROXIMO"),
-      concluidos: all.filter((f) => f.status === "CONCLUIDO"),
-    };
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    function computeGroup(f: FollowUp): keyof FollowUpGroups {
+      if (f.status === "CONCLUIDO") return "concluidos";
+      const dateStr = f.date.slice(0, 10);
+      if (dateStr === todayStr) return "hoje";
+      if (dateStr < todayStr) return "atrasados";
+      return "proximos";
+    }
+
+    const groups: FollowUpGroups = { hoje: [], atrasados: [], proximos: [], concluidos: [] };
+    for (const f of all) {
+      groups[computeGroup(f)].push(f);
+    }
+    return groups;
   }
 
   async getTodayCount(): Promise<number> {

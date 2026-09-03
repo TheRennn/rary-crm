@@ -33,22 +33,17 @@ export function DatePicker({ id, name, label, error, value, onChange, required, 
           {required && <span className="ml-0.5 text-danger">*</span>}
         </label>
       )}
-      <div className="relative flex items-center">
+      <div className="relative">
         <DateInput
           id={id}
           name={name}
           value={internal}
           onChange={handleChange}
           required={required}
-          className={cn(
-            "h-11 w-full rounded-xl border border-border bg-surface-1 px-3 pr-9 text-sm text-foreground transition-all focus:outline-none focus:ring-2",
-            error
-              ? "border-danger/50 focus:border-danger focus:ring-danger/25"
-              : "hover:border-border-strong focus:border-brand-500/60 focus:ring-brand-500/25 focus:shadow-lg focus:shadow-brand-600/5"
-          )}
+          className={error ? "border-danger/50 focus:border-danger focus:ring-danger/25" : undefined}
           {...rest}
         />
-        <IconCalendar className="pointer-events-none absolute right-3 h-4 w-4 text-muted-2" />
+        <IconCalendar className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-2" />
       </div>
       {error && <span className="text-xs text-danger">{error}</span>}
     </div>

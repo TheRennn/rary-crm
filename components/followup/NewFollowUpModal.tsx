@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { TimeInput } from "@/components/ui/TimeInput";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
@@ -45,11 +46,12 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreate
     const date = formData.get("fu-data") as string;
     const time = formData.get("fu-hora") as string;
     const subject = formData.get("fu-assunto") as string;
+    const clientInput = (formData.get("fu-cliente") as string) || "";
 
     try {
       await followUpService.create({
         clientId: clientId ?? "",
-        clientName: clientName ?? "",
+        clientName: clientName || clientInput,
         responsibleId: "",
         type,
         date,
@@ -116,7 +118,7 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreate
         </div>
         <div className="grid grid-cols-2 gap-4">
           <DatePicker id="fu-data" name="fu-data" label="Data" required />
-          <Input id="fu-hora" name="fu-hora" label="Horário" type="time" required />
+          <TimeInput id="fu-hora" name="fu-hora" label="Horário" required />
         </div>
         <Textarea
           id="fu-assunto"

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Input, type InputProps } from "@/components/ui/Input";
+import { useState, useEffect, useCallback, forwardRef } from "react";
+import { cn } from "@/lib/utils";
 
 function isValidDate(d: Date): boolean {
   return d instanceof Date && !isNaN(d.getTime());
@@ -34,47 +34,80 @@ function maskDateInput(value: string): string {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
-export interface DateInputProps extends Omit<InputProps, "onChange" | "value" | "type"> {
+export interface DateInputProps {
+  id?: string;
+  name?: string;
+  label?: string;
   value: string;
   onChange: (isoValue: string) => void;
+  required?: boolean;
+  placeholder?: string;
+  className?: string;
 }
 
-export function DateInput({ value, onChange, ...props }: DateInputProps) {
-  const [display, setDisplay] = useState(() => parseFromISO(value));
+export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
+  ({ value, onChange, className, id, name, label, required, placeholder, ...props }, ref) => {
+    const [display, setDisplay] = useState(() => parseFromISO(value));
 
-  useEffect(() => {
-    setDisplay(parseFromISO(value));
-  }, [value]);
+    useEffect(() => {
+      setDisplay(parseFromISO(value));
+    }, [value]);
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const masked = maskDateInput(e.target.value);
-      setDisplay(masked);
-      const iso = toISO(masked);
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const masked = maskDateInput(e.target.value);
+        setDisplay(masked);
+        const iso = toISO(masked);
+        if (iso) {
+          onChange(iso);
+        }
+      },
+      [onChange]
+    );
+
+    const handleBlur = useCallback(() => {
+      const iso = toISO(display);
       if (iso) {
         onChange(iso);
       }
-    },
-    [onChange]
-  );
+    }, [display, onChange]);
 
-  const handleBlur = useCallback(() => {
-    const iso = toISO(display);
-    if (iso) {
-      onChange(iso);
+    const input = (
+      <input
+        ref={ref}
+        id={id}
+        name={name}
+        type="text"
+        inputMode="numeric"
+        placeholder={placeholder ?? "dd/mm/aaaa"}
+        maxLength={10}
+        required={required}
+        value={display}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        className={cn(
+          "h-11 w-full rounded-xl border border-border bg-surface-1 px-3 text-sm text-foreground placeholder:text-muted-2 transition-all focus:outline-none focus:ring-2",
+          "hover:border-border-strong focus:border-brand-500/60 focus:ring-brand-500/25 focus:shadow-lg focus:shadow-brand-600/5",
+          className
+        )}
+        {...props}
+      />
+    );
+
+    if (label) {
+      return (
+        <div className="flex w-full flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-foreground" htmlFor={id}>
+            {label}
+            {required && <span className="ml-0.5 text-danger">*</span>}
+          </label>
+          {input}
+        </div>
+      );
     }
-  }, [display, onChange]);
 
-  return (
-    <Input
-      type="text"
-      inputMode="numeric"
-      placeholder="dd/mm/aaaa"
-      maxLength={10}
-      value={display}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      {...props}
-    />
-  );
-}
+    return input;
+  }
+);
+
+DateInput.displayName = "DateInput";

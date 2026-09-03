@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Drawer } from "@/components/ui/Drawer";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { TimeInput } from "@/components/ui/TimeInput";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -113,12 +114,11 @@ export function TaskDrawer({ open, onClose, task, clients, onSaved }: TaskDrawer
             onChange={setDueDate}
             required
           />
-          <Input
+          <TimeInput
             id="task-hora"
             label="Horário"
-            type="time"
             value={dueTime}
-            onChange={(event) => setDueTime(event.target.value)}
+            onChange={setDueTime}
             required
           />
         </div>
