@@ -39,7 +39,7 @@ export function ClientActivities({ activities }: { activities: ClientActivityIte
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <span className="text-[11px] text-muted-2">{relativeLabel(activity.date)}</span>
-                  {activity.tone && <Badge tone={activity.tone}>{formatDate(activity.date, { day: "2-digit", month: "short" })}</Badge>}
+                  {activity.tone && <Badge tone={activity.tone}>{formatDate(activity.date, { day: "2-digit", month: "2-digit" })}</Badge>}
                 </div>
               </li>
             ))}

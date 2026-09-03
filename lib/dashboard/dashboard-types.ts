@@ -2,8 +2,10 @@ import type {
   Activity,
   CalendarEvent,
   Client,
+  Commission,
   Deal,
   FollowUp,
+  Order,
   Payment,
   Task,
 } from "@/types";
@@ -39,7 +41,8 @@ export type DashboardWidgetId =
   | "goals"
   | "insights"
   | "quick-actions"
-  | "sales";
+  | "sales"
+  | "financial";
 
 export interface DashboardWidgetConfig {
   id: DashboardWidgetId;
@@ -148,6 +151,16 @@ export interface ChartMetrics {
   clientDistribution: { label: string; value: number; tone: "brand" | "success" | "neutral" }[];
 }
 
+export interface FinancialSummary {
+  totalCommissions: number;
+  pendingCommissions: number;
+  paidCommissions: number;
+  totalOrders: number;
+  pendingOrders: number;
+  companiesCount: number;
+  topCompanies: { name: string; total: number }[];
+}
+
 export interface DashboardData {
   user: { name: string } | null;
   greeting: string;
@@ -171,4 +184,5 @@ export interface DashboardData {
   deals: Deal[];
   payments: Payment[];
   tasks: Task[];
+  financial?: FinancialSummary;
 }

@@ -17,7 +17,7 @@ export function formatDate(
 ): string {
   if (!iso) return "—";
   const date = new Date(iso);
-  return new Intl.DateTimeFormat("pt-BR", options ?? { day: "2-digit", month: "short", year: "numeric" }).format(
+  return new Intl.DateTimeFormat("pt-BR", options ?? { day: "2-digit", month: "2-digit", year: "numeric" }).format(
     date
   );
 }

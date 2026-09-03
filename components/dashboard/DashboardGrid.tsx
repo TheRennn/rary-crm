@@ -21,6 +21,7 @@ import { GoalsWidget } from "./GoalsWidget";
 import { InsightsWidget } from "./InsightsWidget";
 import { QuickActions } from "./QuickActions";
 import { NewClientsWidget } from "./NewClientsWidget";
+import { FinancialWidget } from "./FinancialWidget";
 
 interface DashboardGridProps {
   data: DashboardData;
@@ -133,6 +134,8 @@ export function DashboardGrid({ data, summary, periodKey, heading }: DashboardGr
         return <QuickActions />;
       case "new-clients":
         return <NewClientsWidget clients={data.clients} />;
+      case "financial":
+        return <FinancialWidget data={data.financial} />;
       default:
         return null;
     }

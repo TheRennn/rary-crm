@@ -110,7 +110,7 @@ export function TaskDrawer({ open, onClose, task, clients, onSaved }: TaskDrawer
             id="task-prazo"
             label="Prazo"
             value={dueDate}
-            onChange={(event) => setDueDate(event.target.value)}
+            onChange={setDueDate}
             required
           />
           <Input

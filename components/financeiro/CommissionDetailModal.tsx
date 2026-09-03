@@ -265,7 +265,7 @@ export function CommissionDetailModal({
         return (
           <div>
             <span className={cn("text-foreground/90", isOverdue(dueDate) && statusForDate !== "PAGO" && "text-danger")}>
-              {formatDate(dueDate, { day: "2-digit", month: "short" })}
+              {formatDate(dueDate, { day: "2-digit", month: "2-digit" })}
             </span>
             <span className="ml-1.5 text-xs text-muted-2">{relativeLabel(dueDate)}</span>
           </div>

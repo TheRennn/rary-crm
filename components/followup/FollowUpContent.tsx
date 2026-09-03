@@ -62,7 +62,7 @@ export function FollowUpContent({ groups, onDelete, onComplete, onEdit }: Follow
         header: "Data",
         render: (followUp) => (
           <span className="text-muted">
-            {formatDate(followUp.date, { day: "2-digit", month: "short" })}
+            {formatDate(followUp.date, { day: "2-digit", month: "2-digit" })}
             <span className="ml-1.5 text-muted-2">· {relativeLabel(followUp.date)}</span>
           </span>
         ),

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { MaskedInput } from "@/components/ui/MaskedInput";
+import { DateInput } from "@/components/ui/DateInput";
 import { IconPlus, IconX } from "@/components/icons";
 import { useToast } from "@/components/ui/Toast";
 import { orderService } from "@/lib/services";
 import { ORDER_TYPE_LABELS, ORDER_SOURCE_LABELS } from "@/lib/constants";
-import type { Order, OrderItem, OrderSource, OrderType, PaymentStatus, Product } from "@/types";
+import type { Order, OrderItem, OrderSource, OrderType, PaymentStatus, Product, EntryType } from "@/types";
 import { formatCurrency, cn, maskCurrency, parseCurrency } from "@/lib/utils";
 
 export interface RegisterOrderModalProps {
@@ -53,6 +54,12 @@ export function RegisterOrderModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [entryEnabled, setEntryEnabled] = useState(false);
+  const [entryValue, setEntryValue] = useState("");
+  const [entryType, setEntryType] = useState<EntryType>("FIXO");
+  const [shippingEnabled, setShippingEnabled] = useState(false);
+  const [shippingValue, setShippingValue] = useState("");
+
   useEffect(() => {
     if (editOrder && open) {
       setClientName(editOrder.clientName);
@@ -69,15 +76,31 @@ export function RegisterOrderModal({
         quantity: item.quantity,
         unitValue: maskCurrency(String(Math.round(item.unitValue * 100))),
       })));
+      setEntryEnabled(!!editOrder.entryValue);
+      setEntryValue(editOrder.entryValue ? editOrder.entryValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "");
+      setEntryType(editOrder.entryType ?? "FIXO");
+      setShippingEnabled(!!editOrder.shippingValue);
+      setShippingValue(editOrder.shippingValue ? editOrder.shippingValue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "");
     } else if (!open) {
       reset();
     }
   }, [editOrder, open]);
 
-  const total = items.reduce((acc, item) => {
+  const subtotal = items.reduce((acc, item) => {
     const unitVal = typeof item.unitValue === "string" ? parseCurrency(item.unitValue) : (item.unitValue || 0);
     return acc + (item.quantity || 0) * unitVal;
   }, 0);
+
+  const entryAmount = useMemo(() => {
+    if (!entryEnabled) return 0;
+    const raw = parseCurrency(entryValue);
+    if (entryType === "PERCENTUAL") {
+      return Math.round((subtotal * raw) / 100 * 100) / 100;
+    }
+    return raw;
+  }, [entryEnabled, entryValue, entryType, subtotal]);
+  const shippingAmount = shippingEnabled ? parseCurrency(shippingValue) : 0;
+  const total = Math.max(0, subtotal - entryAmount - shippingAmount);
 
   function updateItem(key: string, patch: Partial<DraftItem>) {
     setItems((prev) => prev.map((item) => (item.key === key ? { ...item, ...patch } : item)));
@@ -104,6 +127,11 @@ export function RegisterOrderModal({
     setStatus("PENDENTE");
     setItems([{ key: "row-1", product: "", productCode: "", quantity: 1, unitValue: "" }]);
     setError(null);
+    setEntryEnabled(false);
+    setEntryValue("");
+    setEntryType("FIXO");
+    setShippingEnabled(false);
+    setShippingValue("");
   }
 
   function handleClose() {
@@ -154,6 +182,9 @@ export function RegisterOrderModal({
           type,
           status,
           items: fullItems,
+          entryValue: entryEnabled ? entryAmount : undefined,
+          entryType: entryEnabled ? entryType : undefined,
+          shippingValue: shippingAmount > 0 ? shippingAmount : undefined,
         });
         onCreated(updated);
         toast({
@@ -171,6 +202,9 @@ export function RegisterOrderModal({
           type,
           status,
           items: fullItems,
+          entryValue: entryEnabled ? entryAmount : undefined,
+          entryType: entryEnabled ? entryType : undefined,
+          shippingValue: shippingAmount > 0 ? shippingAmount : undefined,
         });
         onCreated(created);
         toast({
@@ -267,12 +301,10 @@ export function RegisterOrderModal({
             <label htmlFor="od-date" className="text-xs font-medium text-muted">
               Data
             </label>
-            <input
+            <DateInput
               id="od-date"
-              type="date"
               value={date}
-              onChange={(event) => setDate(event.target.value)}
-              className={inputClasses}
+              onChange={setDate}
             />
           </div>
         </div>
@@ -410,15 +442,117 @@ export function RegisterOrderModal({
 
         <div className="flex items-center justify-between rounded-lg border border-border bg-surface-2 px-3 py-2.5">
           <span className="text-xs font-medium text-muted">
-            Total do pedido
+            Subtotal
             {type === "AMOSTRA" || type === "BONIFICACAO" ? (
               <span className="ml-1 text-muted-2">({ORDER_TYPE_LABELS[type]})</span>
             ) : null}
           </span>
           <span className="text-sm font-bold tabular-nums text-foreground">
-            {formatCurrency(total)}
+            {formatCurrency(subtotal)}
           </span>
         </div>
+
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface-2 p-4">
+          <div className="flex items-center gap-3">
+            <input
+              id="od-entry-toggle"
+              type="checkbox"
+              checked={entryEnabled}
+              onChange={(e) => { setEntryEnabled(e.target.checked); setEntryValue(""); }}
+              className="h-4 w-4 rounded border-border-strong bg-surface-1 text-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            />
+            <label htmlFor="od-entry-toggle" className="text-sm font-medium text-foreground">
+              Possui entrada
+            </label>
+          </div>
+          {entryEnabled && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted">Tipo de entrada</label>
+                <div className="flex items-center gap-1 rounded-lg border border-border bg-surface-1 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setEntryType("FIXO")}
+                    className={cn(
+                      "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                      entryType === "FIXO" ? "bg-brand-500/15 text-brand-300" : "text-muted hover:text-foreground"
+                    )}
+                  >
+                    Valor fixo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEntryType("PERCENTUAL")}
+                    className={cn(
+                      "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                      entryType === "PERCENTUAL" ? "bg-brand-500/15 text-brand-300" : "text-muted hover:text-foreground"
+                    )}
+                  >
+                    Porcentagem
+                  </button>
+                </div>
+              </div>
+              <MaskedInput
+                id="od-entry-value"
+                mask={entryType === "PERCENTUAL" ? "percentage" : "currency"}
+                label={entryType === "PERCENTUAL" ? "Entrada (%)" : "Entrada (R$)"}
+                placeholder={entryType === "PERCENTUAL" ? "0" : "0,00"}
+                value={entryValue}
+                onChange={setEntryValue}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface-2 p-4">
+          <div className="flex items-center gap-3">
+            <input
+              id="od-shipping-toggle"
+              type="checkbox"
+              checked={shippingEnabled}
+              onChange={(e) => { setShippingEnabled(e.target.checked); setShippingValue(""); }}
+              className="h-4 w-4 rounded border-border-strong bg-surface-1 text-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            />
+            <label htmlFor="od-shipping-toggle" className="text-sm font-medium text-foreground">
+              Possui embarque
+            </label>
+          </div>
+          {shippingEnabled && (
+            <MaskedInput
+              id="od-shipping"
+              mask="currency"
+              label="Embarque (R$)"
+              placeholder="0,00"
+              value={shippingValue}
+              onChange={setShippingValue}
+            />
+          )}
+        </div>
+
+        {(entryEnabled || shippingAmount > 0) && subtotal > 0 && (
+          <div className="flex flex-col gap-1 rounded-lg border border-info/25 bg-info/10 p-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted">Subtotal</span>
+              <span className="font-medium text-foreground">{formatCurrency(subtotal)}</span>
+            </div>
+            {entryEnabled && entryAmount > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted">Entrada ({entryType === "PERCENTUAL" ? `${parseCurrency(entryValue)}%` : "fixo"})</span>
+                <span className="font-medium text-danger">- {formatCurrency(entryAmount)}</span>
+              </div>
+            )}
+            {shippingAmount > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted">Embarque</span>
+                <span className="font-medium text-danger">- {formatCurrency(shippingAmount)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between border-t border-info/20 pt-1 text-xs">
+              <span className="font-semibold text-foreground">Valor final</span>
+              <span className="font-bold text-foreground">{formatCurrency(total)}</span>
+            </div>
+          </div>
+        )}
 
         {error && (
           <p className="rounded-lg border border-danger/25 bg-danger/10 px-3 py-2 text-xs font-medium text-danger">

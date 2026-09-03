@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { MaskedInput } from "@/components/ui/MaskedInput";
 import { Select } from "@/components/ui/Select";
+import { DateInput } from "@/components/ui/DateInput";
 import { useToast } from "@/components/ui/Toast";
 import { paymentService } from "@/lib/services";
 import { formatCurrency, parseCurrency } from "@/lib/utils";
@@ -215,12 +216,11 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
             onChange={setValue}
             required
           />
-          <Input
+          <DateInput
             id="pay-vencimento"
             label="Data de vencimento"
-            type="date"
             value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
+            onChange={setDueDate}
             required
           />
         </div>

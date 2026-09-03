@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FinanceiroContent } from "./FinanceiroContent";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useToast } from "@/components/ui/Toast";
 import { commissionService, orderService, goalService, paymentService, productService } from "@/lib/services";
 import type { Commission, Order, Goal, Payment, Product } from "@/types";
@@ -16,6 +17,14 @@ export interface FinanceiroContentClientProps {
   products: Product[];
   clients: { id: string; name: string }[];
 }
+
+type DeleteTarget =
+  | { type: "commission"; item: Commission }
+  | { type: "order"; item: Order }
+  | { type: "goal"; item: Goal }
+  | { type: "payment"; item: Payment }
+  | { type: "product"; item: Product }
+  | null;
 
 export function FinanceiroContentClient({
   payments: initialPayments,
@@ -32,72 +41,106 @@ export function FinanceiroContentClient({
   const [orders, setOrders] = useState(initialOrders);
   const [goals, setGoals] = useState(initialGoals);
   const [products, setProducts] = useState(initialProducts);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  async function handleDeleteCommission(commission: Commission) {
-    try {
-      await commissionService.delete(commission.id);
-      setCommissions((prev) => prev.filter((c) => c.id !== commission.id));
-      toast({ title: "Comissão excluída", message: `${commission.companyName} — ${commission.period}`, variant: "success" });
-    } catch {
-      toast({ title: "Erro ao excluir", message: "Não foi possível excluir a comissão.", variant: "error" });
+  function getDeleteInfo(target: DeleteTarget): { title: string; description: string } {
+    if (!target) return { title: "", description: "" };
+    switch (target.type) {
+      case "commission":
+        return {
+          title: "Excluir comissão",
+          description: `Deseja excluir a comissão de ${target.item.companyName} — ${target.item.period}?`,
+        };
+      case "order":
+        return {
+          title: "Excluir pedido",
+          description: `Deseja excluir o pedido ${target.item.code} — ${target.item.clientName}?`,
+        };
+      case "goal":
+        return {
+          title: "Excluir meta",
+          description: `Deseja excluir a meta ${target.item.targetType} — ${target.item.period}?`,
+        };
+      case "payment":
+        return {
+          title: "Excluir pagamento",
+          description: `Deseja excluir o pagamento ${target.item.description} — ${target.item.clientName}?`,
+        };
+      case "product":
+        return {
+          title: "Excluir produto",
+          description: `Deseja excluir o produto ${target.item.code} — ${target.item.name}?`,
+        };
     }
   }
 
-  async function handleDeleteOrder(order: Order) {
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await orderService.delete(order.id);
-      setOrders((prev) => prev.filter((o) => o.id !== order.id));
-      toast({ title: "Pedido excluído", message: `${order.code} — ${order.clientName}`, variant: "success" });
+      switch (deleteTarget.type) {
+        case "commission":
+          await commissionService.delete(deleteTarget.item.id);
+          setCommissions((prev) => prev.filter((c) => c.id !== deleteTarget.item.id));
+          toast({ title: "Comissão excluída", message: `${deleteTarget.item.companyName} — ${deleteTarget.item.period}`, variant: "success" });
+          break;
+        case "order":
+          await orderService.delete(deleteTarget.item.id);
+          setOrders((prev) => prev.filter((o) => o.id !== deleteTarget.item.id));
+          toast({ title: "Pedido excluído", message: `${deleteTarget.item.code} — ${deleteTarget.item.clientName}`, variant: "success" });
+          break;
+        case "goal":
+          await goalService.delete(deleteTarget.item.id);
+          setGoals((prev) => prev.filter((g) => g.id !== deleteTarget.item.id));
+          toast({ title: "Meta excluída", message: `${deleteTarget.item.targetType} — ${deleteTarget.item.period}`, variant: "success" });
+          break;
+        case "payment":
+          await paymentService.delete(deleteTarget.item.id);
+          setPayments((prev) => prev.filter((p) => p.id !== deleteTarget.item.id));
+          toast({ title: "Pagamento excluído", message: `${deleteTarget.item.description} — ${deleteTarget.item.clientName}`, variant: "success" });
+          break;
+        case "product":
+          await productService.delete(deleteTarget.item.id);
+          setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.item.id));
+          toast({ title: "Produto excluído", message: `${deleteTarget.item.code} — ${deleteTarget.item.name}`, variant: "success" });
+          break;
+      }
     } catch {
-      toast({ title: "Erro ao excluir", message: "Não foi possível excluir o pedido.", variant: "error" });
+      toast({ title: "Erro ao excluir", message: "Não foi possível excluir. Tente novamente.", variant: "error" });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   }
 
-  async function handleDeleteGoal(goal: Goal) {
-    try {
-      await goalService.delete(goal.id);
-      setGoals((prev) => prev.filter((g) => g.id !== goal.id));
-      toast({ title: "Meta excluída", message: `${goal.targetType} — ${goal.period}`, variant: "success" });
-    } catch {
-      toast({ title: "Erro ao excluir", message: "Não foi possível excluir a meta.", variant: "error" });
-    }
-  }
-
-  async function handleDeletePayment(payment: Payment) {
-    try {
-      await paymentService.delete(payment.id);
-      setPayments((prev) => prev.filter((p) => p.id !== payment.id));
-      toast({ title: "Pagamento excluído", message: `${payment.description} — ${payment.clientName}`, variant: "success" });
-    } catch {
-      toast({ title: "Erro ao excluir", message: "Não foi possível excluir o pagamento.", variant: "error" });
-    }
-  }
-
-  async function handleDeleteProduct(product: Product) {
-    try {
-      await productService.delete(product.id);
-      setProducts((prev) => prev.filter((p) => p.id !== product.id));
-      toast({ title: "Produto excluído", message: `${product.code} — ${product.name}`, variant: "success" });
-    } catch {
-      toast({ title: "Erro ao excluir", message: "Não foi possível excluir o produto.", variant: "error" });
-    }
-  }
+  const deleteInfo = getDeleteInfo(deleteTarget);
 
   return (
-    <FinanceiroContent
-      payments={payments}
-      onPaymentsChange={setPayments}
-      paymentStats={paymentStats}
-      commissions={commissions}
-      orders={orders}
-      goals={goals}
-      products={products}
-      clients={clients}
-      onDeleteCommission={handleDeleteCommission}
-      onDeleteOrder={handleDeleteOrder}
-      onDeleteGoal={handleDeleteGoal}
-      onDeletePayment={handleDeletePayment}
-      onDeleteProduct={handleDeleteProduct}
-    />
+    <>
+      <FinanceiroContent
+        payments={payments}
+        onPaymentsChange={setPayments}
+        paymentStats={paymentStats}
+        commissions={commissions}
+        orders={orders}
+        goals={goals}
+        products={products}
+        clients={clients}
+        onDeleteCommission={(c) => setDeleteTarget({ type: "commission", item: c })}
+        onDeleteOrder={(o) => setDeleteTarget({ type: "order", item: o })}
+        onDeleteGoal={(g) => setDeleteTarget({ type: "goal", item: g })}
+        onDeletePayment={(p) => setDeleteTarget({ type: "payment", item: p })}
+        onDeleteProduct={(p) => setDeleteTarget({ type: "product", item: p })}
+      />
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title={deleteInfo.title}
+        description={deleteInfo.description}
+        loading={deleting}
+      />
+    </>
   );
 }

@@ -125,6 +125,8 @@ export interface Client {
   nextInteractionAt?: string;
 }
 
+export type EntryType = "FIXO" | "PERCENTUAL";
+
 export interface Deal {
   id: string;
   code: string;
@@ -138,6 +140,11 @@ export interface Deal {
   paymentMethod?: string;
   responsibleId: string;
   deliveryDeadline?: string;
+  entryValue?: number;
+  entryType?: EntryType;
+  shippingValue?: number;
+  installments?: number;
+  installmentValue?: number;
 }
 
 export interface Purchase {
@@ -216,6 +223,9 @@ export interface Order {
   items: OrderItem[];
   total: number;
   status: PaymentStatus;
+  entryValue?: number;
+  entryType?: EntryType;
+  shippingValue?: number;
 }
 
 export type ProductCategory =

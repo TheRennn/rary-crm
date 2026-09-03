@@ -12,6 +12,11 @@ export interface CreateDealInput {
   paymentMethod?: string;
   responsibleId: string;
   deliveryDeadline?: string;
+  entryValue?: number;
+  entryType?: Deal["entryType"];
+  shippingValue?: number;
+  installments?: number;
+  installmentValue?: number;
 }
 
 function rowToDeal(row: Record<string, unknown>): Deal {
@@ -28,6 +33,11 @@ function rowToDeal(row: Record<string, unknown>): Deal {
     paymentMethod: (row.payment_method as string) ?? undefined,
     responsibleId: (row.responsible_id as string) ?? "",
     deliveryDeadline: (row.delivery_deadline as string) ?? undefined,
+    entryValue: (row.entry_value as number) ?? undefined,
+    entryType: (row.entry_type as Deal["entryType"]) ?? undefined,
+    shippingValue: (row.shipping_value as number) ?? undefined,
+    installments: (row.installments as number) ?? undefined,
+    installmentValue: (row.installment_value as number) ?? undefined,
   };
 }
 
@@ -126,6 +136,11 @@ export class DealRepository {
       payment_method: input.paymentMethod ?? "",
       responsible_id: input.responsibleId,
       delivery_deadline: input.deliveryDeadline ?? null,
+      entry_value: input.entryValue ?? null,
+      entry_type: input.entryType ?? null,
+      shipping_value: input.shippingValue ?? null,
+      installments: input.installments ?? null,
+      installment_value: input.installmentValue ?? null,
       created_at: new Date().toISOString(),
     };
 
@@ -144,6 +159,11 @@ export class DealRepository {
       paymentStatus: input.paymentStatus,
       responsibleId: input.responsibleId,
       deliveryDeadline: input.deliveryDeadline,
+      entryValue: input.entryValue,
+      entryType: input.entryType,
+      shippingValue: input.shippingValue,
+      installments: input.installments,
+      installmentValue: input.installmentValue,
     };
   }
 
@@ -159,6 +179,11 @@ export class DealRepository {
     if (input.paymentMethod !== undefined) row.payment_method = input.paymentMethod;
     if (input.responsibleId !== undefined) row.responsible_id = input.responsibleId;
     if (input.deliveryDeadline !== undefined) row.delivery_deadline = input.deliveryDeadline ?? null;
+    if (input.entryValue !== undefined) row.entry_value = input.entryValue ?? null;
+    if (input.entryType !== undefined) row.entry_type = input.entryType ?? null;
+    if (input.shippingValue !== undefined) row.shipping_value = input.shippingValue ?? null;
+    if (input.installments !== undefined) row.installments = input.installments ?? null;
+    if (input.installmentValue !== undefined) row.installment_value = input.installmentValue ?? null;
 
     const { data, error } = await supabase.from("deals").update(row).eq("id", id).select().single();
     if (error) throw error;

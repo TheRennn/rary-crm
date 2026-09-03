@@ -38,7 +38,7 @@ export function EventDetails({ event }: EventDetailsProps) {
             {formatDate(event.date, {
               weekday: "short",
               day: "2-digit",
-              month: "short",
+              month: "2-digit",
               year: "numeric",
             })}
           </dd>

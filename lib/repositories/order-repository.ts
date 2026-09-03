@@ -16,6 +16,9 @@ function rowToOrder(row: Record<string, unknown>): Order {
     items: (row.items as Order["items"]) ?? [],
     total: Number(row.total) || 0,
     status: row.status as Order["status"],
+    entryValue: (row.entry_value as number) ?? undefined,
+    entryType: (row.entry_type as Order["entryType"]) ?? undefined,
+    shippingValue: (row.shipping_value as number) ?? undefined,
   };
 }
 
@@ -53,6 +56,9 @@ export class OrderRepository {
       items: input.items,
       total: input.total,
       status: input.status,
+      entry_value: input.entryValue ?? null,
+      entry_type: input.entryType ?? null,
+      shipping_value: input.shippingValue ?? null,
     };
 
     const { error: insertError } = await supabase.from("orders").insert(row);
@@ -74,6 +80,9 @@ export class OrderRepository {
     if (input.items !== undefined) row.items = input.items;
     if (input.total !== undefined) row.total = input.total;
     if (input.status !== undefined) row.status = input.status;
+    if (input.entryValue !== undefined) row.entry_value = input.entryValue ?? null;
+    if (input.entryType !== undefined) row.entry_type = input.entryType ?? null;
+    if (input.shippingValue !== undefined) row.shipping_value = input.shippingValue ?? null;
 
     const { data, error } = await supabase.from("orders").update(row).eq("id", id).select().single();
     if (error) throw error;

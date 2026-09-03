@@ -5,6 +5,7 @@ import { useDashboard } from "./DashboardProvider";
 import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { DashboardModeSelector } from "./DashboardModeSelector";
 import { NotificationCenter } from "@/components/ui/NotificationCenter";
+import { DateInput } from "@/components/ui/DateInput";
 import { PERIOD_OPTIONS } from "@/lib/dashboard/dashboard-config";
 import type { DashboardPeriod } from "@/lib/dashboard/dashboard-types";
 import { cn } from "@/lib/utils";
@@ -111,18 +112,16 @@ export function DashboardHeader({
           {customOpen && (
             <div className="absolute left-0 top-full z-30 mt-2 w-56 rounded-xl border border-border bg-surface-2 p-3 shadow-xl shadow-black/50">
               <label className="mb-1 block text-[11px] font-medium text-muted">De</label>
-              <input
-                type="date"
+              <DateInput
                 value={from}
-                onChange={(event) => setFrom(event.target.value)}
-                className="mb-2 block rounded-lg border border-border-strong bg-surface-1 px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand-500"
+                onChange={setFrom}
+                className="mb-2"
               />
               <label className="mb-1 block text-[11px] font-medium text-muted">Até</label>
-              <input
-                type="date"
+              <DateInput
                 value={to}
-                onChange={(event) => setTo(event.target.value)}
-                className="mb-3 block rounded-lg border border-border-strong bg-surface-1 px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand-500"
+                onChange={setTo}
+                className="mb-3"
               />
               <button
                 type="button"

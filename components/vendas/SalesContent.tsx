@@ -102,7 +102,31 @@ export function SalesContent({
     {
       key: "valor",
       header: "Valor",
-      render: (deal) => <span className="font-medium text-foreground">{formatCurrency(deal.value)}</span>,
+      render: (deal) => {
+        const hasEntry = !!deal.entryValue && deal.entryValue > 0;
+        const hasShipping = !!deal.shippingValue && deal.shippingValue > 0;
+        const hasDiscounts = hasEntry || hasShipping;
+        const finalVal = hasDiscounts
+          ? Math.max(0, deal.value - (deal.entryValue ?? 0) - (deal.shippingValue ?? 0))
+          : deal.value;
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium text-foreground">{formatCurrency(deal.value)}</span>
+            {hasDiscounts && (
+              <span className="text-[11px] text-danger">
+                -{hasEntry ? ` entrada ${formatCurrency(deal.entryValue!)}` : ""}
+                {hasShipping ? ` embarque ${formatCurrency(deal.shippingValue!)}` : ""}
+              </span>
+            )}
+            {hasDiscounts && (
+              <span className="text-[11px] font-semibold text-foreground">= {formatCurrency(finalVal)}</span>
+            )}
+            {deal.installments && deal.installments > 1 && deal.installmentValue && (
+              <span className="text-[11px] text-muted">{deal.installments}x {formatCurrency(deal.installmentValue)}</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "data",

@@ -155,7 +155,7 @@ export function PedidosContent({ orders, onEdit, onDelete }: PedidosContentProps
       render: (order) => (
         <div>
           <span className="font-mono text-xs font-semibold text-foreground">{order.code}</span>
-          <span className="ml-1.5 text-xs text-muted-2">{formatDate(order.date, { day: "2-digit", month: "short" })}</span>
+          <span className="ml-1.5 text-xs text-muted-2">{formatDate(order.date, { day: "2-digit", month: "2-digit" })}</span>
         </div>
       ),
     },
@@ -207,11 +207,30 @@ export function PedidosContent({ orders, onEdit, onDelete }: PedidosContentProps
     {
       key: "valor",
       header: "Valor",
-      render: (order) => (
-        <span className={cn("font-semibold tabular-nums", order.total === 0 ? "text-muted" : "text-foreground")}>
-          {order.total === 0 ? "—" : formatCurrency(order.total)}
-        </span>
-      ),
+      render: (order) => {
+        const hasEntry = !!order.entryValue && order.entryValue > 0;
+        const hasShipping = !!order.shippingValue && order.shippingValue > 0;
+        const hasDiscounts = hasEntry || hasShipping;
+        const finalVal = hasDiscounts
+          ? Math.max(0, order.total - (order.entryValue ?? 0) - (order.shippingValue ?? 0))
+          : order.total;
+        return (
+          <div className="flex flex-col">
+            <span className={cn("font-semibold tabular-nums", order.total === 0 ? "text-muted" : "text-foreground")}>
+              {order.total === 0 ? "—" : formatCurrency(order.total)}
+            </span>
+            {hasDiscounts && (
+              <span className="text-[11px] text-danger">
+                -{hasEntry ? ` entrada ${formatCurrency(order.entryValue!)}` : ""}
+                {hasShipping ? ` embarque ${formatCurrency(order.shippingValue!)}` : ""}
+              </span>
+            )}
+            {hasDiscounts && (
+              <span className="text-[11px] font-semibold text-foreground">= {formatCurrency(finalVal)}</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "status",

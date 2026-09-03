@@ -79,7 +79,7 @@ export function PaymentsContent({ payments, stats, onDelete, onEdit }: PaymentsC
       render: (payment) => (
         <div>
           <span className={cn("text-foreground/90", isOverdue(payment.dueDate) && payment.status !== "PAGO" && "text-danger")}>
-            {formatDate(payment.dueDate, { day: "2-digit", month: "short" })}
+            {formatDate(payment.dueDate, { day: "2-digit", month: "2-digit" })}
           </span>
           <span className="ml-1.5 text-xs text-muted-2">{relativeLabel(payment.dueDate)}</span>
         </div>

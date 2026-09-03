@@ -24,7 +24,7 @@ const TYPE_TONE: Record<FollowUp["type"], "brand" | "info" | "neutral" | "succes
 function followUpDateTime(followUp: FollowUp): string {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
-    month: "short",
+    month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(followUp.date));

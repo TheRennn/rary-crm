@@ -55,7 +55,7 @@ export class CommissionService {
   async create(input: CreateCommissionInput): Promise<Commission> {
     const rate = Number(input.rate);
     const baseValue = Number(input.baseValue);
-    const value = Math.round((baseValue * rate) / 100);
+    const value = Math.round(((baseValue * rate) / 100) * 100) / 100;
     const method = input.method ?? "A_VISTA";
     const dueDate = input.dueDate ?? new Date().toISOString().slice(0, 10);
     const paymentMethod = method;

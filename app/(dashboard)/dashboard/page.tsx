@@ -8,9 +8,11 @@ import type { DashboardData } from "@/lib/dashboard/dashboard-types";
 import {
   calendarService,
   clientService,
+  commissionService,
   dealService,
   followUpService,
   notificationService,
+  orderService,
   paymentService,
   taskService,
   userService,
@@ -39,6 +41,8 @@ export default async function DashboardPage() {
     events,
     notifications,
     activities,
+    commissions,
+    orders,
   ] = await Promise.all([
     userService.getCurrentUser(authUser, supabase).catch(() => null),
     clientService.getAll().catch(() => []),
@@ -49,6 +53,8 @@ export default async function DashboardPage() {
     calendarService.getAll().catch(() => []),
     notificationService.getAll().catch(() => []),
     userService.getActivities().catch(() => []),
+    commissionService.getAll().catch(() => []),
+    orderService.getAll().catch(() => []),
   ]);
 
   const input: DashboardMetricInput = {
@@ -70,6 +76,8 @@ export default async function DashboardPage() {
     events,
     notifications,
     activities,
+    commissions,
+    orders,
   };
 
   const data: DashboardData = {

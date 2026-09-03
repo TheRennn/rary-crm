@@ -2,9 +2,11 @@ import type {
   Activity,
   CalendarEvent,
   Client,
+  Commission,
   Deal,
   FollowUp,
   Notification,
+  Order,
   Payment,
   Task,
 } from "@/types";
@@ -15,6 +17,7 @@ import type {
   DashboardKpis,
   DashboardOrganization,
   DashboardPeriod,
+  FinancialSummary,
   GoalData,
   InsightItem,
   PerformanceRow,
@@ -36,6 +39,8 @@ export interface DashboardMetricInput {
   events: CalendarEvent[];
   notifications: Notification[];
   activities: Activity[];
+  commissions?: Commission[];
+  orders?: Order[];
 }
 
 function getPeriodRange(period: DashboardPeriod): { start: Date; end: Date } {
@@ -677,6 +682,47 @@ function buildActivities(data: DashboardMetricInput): Activity[] {
   return [...fromNotifications, ...data.activities].slice(0, 8);
 }
 
+function buildFinancialSummary(
+  commissions: Commission[],
+  orders: Order[]
+): FinancialSummary {
+  const totalCommissions = commissions.reduce((acc, c) => acc + c.value, 0);
+  const pendingCommissions = commissions
+    .filter((c) => c.status === "PENDENTE" || c.status === "ATRASADO")
+    .reduce((acc, c) => acc + c.value, 0);
+  const paidCommissions = commissions
+    .filter((c) => c.status === "PAGO")
+    .reduce((acc, c) => acc + c.value, 0);
+
+  const totalOrders = orders.reduce((acc, o) => acc + o.total, 0);
+  const pendingOrders = orders
+    .filter((o) => o.status === "PENDENTE" || o.status === "ATRASADO")
+    .reduce((acc, o) => acc + o.total, 0);
+
+  const companyMap = new Map<string, number>();
+  commissions.forEach((c) => {
+    companyMap.set(c.companyName, (companyMap.get(c.companyName) ?? 0) + c.value);
+  });
+  orders.forEach((o) => {
+    companyMap.set(o.companyName, (companyMap.get(o.companyName) ?? 0) + o.total);
+  });
+
+  const topCompanies = Array.from(companyMap.entries())
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
+  return {
+    totalCommissions,
+    pendingCommissions,
+    paidCommissions,
+    totalOrders,
+    pendingOrders,
+    companiesCount: companyMap.size,
+    topCompanies,
+  };
+}
+
 export function buildDashboardData(data: DashboardMetricInput): DashboardData {
   const kpis = buildKpisForPeriod("30d", data);
   const metrics = buildMetricsForPeriod("30d", data);
@@ -732,6 +778,7 @@ export function buildDashboardData(data: DashboardMetricInput): DashboardData {
     deals: data.deals,
     payments: data.payments,
     tasks: data.tasks,
+    financial: buildFinancialSummary(data.commissions ?? [], data.orders ?? []),
   };
 }
 
@@ -739,7 +786,6 @@ export function formatDashboardCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    maximumFractionDigits: 0,
   }).format(value);
 }
 

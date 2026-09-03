@@ -84,7 +84,7 @@ export function UpcomingCommitments({ events }: UpcomingCommitmentsProps) {
                           ? "Hoje"
                           : isOverdue(event.date)
                             ? "Em atraso"
-                            : formatDate(event.date, { day: "2-digit", month: "short" })}
+                            : formatDate(event.date, { day: "2-digit", month: "2-digit" })}
                       </span>
                       <span className="text-muted-2">·</span>
                       <span>{event.time}</span>

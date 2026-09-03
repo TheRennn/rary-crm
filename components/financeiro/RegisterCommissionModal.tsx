@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { MaskedInput } from "@/components/ui/MaskedInput";
+import { DateInput } from "@/components/ui/DateInput";
 import { IconPlus } from "@/components/icons";
 import { useToast } from "@/components/ui/Toast";
 import { commissionService } from "@/lib/services";
@@ -64,7 +65,7 @@ export function RegisterCommissionModal({
   const previewValue = useMemo(() => {
     const r = Number(rate) || 0;
     const b = parseCurrency(baseValue);
-    return Math.round((b * r) / 100);
+    return Math.round(((b * r) / 100) * 100) / 100;
   }, [rate, baseValue]);
 
   const installmentsCountEffective =
@@ -327,12 +328,10 @@ export function RegisterCommissionModal({
           <label htmlFor="cm-due" className="text-xs font-medium text-muted">
             {method === "A_VISTA" ? "Vencimento (liquidação)" : "Vencimento (1ª parcela)"}
           </label>
-          <input
+          <DateInput
             id="cm-due"
-            type="date"
             value={dueDate}
-            onChange={(event) => setDueDate(event.target.value)}
-            className={inputClasses}
+            onChange={setDueDate}
           />
         </div>
 
