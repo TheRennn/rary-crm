@@ -12,7 +12,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
 import { NewFollowUpModal } from "./NewFollowUpModal";
 import type { FollowUp } from "@/types";
-import { formatDate, relativeLabel } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import {
   FOLLOW_UP_STATUS_LABELS,
   FOLLOW_UP_STATUS_TONES,
@@ -30,9 +30,10 @@ export interface FollowUpContentProps {
   onDelete?: (followUp: FollowUp) => void;
   onComplete?: (followUp: FollowUp) => void;
   onEdit?: (followUp: FollowUp) => void;
+  onRefresh?: () => void;
 }
 
-export function FollowUpContent({ groups, onDelete, onComplete, onEdit }: FollowUpContentProps) {
+export function FollowUpContent({ groups, onDelete, onComplete, onEdit, onRefresh }: FollowUpContentProps) {
   const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -43,34 +44,41 @@ export function FollowUpContent({ groups, onDelete, onComplete, onEdit }: Follow
         header: "Cliente",
         render: (followUp) => (
           <Link href={`/clientes/${followUp.clientId}`} className="font-medium text-foreground hover:text-brand-300">
-            {followUp.clientName}
+            {followUp.clientName || "Sem cliente"}
           </Link>
         ),
       },
       {
-        key: "responsavel",
-        header: "Responsável",
-        render: (followUp) => <span className="text-muted">{followUp.responsibleId || "—"}</span>,
-      },
-      {
         key: "tipo",
         header: "Tipo",
-        render: (followUp) => <span className="text-muted">{FOLLOW_UP_TYPE_LABELS[followUp.type]}</span>,
+        render: (followUp) => (
+          <Badge tone={FOLLOW_UP_STATUS_TONES[followUp.status]} dot>
+            {FOLLOW_UP_TYPE_LABELS[followUp.type]}
+          </Badge>
+        ),
       },
       {
         key: "data",
         header: "Data",
         render: (followUp) => (
           <span className="text-muted">
-            {formatDate(followUp.date, { day: "2-digit", month: "2-digit" })}
-            <span className="ml-1.5 text-muted-2">· {relativeLabel(followUp.date)}</span>
+            {formatDate(followUp.date, { day: "2-digit", month: "2-digit", year: "numeric" })}
           </span>
         ),
       },
       {
         key: "horario",
         header: "Horário",
-        render: (followUp) => <span className="text-foreground/90">{followUp.time}</span>,
+        render: (followUp) => (
+          <span className="font-mono text-sm text-foreground/90">{followUp.time}</span>
+        ),
+      },
+      {
+        key: "assunto",
+        header: "Assunto",
+        render: (followUp) => (
+          <span className="max-w-[200px] truncate text-muted">{followUp.subject || "—"}</span>
+        ),
       },
       {
         key: "status",
@@ -83,8 +91,8 @@ export function FollowUpContent({ groups, onDelete, onComplete, onEdit }: Follow
       },
       {
         key: "acao",
-        header: "Ação",
-        className: "w-14",
+        header: "",
+        className: "w-10",
         render: (followUp) => (
           <Dropdown
             align="right"
@@ -153,7 +161,7 @@ export function FollowUpContent({ groups, onDelete, onComplete, onEdit }: Follow
 
       <Tabs tabs={tabs} />
 
-      <NewFollowUpModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <NewFollowUpModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={onRefresh} />
     </div>
   );
 }

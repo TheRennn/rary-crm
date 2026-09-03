@@ -41,10 +41,10 @@ export function DatePicker({ id, name, label, error, value, onChange, required, 
           onChange={handleChange}
           required={required}
           className={cn(
-            "h-10 w-full rounded-lg border border-border bg-surface-1 px-3 pr-9 text-sm text-foreground transition-colors focus:outline-none focus:ring-2",
+            "h-11 w-full rounded-xl border border-border bg-surface-1 px-3 pr-9 text-sm text-foreground transition-all focus:outline-none focus:ring-2",
             error
               ? "border-danger/50 focus:border-danger focus:ring-danger/25"
-              : "hover:border-border-strong focus:border-brand-500/60 focus:ring-brand-500/25"
+              : "hover:border-border-strong focus:border-brand-500/60 focus:ring-brand-500/25 focus:shadow-lg focus:shadow-brand-600/5"
           )}
           {...rest}
         />

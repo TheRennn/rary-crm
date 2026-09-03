@@ -39,6 +39,7 @@ export function formatFullDate(iso: string | null | undefined): string {
 }
 
 export function formatTime(time: string): string {
+  if (!time) return "—";
   return time;
 }
 

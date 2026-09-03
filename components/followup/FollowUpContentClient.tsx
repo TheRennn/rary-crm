@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { FollowUpContent } from "./FollowUpContent";
 import { useToast } from "@/components/ui/Toast";
 import { followUpService } from "@/lib/services";
@@ -17,7 +18,12 @@ export interface FollowUpContentClientProps {
 
 export function FollowUpContentClient({ groups: initialGroups }: FollowUpContentClientProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [groups, setGroups] = useState(initialGroups);
+
+  const refresh = useCallback(() => {
+    router.refresh();
+  }, [router]);
 
   const followUpStatusToGroup: Record<FollowUp["status"], keyof FollowUpContentClientProps["groups"]> = {
     HOJE: "hoje",
@@ -62,6 +68,7 @@ export function FollowUpContentClient({ groups: initialGroups }: FollowUpContent
       groups={groups}
       onComplete={handleComplete}
       onDelete={handleDelete}
+      onRefresh={refresh}
     />
   );
 }
