@@ -10,8 +10,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { useToast } from "@/components/ui/Toast";
 import { followUpService } from "@/lib/services";
-import { FOLLOW_UP_TYPE_LABELS, FOLLOW_UP_STATUS_LABELS } from "@/lib/constants";
-import type { FollowUpStatus, FollowUpType } from "@/types";
+import { FOLLOW_UP_TYPE_LABELS } from "@/lib/constants";
+import type { FollowUpType } from "@/types";
 
 export interface NewFollowUpModalProps {
   open: boolean;
@@ -26,11 +26,6 @@ const typeOptions = (Object.keys(FOLLOW_UP_TYPE_LABELS) as FollowUpType[]).map((
   label: FOLLOW_UP_TYPE_LABELS[type],
 }));
 
-const statusOptions = (Object.keys(FOLLOW_UP_STATUS_LABELS) as FollowUpStatus[]).map((status) => ({
-  value: status,
-  label: FOLLOW_UP_STATUS_LABELS[status],
-}));
-
 export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreated }: NewFollowUpModalProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -42,7 +37,6 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreate
     const form = event.currentTarget;
     const formData = new FormData(form);
     const type = (formData.get("fu-tipo") as FollowUpType) || "LIGACAO";
-    const status = (formData.get("fu-status") as FollowUpStatus) || "HOJE";
     const date = formData.get("fu-data") as string;
     const time = formData.get("fu-hora") as string;
     const subject = formData.get("fu-assunto") as string;
@@ -56,7 +50,7 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreate
         type,
         date,
         time,
-        status,
+        status: "PROXIMO",
         subject: subject || undefined,
       });
       toast({
@@ -106,15 +100,7 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreate
             required
             defaultValue="LIGACAO"
           />
-          <Select
-            id="fu-status"
-            name="fu-status"
-            label="Status"
-            options={statusOptions}
-            placeholder="Selecione"
-            required
-            defaultValue="HOJE"
-          />
+          <div />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <DatePicker id="fu-data" name="fu-data" label="Data" required />

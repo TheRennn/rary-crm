@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { FollowUpContent } from "./FollowUpContent";
+import { EditFollowUpModal } from "./EditFollowUpModal";
 import { useToast } from "@/components/ui/Toast";
 import { followUpService } from "@/lib/services";
 import type { FollowUp } from "@/types";
@@ -39,6 +40,7 @@ export function FollowUpContentClient({ groups: initialGroups }: FollowUpContent
   const router = useRouter();
   const [groups, setGroups] = useState(initialGroups);
   const [prevInitial, setPrevInitial] = useState(initialGroups);
+  const [editing, setEditing] = useState<FollowUp | null>(null);
 
   if (prevInitial !== initialGroups) {
     setPrevInitial(initialGroups);
@@ -81,12 +83,25 @@ export function FollowUpContentClient({ groups: initialGroups }: FollowUpContent
     }
   }
 
+  function handleEdit(followUp: FollowUp) {
+    setEditing(followUp);
+  }
+
   return (
-    <FollowUpContent
-      groups={groups}
-      onComplete={handleComplete}
-      onDelete={handleDelete}
-      onRefresh={refresh}
-    />
+    <>
+      <FollowUpContent
+        groups={groups}
+        onComplete={handleComplete}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+        onRefresh={refresh}
+      />
+      <EditFollowUpModal
+        open={editing !== null}
+        followUp={editing}
+        onClose={() => setEditing(null)}
+        onUpdated={refresh}
+      />
+    </>
   );
 }

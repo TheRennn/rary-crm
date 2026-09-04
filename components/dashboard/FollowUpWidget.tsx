@@ -21,14 +21,12 @@ const TYPE_TONE: Record<FollowUp["type"], "brand" | "info" | "neutral" | "succes
   OUTRO: "neutral",
 };
 
-function followUpDateTime(followUp: FollowUp): string {
-  return new Intl.DateTimeFormat("pt-BR", {
+function followUpDateLabel(followUp: FollowUp): string {
+  const datePart = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(followUp.date));
+  }).format(new Date(followUp.date.slice(0, 10) + "T12:00:00"));
+  return `${datePart} às ${followUp.time}`;
 }
 
 export function FollowUpWidget({ today, overdueCount, next }: FollowUpWidgetProps) {
@@ -69,7 +67,7 @@ export function FollowUpWidget({ today, overdueCount, next }: FollowUpWidgetProp
                   {followUp.subject ?? "Sem assunto"}
                 </span>
                 <span className="mt-0.5 block text-[11px] text-muted-2">
-                  {followUpDateTime(followUp)}
+                  {followUpDateLabel(followUp)}
                 </span>
               </span>
               <Badge tone={TYPE_TONE[followUp.type]}>

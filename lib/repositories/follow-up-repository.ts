@@ -1,16 +1,24 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
 import { getUserIdFromUser } from "@/lib/supabase/auth";
-import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { FollowUp } from "@/types";
 
 function rowToFollowUp(row: Record<string, unknown>): FollowUp {
+  const rawDate = row.date as string;
+  let normalizedDate = rawDate;
+  if (rawDate) {
+    normalizedDate = rawDate.replace(/([+-]\d{2}:\d{2}|Z)$/, "");
+    if (!normalizedDate.includes("T")) {
+      normalizedDate = normalizedDate.replace(" ", "T");
+    }
+  }
+
   return {
     id: row.id as string,
     clientId: (row.client_id as string) ?? "",
     clientName: (row.client_name as string) ?? "",
     responsibleId: (row.responsible_id as string) ?? "",
     type: row.type as FollowUp["type"],
-    date: row.date as string,
+    date: normalizedDate,
     time: (row.time as string) ?? "09:00",
     status: row.status as FollowUp["status"],
     subject: (row.subject as string) ?? undefined,
@@ -20,27 +28,15 @@ function rowToFollowUp(row: Record<string, unknown>): FollowUp {
 export type CreateFollowUpInput = Omit<FollowUp, "id">;
 
 export class FollowUpRepository {
-  async findAll(companyId?: string | null): Promise<FollowUp[]> {
+  async findAll(): Promise<FollowUp[]> {
     const supabase = await createUniversalClient();
-    const [clientIds, userId] = await Promise.all([
-      getClientIdsForCompany(companyId),
-      getUserIdFromUser(),
-    ]);
+    const userId = await getUserIdFromUser();
 
     let query = supabase.from("follow_ups").select("*");
 
-    const conditions: string[] = [];
-
-    if (clientIds.length > 0) {
-      conditions.push(`client_id.in.(${clientIds.join(",")})`);
-    }
     if (userId) {
-      conditions.push(`responsible_id.eq.${userId}`);
+      query = query.eq("responsible_id", userId);
     }
-
-    if (conditions.length === 0) return [];
-
-    query = query.or(conditions.join(","));
 
     const { data, error } = await query.order("date", { ascending: false });
 
@@ -52,7 +48,10 @@ export class FollowUpRepository {
     const supabase = await createUniversalClient();
     const id = `fu-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
-    const responsibleId = input.responsibleId || (await getUserIdFromUser()) || null;
+    const responsibleId = input.responsibleId || (await getUserIdFromUser());
+    if (!responsibleId) {
+      throw new Error("Não foi possível identificar o usuário responsável.");
+    }
 
     const dateTime = input.date.includes("T")
       ? input.date
@@ -72,7 +71,7 @@ export class FollowUpRepository {
 
     const { error: insertError } = await supabase.from("follow_ups").insert(row);
     if (insertError) throw insertError;
-    return { id, ...input };
+    return { id, ...input, responsibleId };
   }
 
   async update(id: string, input: Partial<CreateFollowUpInput>): Promise<FollowUp> {

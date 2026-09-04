@@ -1,16 +1,27 @@
+import { redirect } from "next/navigation";
 import { CalendarContent } from "@/components/calendario/CalendarContent";
 import { calendarService, dealService, clientService, paymentService, followUpService } from "@/lib/services";
+import { createClient } from "@/lib/supabase/server";
 import type { CalendarEvent } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function CalendarioPage() {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser) {
+    redirect("/login");
+  }
+
   const [events, deals, clients, payments, followUpGroups] = await Promise.all([
-    calendarService.getAll().catch(() => []),
-    dealService.getAll().catch(() => []),
-    clientService.getAll().catch(() => []),
-    paymentService.getAll().catch(() => []),
-    followUpService.getGroups().catch(() => ({ hoje: [], atrasados: [], proximos: [], concluidos: [] })),
+    calendarService.getAll(),
+    dealService.getAll(),
+    clientService.getAll(),
+    paymentService.getAll(),
+    followUpService.getGroups(),
   ]);
 
   const clientNames = Object.fromEntries(clients.map((c) => [c.id, c.companyName]));

@@ -9,9 +9,8 @@ import { DataTable, type TableColumn } from "@/components/ui/Table";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Tabs } from "@/components/ui/Tabs";
-import { useToast } from "@/components/ui/Toast";
 import { NewFollowUpModal } from "./NewFollowUpModal";
-import type { FollowUp } from "@/types";
+import type { FollowUp, FollowUpStatus } from "@/types";
 import { formatDate } from "@/lib/utils";
 import {
   FOLLOW_UP_STATUS_LABELS,
@@ -19,6 +18,16 @@ import {
   FOLLOW_UP_TYPE_LABELS,
 } from "@/lib/constants";
 import { IconPlus, IconRefresh, IconEdit, IconTrash, IconCheck } from "@/components/icons";
+
+function dynamicStatus(f: FollowUp): FollowUpStatus {
+  if (f.status === "CONCLUIDO") return "CONCLUIDO";
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const dateStr = f.date.slice(0, 10);
+  if (dateStr === todayStr) return "HOJE";
+  if (dateStr < todayStr) return "ATRASADO";
+  return "PROXIMO";
+}
 
 export interface FollowUpContentProps {
   groups: {
@@ -34,7 +43,6 @@ export interface FollowUpContentProps {
 }
 
 export function FollowUpContent({ groups, onDelete, onComplete, onEdit, onRefresh }: FollowUpContentProps) {
-  const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
 
   function columns(): TableColumn<FollowUp>[] {
@@ -83,11 +91,14 @@ export function FollowUpContent({ groups, onDelete, onComplete, onEdit, onRefres
       {
         key: "status",
         header: "Status",
-        render: (followUp) => (
-          <Badge tone={FOLLOW_UP_STATUS_TONES[followUp.status]} dot>
-            {FOLLOW_UP_STATUS_LABELS[followUp.status]}
-          </Badge>
-        ),
+        render: (followUp) => {
+          const status = dynamicStatus(followUp);
+          return (
+            <Badge tone={FOLLOW_UP_STATUS_TONES[status]} dot>
+              {FOLLOW_UP_STATUS_LABELS[status]}
+            </Badge>
+          );
+        },
       },
       {
         key: "acao",
