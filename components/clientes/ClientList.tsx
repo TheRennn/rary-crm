@@ -229,7 +229,7 @@ export function ClientList({ clients, initialQuery = "", onDelete }: ClientListP
           <Link href="/clientes/novo">
             <Button>
               <IconPlus className="h-4 w-4" />
-              Novo cliente
+              Novo Cadastro
             </Button>
           </Link>
         }
@@ -278,7 +278,7 @@ export function ClientList({ clients, initialQuery = "", onDelete }: ClientListP
                 <Link href="/clientes/novo">
                   <Button variant="outline">
                     <IconPlus className="h-4 w-4" />
-                    Cadastrar cliente
+                    Novo Cadastro
                   </Button>
                 </Link>
               }

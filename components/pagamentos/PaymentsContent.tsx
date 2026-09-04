@@ -64,7 +64,16 @@ export function PaymentsContent({ payments, stats, onDelete, onEdit }: PaymentsC
     {
       key: "compra",
       header: "Compra",
-      render: (payment) => <span className="text-muted">{payment.description}</span>,
+      render: (payment) => (
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted">{payment.description}</span>
+          {payment.recurrent && (
+            <span className="inline-flex items-center rounded bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-medium text-brand-300" title="Conta recorrente">
+              REC
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       key: "valor",

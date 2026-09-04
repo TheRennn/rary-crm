@@ -1,17 +1,19 @@
 import type { CalendarEvent } from "@/types";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils";
 import {
   CALENDAR_EVENT_TYPE_LABELS,
   CALENDAR_EVENT_TYPE_TONES,
 } from "@/lib/constants";
-import { IconCalendar, IconClock, IconUser } from "@/components/icons";
+import { IconCalendar, IconClock, IconUser, IconEdit } from "@/components/icons";
 
 export interface EventDetailsProps {
   event: CalendarEvent;
+  onEdit?: (event: CalendarEvent) => void;
 }
 
-export function EventDetails({ event }: EventDetailsProps) {
+export function EventDetails({ event, onEdit }: EventDetailsProps) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -20,6 +22,11 @@ export function EventDetails({ event }: EventDetailsProps) {
         </Badge>
         {event.clientName && (
           <Badge tone="neutral">{event.clientName}</Badge>
+        )}
+        {event.status && (
+          <Badge tone={event.status === "ATRASADO" ? "danger" : event.status === "CONCLUIDO" ? "success" : "warning"}>
+            {event.status === "PENDENTE" ? "Pendente" : event.status === "CONCLUIDO" ? "Concluído" : "Atrasado"}
+          </Badge>
         )}
       </div>
 
@@ -58,6 +65,13 @@ export function EventDetails({ event }: EventDetailsProps) {
           </div>
         )}
       </dl>
+
+      {onEdit && (
+        <Button variant="outline" onClick={() => onEdit(event)} className="w-full">
+          <IconEdit className="h-4 w-4" />
+          Editar compromisso
+        </Button>
+      )}
     </div>
   );
 }

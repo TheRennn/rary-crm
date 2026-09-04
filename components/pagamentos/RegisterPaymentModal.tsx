@@ -56,6 +56,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentUrl, setAttachmentUrl] = useState("");
   const [attachmentName, setAttachmentName] = useState("");
+  const [recurrent, setRecurrent] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
       setStatus(editPayment.status);
       setMethod(editPayment.method || "PIX");
       setDirection(editPayment.direction || "ENTRADA");
+      setRecurrent(editPayment.recurrent ?? false);
       setAttachmentUrl(editPayment.attachmentUrl ?? "");
       setAttachmentName(editPayment.attachmentName ?? "");
     } else if (!open) {
@@ -82,6 +84,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
     setStatus("PENDENTE");
     setMethod("PIX");
     setDirection("ENTRADA");
+    setRecurrent(false);
     setError(null);
     setAttachmentFile(null);
     setAttachmentUrl("");
@@ -138,6 +141,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
           status,
           method,
           direction,
+          recurrent,
           attachmentUrl: finalAttachmentUrl || undefined,
           attachmentName: finalAttachmentName || undefined,
         });
@@ -153,11 +157,35 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
           status,
           method,
           direction,
+          recurrent,
           attachmentUrl: finalAttachmentUrl || undefined,
           attachmentName: finalAttachmentName || undefined,
         });
         onCreated(created);
         toast({ title: "Pagamento registrado", message: `${created.description} — ${formatCurrency(created.value)}`, variant: "success" });
+
+        // Auto-create next month's payment if recurrent
+        if (recurrent && dueDate) {
+          try {
+            const nextMonth = new Date(dueDate + "T00:00:00");
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            const nextDueDate = nextMonth.toISOString().slice(0, 10);
+            await paymentService.create({
+              clientId,
+              clientName: selectedClient?.name ?? "",
+              description,
+              value: numericValue,
+              dueDate: nextDueDate,
+              status: "PENDENTE",
+              method,
+              direction,
+              recurrent: true,
+            });
+            toast({ title: "Próximo lançamento criado", message: `Vencimento: ${new Date(nextDueDate + "T00:00:00").toLocaleDateString("pt-BR")}`, variant: "info" });
+          } catch {
+            // Silent fail for auto-create
+          }
+        }
       }
       reset();
       onClose();
@@ -172,8 +200,14 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
     <Modal
       open={open}
       onClose={() => { reset(); onClose(); }}
-      title={isEditing ? "Editar pagamento" : "Novo pagamento"}
-      description={isEditing ? "Atualize os dados do pagamento" : "Registre um recebimento de cliente"}
+      title={isEditing
+        ? "Editar pagamento"
+        : direction === "ENTRADA" ? "Novo recebimento" : "Novo pagamento"
+      }
+      description={isEditing
+        ? "Atualize os dados do pagamento"
+        : direction === "ENTRADA" ? "Registre um recebimento de cliente" : "Registre um pagamento a ser realizado"
+      }
       footer={
         <>
           <Button variant="ghost" onClick={() => { reset(); onClose(); }}>Cancelar</Button>
@@ -250,6 +284,15 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
             required
           />
         </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={recurrent}
+            onChange={(e) => setRecurrent(e.target.checked)}
+            className="h-4 w-4 rounded border-border-strong bg-surface-1 text-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+          <span className="text-sm text-foreground">Conta recorrente (gera lançamento automaticamente no próximo mês)</span>
+        </label>
         <div>
           <label className="mb-1.5 block text-xs font-medium text-foreground">
             Nota / Recibo / Comprovante (PDF ou imagem)

@@ -1,6 +1,6 @@
 import { calendarRepository } from "@/lib/repositories";
 import type { CalendarEvent } from "@/types";
-import type { CreateCalendarEventInput } from "@/lib/repositories/calendar-repository";
+import type { CreateCalendarEventInput, UpdateCalendarEventInput } from "@/lib/repositories/calendar-repository";
 
 /**
  * Service de eventos de calendário.
@@ -12,6 +12,10 @@ export class CalendarService {
 
   async create(input: CreateCalendarEventInput): Promise<CalendarEvent> {
     return calendarRepository.create(input);
+  }
+
+  async update(id: string, input: UpdateCalendarEventInput): Promise<CalendarEvent> {
+    return calendarRepository.update(id, input);
   }
 
   async delete(id: string): Promise<void> {

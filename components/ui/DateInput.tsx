@@ -72,26 +72,30 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
       }
     }, [display, onChange]);
 
+    const isoValue = toISO(display);
+
     const input = (
-      <input
-        ref={ref}
-        id={id}
-        name={name}
-        type="text"
-        inputMode="numeric"
-        placeholder={placeholder ?? "dd/mm/aaaa"}
-        maxLength={10}
-        required={required}
-        value={display}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        className={cn(
-          "h-11 w-full rounded-xl border border-border bg-surface-1 px-3 text-sm text-foreground placeholder:text-muted-2 transition-all focus:outline-none focus:ring-2",
-          "hover:border-border-strong focus:border-brand-500/60 focus:ring-brand-500/25 focus:shadow-lg focus:shadow-brand-600/5",
-          className
-        )}
-        {...props}
-      />
+      <>
+        {name && <input type="hidden" name={name} value={isoValue} />}
+        <input
+          ref={ref}
+          id={id}
+          type="text"
+          inputMode="numeric"
+          placeholder={placeholder ?? "dd/mm/aaaa"}
+          maxLength={10}
+          required={required}
+          value={display}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className={cn(
+            "h-11 w-full rounded-xl border border-border bg-surface-1 px-3 text-sm text-foreground placeholder:text-muted-2 transition-all focus:outline-none focus:ring-2",
+            "hover:border-border-strong focus:border-brand-500/60 focus:ring-brand-500/25 focus:shadow-lg focus:shadow-brand-600/5",
+            className
+          )}
+          {...props}
+        />
+      </>
     );
 
     if (label) {

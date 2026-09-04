@@ -47,6 +47,12 @@ export function RegisterProductModal({
     }
   }, [editProduct, open]);
 
+  useEffect(() => {
+    if (!editProduct && open) {
+      productService.getNextCode().then(setCode);
+    }
+  }, [editProduct, open]);
+
   function reset() {
     setCode("");
     setName("");
@@ -69,10 +75,6 @@ export function RegisterProductModal({
       setError("Informe o nome do produto.");
       return;
     }
-    if (!code.trim()) {
-      setError("Informe o código do produto.");
-      return;
-    }
     const unitValueNum = parseCurrency(unitValue);
     if (!Number.isFinite(unitValueNum) || unitValueNum <= 0) {
       setError("Informe um valor unitário válido.");
@@ -83,7 +85,7 @@ export function RegisterProductModal({
     setError(null);
     try {
       const productData: Omit<Product, "id" | "createdAt"> = {
-        code: code.trim().toUpperCase(),
+        code: code.trim().toUpperCase() || undefined as unknown as string,
         name: productName,
         category: "OUTRO",
         unit: "UN",
@@ -136,10 +138,11 @@ export function RegisterProductModal({
           <Input
             id="pr-code"
             label="Código"
-            placeholder="PROD-001"
+            placeholder="Gerado automaticamente"
             value={code}
-            onChange={(e) => setCode(e.target.value)}
-            required
+            readOnly
+            className="opacity-80"
+            hint="Gerado automaticamente"
           />
           <Input
             id="pr-name"

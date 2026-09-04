@@ -195,6 +195,7 @@ export interface Payment {
   supplierName?: string;
   attachmentUrl?: string;
   attachmentName?: string;
+  recurrent?: boolean;
 }
 
 export type CommissionPaymentMethod = "A_VISTA" | "BOLETO" | "CARTAO";
@@ -321,6 +322,8 @@ export interface Task {
   completed: boolean;
 }
 
+export type CalendarEventStatus = "PENDENTE" | "CONCLUIDO" | "ATRASADO";
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -331,6 +334,7 @@ export interface CalendarEvent {
   clientId?: string;
   clientName?: string;
   description?: string;
+  status?: CalendarEventStatus;
 }
 
 export interface Notification {

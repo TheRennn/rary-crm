@@ -1,4 +1,5 @@
 import { productRepository } from "@/lib/repositories";
+import { generateProductCode } from "@/lib/utils";
 import type { Product, ProductCategory } from "@/types";
 
 export interface ProductStats {
@@ -18,6 +19,11 @@ export class ProductService {
 
   async getById(id: string): Promise<Product | null> {
     return productRepository.findById(id);
+  }
+
+  async getNextCode(): Promise<string> {
+    const codes = await productRepository.findAllCodes();
+    return generateProductCode(codes);
   }
 
   async create(input: CreateProductInput): Promise<Product> {

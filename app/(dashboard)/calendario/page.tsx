@@ -51,6 +51,7 @@ export default async function CalendarioPage() {
       deals={deals}
       payments={payments}
       clientNames={clientNames}
+      clients={clients.map((c) => ({ id: c.id, name: c.companyName }))}
     />
   );
 }

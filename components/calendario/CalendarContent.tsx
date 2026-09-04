@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, useCallback, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
@@ -16,7 +17,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { EventDetails } from "@/components/events/EventDetails";
 import { calendarService } from "@/lib/services";
-import type { CalendarEvent, CalendarEventType, Deal, Payment } from "@/types";
+import type { CalendarEvent, CalendarEventType, CalendarEventStatus, Deal, Payment } from "@/types";
 import { cn, monthLabel, formatCurrency } from "@/lib/utils";
 import {
   CALENDAR_EVENT_TYPE_LABELS,
@@ -29,12 +30,19 @@ export interface CalendarContentProps {
   deals?: Deal[];
   payments?: Payment[];
   clientNames?: Record<string, string>;
+  clients?: { id: string; name: string }[];
 }
 
 const typeOptions = (Object.keys(CALENDAR_EVENT_TYPE_LABELS) as CalendarEventType[]).map((type) => ({
   value: type,
   label: CALENDAR_EVENT_TYPE_LABELS[type],
 }));
+
+const statusOptions = [
+  { value: "PENDENTE", label: "Pendente" },
+  { value: "CONCLUIDO", label: "Concluído" },
+  { value: "ATRASADO", label: "Atrasado" },
+];
 
 const filterOptions = [
   { value: "TODOS", label: "Todos" },
@@ -48,9 +56,81 @@ function toISOLocal(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function computeStatus(date: string, currentStatus?: CalendarEventStatus): CalendarEventStatus {
+  if (currentStatus === "CONCLUIDO") return "CONCLUIDO";
+  const today = toISOLocal(new Date());
+  return date < today ? "ATRASADO" : "PENDENTE";
+}
+
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export function CalendarContent({ events, deals = [], payments = [], clientNames = {} }: CalendarContentProps) {
+interface EventFormDefaultValues {
+  title?: string;
+  type?: CalendarEventType;
+  date?: string;
+  time?: string;
+  duration?: string;
+  description?: string;
+  clientId?: string;
+  status?: CalendarEventStatus;
+}
+
+function EventForm({ id, onSubmit, defaultValues, clientOptions }: {
+  id: string;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  defaultValues?: EventFormDefaultValues;
+  clientOptions: { value: string; label: string }[];
+}) {
+  return (
+    <form id={id} onSubmit={onSubmit} className="flex flex-col gap-4">
+      <Input
+        id="evt-titulo"
+        name="evt-titulo"
+        label="Título"
+        placeholder="Ex.: Reunião de alinhamento"
+        defaultValue={defaultValues?.title}
+        required
+      />
+      <Select
+        id="evt-tipo"
+        name="evt-tipo"
+        label="Tipo"
+        options={typeOptions}
+        placeholder="Selecione"
+        required
+        defaultValue={defaultValues?.type ?? "COMPROMISSO"}
+      />
+      {clientOptions.length > 0 && (
+        <Select
+          id="evt-cliente"
+          name="evt-cliente"
+          label="Cliente"
+          options={clientOptions}
+          placeholder="Selecione (opcional)"
+          defaultValue={defaultValues?.clientId}
+        />
+      )}
+      <div className="grid grid-cols-2 gap-4">
+        <DatePicker id="evt-data" name="evt-data" label="Data" required defaultValue={defaultValues?.date} />
+        <TimeInput id="evt-hora" name="evt-hora" label="Horário" required value={defaultValues?.time} />
+      </div>
+      <Input id="evt-duracao" name="evt-duracao" label="Duração" placeholder="Ex.: 1 h" defaultValue={defaultValues?.duration} />
+      <Textarea id="evt-desc" name="evt-desc" label="Descrição" placeholder="Detalhes do compromisso..." rows={3} defaultValue={defaultValues?.description} />
+      {defaultValues?.status !== undefined && (
+        <Select
+          id="evt-status"
+          name="evt-status"
+          label="Status"
+          options={statusOptions}
+          defaultValue={defaultValues.status}
+        />
+      )}
+    </form>
+  );
+}
+
+export function CalendarContent({ events, deals = [], payments = [], clientNames = {}, clients = [] }: CalendarContentProps) {
+  const router = useRouter();
   const { toast } = useToast();
   const [view, setView] = useState<"mes" | "agenda">("mes");
   const [filter, setFilter] = useState("TODOS");
@@ -60,7 +140,17 @@ export function CalendarContent({ events, deals = [], payments = [], clientNames
   });
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
   const [newOpen, setNewOpen] = useState(false);
+  const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const openEditModal = useCallback((event: CalendarEvent) => {
+    setSelected(null);
+    setEditEvent(event);
+  }, []);
+
+  const clientOptions = useMemo(() => {
+    return clients.map((c) => ({ value: c.id, label: c.name }));
+  }, [clients]);
 
   const allEvents = useMemo(() => {
     const deadlineEvents: CalendarEvent[] = deals
@@ -93,9 +183,13 @@ export function CalendarContent({ events, deals = [], payments = [], clientNames
         description: `${p.direction === "SAIDA" ? "Conta a pagar" : "Conta a receber"} — ${formatCurrency(p.value)}`,
       }));
 
-    const combined = [...events, ...deadlineEvents, ...paymentEvents];
-    if (filter === "TODOS") return combined;
-    return combined.filter((e) => e.type === filter);
+    const withStatus: CalendarEvent[] = [...events, ...deadlineEvents, ...paymentEvents].map((e) => ({
+      ...e,
+      status: computeStatus(e.date.slice(0, 10), e.status),
+    }));
+
+    if (filter === "TODOS") return withStatus;
+    return withStatus.filter((e) => e.type === filter);
   }, [events, deals, payments, clientNames, filter]);
 
   const eventsByDay = useMemo(() => {
@@ -113,7 +207,7 @@ export function CalendarContent({ events, deals = [], payments = [], clientNames
     const year = cursor.getFullYear();
     const month = cursor.getMonth();
     const first = new Date(year, month, 1);
-    const startOffset = (first.getDay() + 6) % 7; // segunda como primeiro dia
+    const startOffset = (first.getDay() + 6) % 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const todayISO = toISOLocal(new Date());
     const cells: Array<{ day: number | null; iso: string | null; events: CalendarEvent[] }> = [];
@@ -138,34 +232,76 @@ export function CalendarContent({ events, deals = [], payments = [], clientNames
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   }, [allEvents]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function getFormData(form: HTMLFormElement) {
+    const formData = new FormData(form);
+    return {
+      title: formData.get("evt-titulo") as string,
+      type: (formData.get("evt-tipo") as CalendarEventType) || "COMPROMISSO",
+      date: formData.get("evt-data") as string,
+      time: formData.get("evt-hora") as string,
+      duration: (formData.get("evt-duracao") as string) || "30 min",
+      description: formData.get("evt-desc") as string,
+      clientId: (formData.get("evt-cliente") as string) || undefined,
+    };
+  }
+
+  async function handleCreateSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
 
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    const title = formData.get("evt-titulo") as string;
-    const type = (formData.get("evt-tipo") as CalendarEventType) || "COMPROMISSO";
-    const date = formData.get("evt-data") as string;
-    const time = formData.get("evt-hora") as string;
-    const duration = (formData.get("evt-duracao") as string) || "30 min";
-    const description = formData.get("evt-desc") as string;
+    const data = getFormData(event.currentTarget);
+    const clientName = data.clientId ? clients.find((c) => c.id === data.clientId)?.name : undefined;
 
     try {
-      const created = await calendarService.create({
-        title,
-        type,
-        date,
-        time,
-        duration,
-        description: description || undefined,
+      await calendarService.create({
+        ...data,
+        clientName,
+        status: computeStatus(data.date),
       });
       setNewOpen(false);
-      toast({ title: "Compromisso criado", message: `${created.title} em ${created.date}`, variant: "success" });
+      toast({ title: "Compromisso criado", message: `${data.title} em ${data.date}`, variant: "success" });
+      router.refresh();
     } catch {
       toast({ title: "Erro ao criar", message: "Não foi possível criar o compromisso.", variant: "error" });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleEditSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editEvent) return;
+    setSaving(true);
+
+    const data = getFormData(event.currentTarget);
+    const clientName = data.clientId ? clients.find((c) => c.id === data.clientId)?.name : undefined;
+
+    try {
+      await calendarService.update(editEvent.id, {
+        ...data,
+        clientName,
+        status: computeStatus(data.date, editEvent.status),
+      });
+      setEditEvent(null);
+      toast({ title: "Compromisso atualizado", message: `${data.title} em ${data.date}`, variant: "success" });
+      router.refresh();
+    } catch {
+      toast({ title: "Erro ao atualizar", message: "Não foi possível atualizar o compromisso.", variant: "error" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(event: CalendarEvent) {
+    if (!confirm("Deseja excluir este compromisso?")) return;
+    try {
+      await calendarService.delete(event.id);
+      setSelected(null);
+      setEditEvent(null);
+      toast({ title: "Compromisso excluído", message: event.title, variant: "success" });
+      router.refresh();
+    } catch {
+      toast({ title: "Erro ao excluir", message: "Não foi possível excluir.", variant: "error" });
     }
   }
 
@@ -355,8 +491,20 @@ export function CalendarContent({ events, deals = [], payments = [], clientNames
         open={selected !== null}
         onClose={() => setSelected(null)}
         title="Detalhes do compromisso"
+        footer={
+          selected ? (
+            <>
+              <Button variant="ghost" onClick={() => handleDelete(selected!)} className="text-danger hover:text-danger">
+                Excluir
+              </Button>
+              <Button variant="outline" onClick={() => openEditModal(selected!)}>
+                Editar
+              </Button>
+            </>
+          ) : undefined
+        }
       >
-        {selected && <EventDetails event={selected} />}
+        {selected && <EventDetails event={selected} onEdit={openEditModal} />}
       </Modal>
 
       <Modal
@@ -373,24 +521,40 @@ export function CalendarContent({ events, deals = [], payments = [], clientNames
           </>
         }
       >
-        <form id="event-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input id="evt-titulo" name="evt-titulo" label="Título" placeholder="Ex.: Reunião de alinhamento" required />
-          <Select
-            id="evt-tipo"
-            name="evt-tipo"
-            label="Tipo"
-            options={typeOptions}
-            placeholder="Selecione"
-            required
-            defaultValue="COMPROMISSO"
+        <EventForm id="event-form" onSubmit={handleCreateSubmit} clientOptions={clientOptions} />
+      </Modal>
+
+      <Modal
+        open={editEvent !== null}
+        onClose={() => setEditEvent(null)}
+        title="Editar compromisso"
+        description="Atualize os dados do compromisso"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditEvent(null)}>Cancelar</Button>
+            <Button type="submit" form="edit-event-form" loading={saving}>
+              Salvar alterações
+            </Button>
+          </>
+        }
+      >
+        {editEvent && (
+          <EventForm
+            id="edit-event-form"
+            onSubmit={handleEditSubmit}
+            clientOptions={clientOptions}
+            defaultValues={{
+              title: editEvent.title,
+              type: editEvent.type,
+              date: editEvent.date,
+              time: editEvent.time,
+              duration: editEvent.duration,
+              description: editEvent.description,
+              clientId: editEvent.clientId,
+              status: editEvent.status,
+            }}
           />
-          <div className="grid grid-cols-2 gap-4">
-            <DatePicker id="evt-data" name="evt-data" label="Data" required />
-            <TimeInput id="evt-hora" name="evt-hora" label="Horário" required />
-          </div>
-          <Input id="evt-duracao" name="evt-duracao" label="Duração" placeholder="Ex.: 1 h" />
-          <Textarea id="evt-desc" name="evt-desc" label="Descrição" placeholder="Detalhes do compromisso..." rows={3} />
-        </form>
+        )}
       </Modal>
     </div>
   );

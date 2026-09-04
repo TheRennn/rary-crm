@@ -155,7 +155,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
 
   const [nome, setNome] = useState("");
   const [doc, setDoc] = useState("");
-  const [tipo, setTipo] = useState("");
+  const [tipo, setTipo] = useState("PESSOA_FISICA");
   const [kind, setKind] = useState("CLIENTE");
   const [empresaNome, setEmpresaNome] = useState("");
   const [empresaCnpj, setEmpresaCnpj] = useState("");
@@ -321,7 +321,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               mask="cpfCnpj"
               value={doc}
               onChange={setDoc}
-              required
+              required={tipo !== "PESSOA_FISICA"}
             />
             <Select
               id="cliente-tipo"
@@ -331,7 +331,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               icon={<IconLayers className="h-4 w-4" />}
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
-              required
+              defaultValue="PESSOA_FISICA"
             />
             <Select
               id="cliente-kind"
@@ -467,7 +467,6 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               mask="phone"
               value={whatsapp}
               onChange={setWhatsapp}
-              required
             />
             <Input
               id="contato-email"
@@ -476,7 +475,6 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               placeholder="contato@empresa.com"
               value={contatoEmail}
               onChange={(e) => setContatoEmail(e.target.value)}
-              required
             />
             <MaskedInput
               id="contato-telefone"

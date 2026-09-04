@@ -39,6 +39,20 @@ export class ProductRepository {
     return data.map(rowToProduct);
   }
 
+  async findAllCodes(userId?: string | null): Promise<string[]> {
+    const supabase = await createUniversalClient();
+    const uid = userId ?? await getUserIdFromUser();
+
+    let query = supabase.from("products").select("code");
+    if (uid) {
+      query = query.eq("user_id", uid);
+    }
+    const { data, error } = await query;
+
+    if (error || !data) return [];
+    return data.map((row: Record<string, unknown>) => row.code as string);
+  }
+
   async findById(id: string): Promise<Product | null> {
     const supabase = await createUniversalClient();
     const { data, error } = await supabase.from("products").select("*").eq("id", id).single();

@@ -161,7 +161,9 @@ export function FinanceiroContent({
         ? "Adicionar meta"
         : adminTab === "produtos"
           ? "Cadastrar produto"
-          : "Novo recebimento";
+          : adminTab === "pagar"
+            ? "Novo pagamento"
+            : "Novo recebimento";
 
   function handleCreate() {
     if (profile === "representante") {

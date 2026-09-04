@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { MaskedInput } from "@/components/ui/MaskedInput";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { DateInput } from "@/components/ui/DateInput";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { useToast } from "@/components/ui/Toast";
 import { dealService, clientService } from "@/lib/services";
 import { DEAL_STATUS_LABELS, PAYMENT_STATUS_LABELS, PAYMENT_METHODS } from "@/lib/constants";
@@ -344,7 +344,7 @@ export function RegisterDealModal({
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
           />
-          <DateInput
+          <DatePicker
             id="deal-prazo-entrega"
             label="Prazo de entrega"
             value={deliveryDeadline}

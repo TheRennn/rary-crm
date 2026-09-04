@@ -12,10 +12,12 @@ function rowToEvent(row: Record<string, unknown>): CalendarEvent {
     clientId: (row.client_id as string) ?? undefined,
     clientName: (row.client_name as string) ?? undefined,
     description: (row.description as string) ?? undefined,
+    status: (row.status as CalendarEvent["status"]) ?? undefined,
   };
 }
 
 export type CreateCalendarEventInput = Omit<CalendarEvent, "id">;
+export type UpdateCalendarEventInput = Partial<CreateCalendarEventInput>;
 
 export class CalendarRepository {
   async findAll(_companyId?: string | null): Promise<CalendarEvent[]> {
@@ -49,6 +51,24 @@ export class CalendarRepository {
     const { error: insertError } = await supabase.from("calendar_events").insert(row);
     if (insertError) throw insertError;
     return { id, ...input };
+  }
+
+  async update(id: string, input: UpdateCalendarEventInput): Promise<CalendarEvent> {
+    const supabase = await createUniversalClient();
+    const row: Record<string, unknown> = {};
+    if (input.title !== undefined) row.title = input.title;
+    if (input.type !== undefined) row.type = input.type;
+    if (input.date !== undefined) row.date = input.date;
+    if (input.time !== undefined) row.time = input.time;
+    if (input.duration !== undefined) row.duration = input.duration;
+    if (input.clientId !== undefined) row.client_id = input.clientId ?? null;
+    if (input.clientName !== undefined) row.client_name = input.clientName ?? null;
+    if (input.description !== undefined) row.description = input.description ?? null;
+    if (input.status !== undefined) row.status = input.status ?? null;
+
+    const { data, error } = await supabase.from("calendar_events").update(row).eq("id", id).select().single();
+    if (error) throw error;
+    return rowToEvent(data);
   }
 
   async delete(id: string): Promise<void> {

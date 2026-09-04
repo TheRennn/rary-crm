@@ -18,6 +18,7 @@ function rowToPayment(row: Record<string, unknown>): Payment {
     supplierName: (row.supplier_name as string) ?? undefined,
     attachmentUrl: (row.attachment_url as string) ?? undefined,
     attachmentName: (row.attachment_name as string) ?? undefined,
+    recurrent: (row.recurrent as boolean) ?? false,
   };
 }
 
@@ -83,6 +84,7 @@ export class PaymentRepository {
       supplier_name: input.supplierName ?? "",
       attachment_url: input.attachmentUrl ?? null,
       attachment_name: input.attachmentName ?? null,
+      recurrent: input.recurrent ?? false,
     };
 
     const { error: insertError } = await supabase.from("payments").insert(row);
@@ -104,6 +106,7 @@ export class PaymentRepository {
     if (input.supplierName !== undefined) row.supplier_name = input.supplierName;
     if (input.attachmentUrl !== undefined) row.attachment_url = input.attachmentUrl ?? null;
     if (input.attachmentName !== undefined) row.attachment_name = input.attachmentName ?? null;
+    if (input.recurrent !== undefined) row.recurrent = input.recurrent;
 
     const { data, error } = await supabase.from("payments").update(row).eq("id", id).select().single();
     if (error) throw error;
