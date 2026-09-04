@@ -69,6 +69,10 @@ export class PaymentRepository {
     const supabase = await createUniversalClient();
     const id = `pay-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
+    const dueDateValue = input.dueDate
+      ? (input.dueDate.includes("T") ? input.dueDate : `${input.dueDate}T00:00:00.000Z`)
+      : new Date().toISOString();
+
     const row = {
       id,
       client_id: input.clientId,
@@ -77,7 +81,7 @@ export class PaymentRepository {
       client_name: input.clientName,
       description: input.description,
       value: input.value,
-      due_date: input.dueDate,
+      due_date: dueDateValue,
       status: input.status,
       method: input.method,
       direction: input.direction ?? "ENTRADA",
@@ -87,9 +91,11 @@ export class PaymentRepository {
       recurrent: input.recurrent ?? false,
     };
 
-    const { error: insertError } = await supabase.from("payments").insert(row);
-    if (insertError) throw insertError;
-    return { id, ...input };
+    const { data, error: insertError } = await supabase.from("payments").insert(row).select().single();
+    if (insertError) {
+      throw new Error(`Erro ao salvar pagamento: ${insertError.message} (code: ${insertError.code})`);
+    }
+    return rowToPayment(data);
   }
 
   async update(id: string, input: Partial<Omit<Payment, "id">>): Promise<Payment> {
@@ -99,7 +105,9 @@ export class PaymentRepository {
     if (input.clientName !== undefined) row.client_name = input.clientName;
     if (input.description !== undefined) row.description = input.description;
     if (input.value !== undefined) row.value = input.value;
-    if (input.dueDate !== undefined) row.due_date = input.dueDate;
+    if (input.dueDate !== undefined) {
+      row.due_date = input.dueDate.includes("T") ? input.dueDate : `${input.dueDate}T00:00:00.000Z`;
+    }
     if (input.status !== undefined) row.status = input.status;
     if (input.method !== undefined) row.method = input.method;
     if (input.direction !== undefined) row.direction = input.direction;
@@ -109,7 +117,7 @@ export class PaymentRepository {
     if (input.recurrent !== undefined) row.recurrent = input.recurrent;
 
     const { data, error } = await supabase.from("payments").update(row).eq("id", id).select().single();
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar pagamento: ${error.message} (code: ${error.code})`);
     return rowToPayment(data);
   }
 

@@ -117,6 +117,30 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
 
     const numericValue = parseCurrency(value);
 
+    if (!clientId) {
+      setError("Selecione um cliente válido.");
+      setSaving(false);
+      return;
+    }
+
+    if (!dueDate) {
+      setError("Informe a data de vencimento.");
+      setSaving(false);
+      return;
+    }
+
+    if (!description.trim()) {
+      setError("Informe a descrição do pagamento.");
+      setSaving(false);
+      return;
+    }
+
+    if (numericValue <= 0) {
+      setError("Informe um valor maior que zero.");
+      setSaving(false);
+      return;
+    }
+
     try {
       const selectedClient = existingClients.find((c) => c.id === clientId);
 
@@ -131,13 +155,15 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
         }
       }
 
+      const dueDateISO = dueDate.includes("T") ? dueDate : `${dueDate}T00:00:00.000Z`;
+
       if (isEditing) {
         const updated = await paymentService.update(editPayment.id, {
           clientId,
           clientName: selectedClient?.name ?? "",
-          description,
+          description: description.trim(),
           value: numericValue,
-          dueDate,
+          dueDate: dueDateISO,
           status,
           method,
           direction,
@@ -151,9 +177,9 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
         const created = await paymentService.create({
           clientId,
           clientName: selectedClient?.name ?? "",
-          description,
+          description: description.trim(),
           value: numericValue,
-          dueDate,
+          dueDate: dueDateISO,
           status,
           method,
           direction,
@@ -164,7 +190,6 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
         onCreated(created);
         toast({ title: "Pagamento registrado", message: `${created.description} — ${formatCurrency(created.value)}`, variant: "success" });
 
-        // Auto-create next month's payment if recurrent
         if (recurrent && dueDate) {
           try {
             const nextMonth = new Date(dueDate + "T00:00:00");
@@ -173,9 +198,9 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
             await paymentService.create({
               clientId,
               clientName: selectedClient?.name ?? "",
-              description,
+              description: description.trim(),
               value: numericValue,
-              dueDate: nextDueDate,
+              dueDate: `${nextDueDate}T00:00:00.000Z`,
               status: "PENDENTE",
               method,
               direction,
@@ -189,8 +214,13 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
       }
       reset();
       onClose();
-    } catch {
-      setError(isEditing ? "Não foi possível atualizar o pagamento." : "Não foi possível registrar o pagamento.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const supabaseMsg = msg.includes(":") ? msg.split(":").pop()?.trim() : msg;
+      setError(isEditing
+        ? `Erro ao atualizar: ${supabaseMsg || "tente novamente."}`
+        : `Erro ao registrar: ${supabaseMsg || "tente novamente."}`
+      );
     } finally {
       setSaving(false);
     }
