@@ -72,10 +72,12 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
       setRecurrent(editPayment.recurrent ?? false);
       setAttachmentUrl(editPayment.attachmentUrl ?? "");
       setAttachmentName(editPayment.attachmentName ?? "");
-    } else if (!open) {
+    } else if (open) {
+      setDirection(defaultDirection ?? "ENTRADA");
+    } else {
       reset();
     }
-  }, [editPayment, open]);
+  }, [editPayment, open, defaultDirection]);
 
   function reset() {
     setClientId("");
