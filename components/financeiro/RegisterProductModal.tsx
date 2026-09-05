@@ -49,7 +49,7 @@ export function RegisterProductModal({
 
   useEffect(() => {
     if (!editProduct && open) {
-      productService.getNextCode().then(setCode);
+      productService.getNextCode().then(setCode).catch(() => setCode("PROD-001"));
     }
   }, [editProduct, open]);
 
@@ -85,7 +85,7 @@ export function RegisterProductModal({
     setError(null);
     try {
       const productData: Omit<Product, "id" | "createdAt"> = {
-        code: code.trim().toUpperCase() || undefined as unknown as string,
+        code: code.trim().toUpperCase() || "PROD-001",
         name: productName,
         category: "OUTRO",
         unit: "UN",

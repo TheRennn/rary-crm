@@ -20,6 +20,7 @@ export interface RegisterPaymentModalProps {
   existingClients: { id: string; name: string }[];
   onCreated: (payment: Payment) => void;
   editPayment?: Payment | null;
+  defaultDirection?: "ENTRADA" | "SAIDA";
 }
 
 const statusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((s) => ({
@@ -41,7 +42,7 @@ const directionOptions = (Object.keys(PAYMENT_DIRECTION_LABELS) as ("ENTRADA" | 
   label: PAYMENT_DIRECTION_LABELS[d],
 }));
 
-export function RegisterPaymentModal({ open, onClose, existingClients, onCreated, editPayment }: RegisterPaymentModalProps) {
+export function RegisterPaymentModal({ open, onClose, existingClients, onCreated, editPayment, defaultDirection }: RegisterPaymentModalProps) {
   const { toast } = useToast();
   const isEditing = !!editPayment;
   const [clientId, setClientId] = useState("");
@@ -83,7 +84,7 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
     setDueDate("");
     setStatus("PENDENTE");
     setMethod("PIX");
-    setDirection("ENTRADA");
+    setDirection(defaultDirection ?? "ENTRADA");
     setRecurrent(false);
     setError(null);
     setAttachmentFile(null);

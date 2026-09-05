@@ -130,6 +130,7 @@ export function FinanceiroContent({
   const [recebimentoOpen, setRecebimentoOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentDirection, setPaymentDirection] = useState<"ENTRADA" | "SAIDA">("ENTRADA");
   const [productOpen, setProductOpen] = useState(false);
   const [editCommission, setEditCommission] = useState<Commission | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
@@ -156,7 +157,7 @@ export function FinanceiroContent({
 
   const actionLabel =
     profile === "representante"
-      ? "Novo registro"
+      ? "Novo pagamento"
       : adminTab === "metas"
         ? "Adicionar meta"
         : adminTab === "produtos"
@@ -167,7 +168,8 @@ export function FinanceiroContent({
 
   function handleCreate() {
     if (profile === "representante") {
-      setRecebimentoOpen(true);
+      setPaymentDirection("SAIDA");
+      setPaymentOpen(true);
       return;
     }
     if (adminTab === "metas") {
@@ -178,6 +180,12 @@ export function FinanceiroContent({
       setProductOpen(true);
       return;
     }
+    if (adminTab === "pagar") {
+      setPaymentDirection("SAIDA");
+      setPaymentOpen(true);
+      return;
+    }
+    setPaymentDirection("ENTRADA");
     setPaymentOpen(true);
   }
 
@@ -321,6 +329,7 @@ export function FinanceiroContent({
         onClose={() => { setPaymentOpen(false); setEditPayment(null); }}
         existingClients={clients}
         editPayment={editPayment}
+        defaultDirection={paymentDirection}
         onCreated={(payment) => {
           if (onPaymentsChange) {
             if (editPayment) {
