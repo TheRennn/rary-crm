@@ -263,13 +263,16 @@ export function FinanceiroContent({
           commissions={commissions}
           orders={orders}
           recebimentos={recebimentos}
+          payments={payments}
           existingCompanies={existingCompanies}
           onEditCommission={(c) => { setEditCommission(c); setCommissionOpen(true); }}
           onEditOrder={(o) => { setEditOrder(o); setOrderOpen(true); }}
           onEditRecebimento={(r) => { setEditRecebimento(r); setRecebimentoOpen(true); }}
+          onEditPayment={(p) => { setEditPayment(p); setPaymentOpen(true); }}
           onDeleteCommission={onDeleteCommission}
           onDeleteOrder={onDeleteOrder}
           onDeleteRecebimento={onDeleteRecebimento}
+          onDeletePayment={onDeletePayment}
         />
       )}
 

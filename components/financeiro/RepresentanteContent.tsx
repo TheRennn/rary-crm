@@ -15,11 +15,11 @@ import { IconTrendingUp, IconPlus, IconEdit, IconTrash } from "@/components/icon
 import { useToast } from "@/components/ui/Toast";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_TONES } from "@/lib/constants";
-import type { Commission, Order, Recebimento, PaymentStatus } from "@/types";
+import type { Commission, Order, Recebimento, Payment, PaymentStatus } from "@/types";
 
 type UnifiedItem = {
   id: string;
-  type: "comissao" | "pedido" | "recebimento";
+  type: "comissao" | "pedido" | "recebimento" | "pagamento";
   company: string;
   client: string;
   product: string;
@@ -34,38 +34,44 @@ type UnifiedItem = {
   entryValue?: number;
   shippingEnabled?: boolean;
   shippingValue?: number;
-  raw: Commission | Order | Recebimento;
+  raw: Commission | Order | Recebimento | Payment;
 };
 
 export interface RepresentanteContentProps {
   commissions: Commission[];
   orders: Order[];
   recebimentos: Recebimento[];
+  payments: Payment[];
   existingCompanies: string[];
   onEditCommission?: (c: Commission) => void;
   onEditOrder?: (o: Order) => void;
   onEditRecebimento?: (r: Recebimento) => void;
+  onEditPayment?: (p: Payment) => void;
   onDeleteCommission?: (c: Commission) => void;
   onDeleteOrder?: (o: Order) => void;
   onDeleteRecebimento?: (r: Recebimento) => void;
+  onDeletePayment?: (p: Payment) => void;
 }
 
 const TYPE_OPTIONS = [
   { value: "comissao", label: "Comissão" },
   { value: "pedido", label: "Pedido" },
   { value: "recebimento", label: "Recebimento" },
+  { value: "pagamento", label: "Pagamento" },
 ];
 
-const TYPE_BADGE_TONE: Record<string, "brand" | "info" | "success"> = {
+const TYPE_BADGE_TONE: Record<string, "brand" | "info" | "success" | "warning"> = {
   comissao: "brand",
   pedido: "info",
   recebimento: "success",
+  pagamento: "warning",
 };
 
 const TYPE_LABEL: Record<string, string> = {
   comissao: "Comissão",
   pedido: "Pedido",
   recebimento: "Recebimento",
+  pagamento: "Pagamento",
 };
 
 const paymentStatusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatus[]).map((s) => ({
@@ -73,7 +79,7 @@ const paymentStatusOptions = (Object.keys(PAYMENT_STATUS_LABELS) as PaymentStatu
   label: PAYMENT_STATUS_LABELS[s],
 }));
 
-function toUnified(commissions: Commission[], orders: Order[], recebimentos: Recebimento[]): UnifiedItem[] {
+function toUnified(commissions: Commission[], orders: Order[], recebimentos: Recebimento[], payments: Payment[]): UnifiedItem[] {
   const items: UnifiedItem[] = [];
 
   commissions.forEach((c) => {
@@ -133,6 +139,21 @@ function toUnified(commissions: Commission[], orders: Order[], recebimentos: Rec
     });
   });
 
+  payments.forEach((p) => {
+    items.push({
+      id: p.id,
+      type: "pagamento",
+      company: "",
+      client: p.clientName,
+      product: p.description,
+      value: p.value,
+      status: p.status,
+      date: p.dueDate,
+      period: "",
+      raw: p,
+    });
+  });
+
   return items;
 }
 
@@ -140,13 +161,16 @@ export function RepresentanteContent({
   commissions,
   orders,
   recebimentos,
+  payments,
   existingCompanies,
   onEditCommission,
   onEditOrder,
   onEditRecebimento,
+  onEditPayment,
   onDeleteCommission,
   onDeleteOrder,
   onDeleteRecebimento,
+  onDeletePayment,
 }: RepresentanteContentProps) {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
@@ -154,7 +178,7 @@ export function RepresentanteContent({
   const [statusFilter, setStatusFilter] = useState("TODOS");
   const [companyFilter, setCompanyFilter] = useState("TODOS");
 
-  const allItems = useMemo(() => toUnified(commissions, orders, recebimentos), [commissions, orders, recebimentos]);
+  const allItems = useMemo(() => toUnified(commissions, orders, recebimentos, payments), [commissions, orders, recebimentos, payments]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -180,13 +204,15 @@ export function RepresentanteContent({
   function handleEdit(item: UnifiedItem) {
     if (item.type === "comissao") onEditCommission?.(item.raw as Commission);
     else if (item.type === "pedido") onEditOrder?.(item.raw as Order);
-    else onEditRecebimento?.(item.raw as Recebimento);
+    else if (item.type === "recebimento") onEditRecebimento?.(item.raw as Recebimento);
+    else onEditPayment?.(item.raw as Payment);
   }
 
   function handleDelete(item: UnifiedItem) {
     if (item.type === "comissao") onDeleteCommission?.(item.raw as Commission);
     else if (item.type === "pedido") onDeleteOrder?.(item.raw as Order);
-    else onDeleteRecebimento?.(item.raw as Recebimento);
+    else if (item.type === "recebimento") onDeleteRecebimento?.(item.raw as Recebimento);
+    else onDeletePayment?.(item.raw as Payment);
   }
 
   const columns: TableColumn<UnifiedItem>[] = [
