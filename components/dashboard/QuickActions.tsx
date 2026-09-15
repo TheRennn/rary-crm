@@ -9,7 +9,7 @@ const ACTIONS = [
   {
     id: "client",
     label: "Novo cliente",
-    href: "/clientes/novo",
+    href: "/clientes/novo?kind=CLIENTE",
     icon: IconUserPlus,
     tone: "text-brand-300 bg-brand-500/10 border-brand-500/25",
   },

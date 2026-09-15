@@ -34,7 +34,10 @@ export default async function FinanceiroPage() {
       recebimentoStats={recebimentoStats}
       goals={goals}
       products={products}
-      clients={clients.map((client) => ({ id: client.id, name: client.name }))}
+      clients={clients.map((client) => ({
+        id: client.id,
+        name: `[${client.kind === "FORNECEDOR" ? "FOR" : "CLT"}] ${client.name}`,
+      }))}
     />
   );
 }

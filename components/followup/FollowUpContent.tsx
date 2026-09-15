@@ -36,13 +36,14 @@ export interface FollowUpContentProps {
     proximos: FollowUp[];
     concluidos: FollowUp[];
   };
+  clients?: { id: string; name: string; code: string }[];
   onDelete?: (followUp: FollowUp) => void;
   onComplete?: (followUp: FollowUp) => void;
   onEdit?: (followUp: FollowUp) => void;
   onRefresh?: () => void;
 }
 
-export function FollowUpContent({ groups, onDelete, onComplete, onEdit, onRefresh }: FollowUpContentProps) {
+export function FollowUpContent({ groups, clients = [], onDelete, onComplete, onEdit, onRefresh }: FollowUpContentProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
   function columns(): TableColumn<FollowUp>[] {
@@ -172,7 +173,7 @@ export function FollowUpContent({ groups, onDelete, onComplete, onEdit, onRefres
 
       <Tabs tabs={tabs} />
 
-      <NewFollowUpModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={onRefresh} />
+      <NewFollowUpModal open={modalOpen} onClose={() => setModalOpen(false)} clients={clients} onCreated={onRefresh} />
     </div>
   );
 }

@@ -124,11 +124,11 @@ export function TaskDrawer({ open, onClose, task, clients, onSaved }: TaskDrawer
         </div>
         <Select
           id="task-cliente"
-          label="Vincular ao cliente"
+          label="Vincular a cliente/fornecedor"
           options={clients}
           value={clientId}
           onChange={(event) => setClientId(event.target.value)}
-          placeholder="Nenhum cliente"
+          placeholder="Selecione um cliente ou fornecedor"
         />
         <Input
           id="task-responsavel"

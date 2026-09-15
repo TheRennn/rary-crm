@@ -4,7 +4,6 @@ import { useState, type FormEvent } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { TimeInput } from "@/components/ui/TimeInput";
-import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -18,6 +17,7 @@ export interface NewFollowUpModalProps {
   onClose: () => void;
   clientId?: string;
   clientName?: string;
+  clients?: { id: string; name: string; code: string }[];
   onCreated?: () => void;
 }
 
@@ -26,9 +26,10 @@ const typeOptions = (Object.keys(FOLLOW_UP_TYPE_LABELS) as FollowUpType[]).map((
   label: FOLLOW_UP_TYPE_LABELS[type],
 }));
 
-export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreated }: NewFollowUpModalProps) {
+export function NewFollowUpModal({ open, onClose, clientId, clientName, clients = [], onCreated }: NewFollowUpModalProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState(clientId ?? "");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,12 +41,14 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreate
     const date = formData.get("fu-data") as string;
     const time = formData.get("fu-hora") as string;
     const subject = formData.get("fu-assunto") as string;
-    const clientInput = (formData.get("fu-cliente") as string) || "";
+    const finalClientId = clientId || selectedClientId;
+    const selectedClient = clients.find((c) => c.id === finalClientId);
+    const clientNameStr = clientName || selectedClient?.name || "";
 
     try {
       await followUpService.create({
-        clientId: clientId ?? "",
-        clientName: clientName || clientInput,
+        clientId: finalClientId,
+        clientName: clientNameStr,
         responsibleId: "",
         type,
         date,
@@ -55,7 +58,7 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreate
       });
       toast({
         title: "Follow-up agendado",
-        message: clientName ? `Follow-up com ${clientName}.` : "Follow-up criado.",
+        message: clientNameStr ? `Follow-up com ${clientNameStr}.` : "Follow-up criado.",
         variant: "success",
       });
       onCreated?.();
@@ -87,9 +90,16 @@ export function NewFollowUpModal({ open, onClose, clientId, clientName, onCreate
       }
     >
       <form id="followup-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {!clientId && (
-          <Input id="fu-cliente" name="fu-cliente" label="Cliente" placeholder="Buscar cliente" required />
-        )}
+        <Select
+          id="fu-cliente"
+          name="fu-cliente"
+          label="Cliente"
+          options={clients.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
+          placeholder="Selecione o cliente"
+          value={selectedClientId}
+          onChange={(e) => setSelectedClientId(e.target.value)}
+          required
+        />
         <div className="grid grid-cols-2 gap-4">
           <Select
             id="fu-tipo"

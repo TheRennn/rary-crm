@@ -1,5 +1,5 @@
 import { clientRepository } from "@/lib/repositories";
-import { generateClientCode } from "@/lib/utils";
+import { generateClientCode, generateSupplierCode } from "@/lib/utils";
 import type { Client, ClientStatus } from "@/types";
 import type { CreateClientInput } from "@/lib/repositories/client-repository";
 
@@ -20,9 +20,11 @@ export class ClientService {
     return clientRepository.findByCode(code);
   }
 
-  async getNextCode(): Promise<string> {
+  async getNextCode(kind: "CLIENTE" | "FORNECEDOR" = "CLIENTE"): Promise<string> {
     const codes = await clientRepository.findAllCodes();
-    return generateClientCode(codes);
+    return kind === "FORNECEDOR"
+      ? generateSupplierCode(codes)
+      : generateClientCode(codes);
   }
 
   async findByStatus(status: ClientStatus | "TODOS"): Promise<Client[]> {

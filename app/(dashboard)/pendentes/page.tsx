@@ -12,7 +12,10 @@ export default async function PendentesPage() {
   return (
     <TaskBoardClient
       groups={groups}
-      clients={clients.map((client) => ({ value: client.id, label: client.companyName }))}
+      clients={clients.map((client) => ({
+        value: client.id,
+        label: `[${client.kind === "FORNECEDOR" ? "FOR" : "CLT"}] ${client.companyName || client.name || "Sem nome"}`,
+      }))}
     />
   );
 }

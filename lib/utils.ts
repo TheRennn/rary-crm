@@ -59,6 +59,15 @@ export function generateClientCode(existingCodes: string[]): string {
   return `CLT-${String(max + 1).padStart(6, "0")}`;
 }
 
+export function generateSupplierCode(existingCodes: string[]): string {
+  let max = 0;
+  for (const code of existingCodes) {
+    const match = code.match(/^FOR-(\d+)$/);
+    if (match) max = Math.max(max, Number(match[1]));
+  }
+  return `FOR-${String(max + 1).padStart(7, "0")}`;
+}
+
 export function generateProductCode(existingCodes: string[]): string {
   let max = 0;
   for (const code of existingCodes) {

@@ -31,6 +31,7 @@ import {
 export interface ClientListProps {
   clients: Client[];
   initialQuery?: string;
+  kindFilter?: "CLIENTE" | "FORNECEDOR";
   onDelete?: (client: Client) => void;
 }
 
@@ -73,7 +74,7 @@ const periodOptions = [
   { value: "MAIS_30", label: "Mais de 30 dias" },
 ];
 
-export function ClientList({ clients, initialQuery = "", onDelete }: ClientListProps) {
+export function ClientList({ clients, initialQuery = "", kindFilter, onDelete }: ClientListProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [query, setQuery] = useState(initialQuery);
@@ -86,6 +87,7 @@ export function ClientList({ clients, initialQuery = "", onDelete }: ClientListP
     // eslint-disable-next-line react-hooks/purity -- filtro por recência usa o relógio do cliente
     const now = Date.now();
     return clients.filter((client) => {
+      if (kindFilter && client.kind !== kindFilter) return false;
       if (
         q &&
         !client.name.toLowerCase().includes(q) &&
@@ -106,7 +108,7 @@ export function ClientList({ clients, initialQuery = "", onDelete }: ClientListP
       }
       return true;
     });
-  }, [clients, query, status, segment, period]);
+  }, [clients, query, status, segment, period, kindFilter]);
 
   function handleEdit(client: Client) {
     router.push(`/clientes/${client.id}/editar`);
@@ -223,13 +225,13 @@ export function ClientList({ clients, initialQuery = "", onDelete }: ClientListP
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Clientes"
-        description={`${clients.length} clientes na base`}
+        title={kindFilter === "FORNECEDOR" ? "Fornecedores" : "Clientes"}
+        description={`${filtered.length} ${kindFilter === "FORNECEDOR" ? "fornecedores" : "clientes"} na base`}
         actions={
-          <Link href="/clientes/novo">
+          <Link href={kindFilter === "FORNECEDOR" ? "/clientes/novo?kind=FORNECEDOR" : "/clientes/novo?kind=CLIENTE"}>
             <Button>
               <IconPlus className="h-4 w-4" />
-              Novo Cadastro
+              {kindFilter === "FORNECEDOR" ? "Novo Fornecedor" : "Novo Cadastro"}
             </Button>
           </Link>
         }
@@ -272,23 +274,23 @@ export function ClientList({ clients, initialQuery = "", onDelete }: ClientListP
           empty={
             <EmptyState
               icon={<IconUsers className="h-6 w-6" />}
-              title="Nenhum cliente encontrado"
-              description="Ajuste os filtros ou cadastre um novo cliente para começar."
-              action={
-                <Link href="/clientes/novo">
-                  <Button variant="outline">
-                    <IconPlus className="h-4 w-4" />
-                    Novo Cadastro
-                  </Button>
-                </Link>
-              }
+              title={kindFilter === "FORNECEDOR" ? "Nenhum fornecedor encontrado" : "Nenhum cliente encontrado"}
+              description={kindFilter === "FORNECEDOR" ? "Ajuste os filtros ou cadastre um novo fornecedor." : "Ajuste os filtros ou cadastre um novo cliente para começar."}
+            action={
+              <Link href={kindFilter === "FORNECEDOR" ? "/clientes/novo?kind=FORNECEDOR" : "/clientes/novo?kind=CLIENTE"}>
+                <Button variant="outline">
+                  <IconPlus className="h-4 w-4" />
+                  {kindFilter === "FORNECEDOR" ? "Novo Fornecedor" : "Novo Cadastro"}
+                </Button>
+              </Link>
+            }
             />
           }
         />
       </div>
 
       <p className="text-xs text-muted-2">
-        Exibindo {filtered.length} de {clients.length} clientes
+        Exibindo {filtered.length} de {clients.length} {kindFilter === "FORNECEDOR" ? "fornecedores" : "clientes"}
       </p>
     </div>
   );

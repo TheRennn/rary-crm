@@ -15,6 +15,7 @@ export interface FollowUpContentClientProps {
     proximos: FollowUp[];
     concluidos: FollowUp[];
   };
+  clients?: { id: string; name: string; code: string }[];
 }
 
 function localDateStr(): string {
@@ -35,7 +36,7 @@ function sourceKey(followUp: FollowUp): keyof FollowUpContentClientProps["groups
   return groupKeyFromDate(followUp.date);
 }
 
-export function FollowUpContentClient({ groups: initialGroups }: FollowUpContentClientProps) {
+export function FollowUpContentClient({ groups: initialGroups, clients = [] }: FollowUpContentClientProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [groups, setGroups] = useState(initialGroups);
@@ -91,6 +92,7 @@ export function FollowUpContentClient({ groups: initialGroups }: FollowUpContent
     <>
       <FollowUpContent
         groups={groups}
+        clients={clients}
         onComplete={handleComplete}
         onDelete={handleDelete}
         onEdit={handleEdit}

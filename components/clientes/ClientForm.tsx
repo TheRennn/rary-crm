@@ -31,6 +31,7 @@ import {
 export interface ClientFormProps {
   currentUserId?: string;
   editClient?: Client | null;
+  initialKind?: "CLIENTE" | "FORNECEDOR";
 }
 
 const typeOptions = [
@@ -146,7 +147,7 @@ const statusOptions = [
 const ufOptions = UF_LIST.map((uf) => ({ value: uf, label: uf }));
 const countryOptions = COUNTRY_OPTIONS.map((c) => ({ value: c.value, label: c.label }));
 
-export default function ClientForm({ currentUserId, editClient }: ClientFormProps) {
+export default function ClientForm({ currentUserId, editClient, initialKind }: ClientFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const isEditing = !!editClient;
@@ -156,7 +157,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
   const [nome, setNome] = useState("");
   const [doc, setDoc] = useState("");
   const [tipo, setTipo] = useState("PESSOA_FISICA");
-  const [kind, setKind] = useState("CLIENTE");
+  const [kind, setKind] = useState(initialKind ?? "CLIENTE");
   const [empresaNome, setEmpresaNome] = useState("");
   const [empresaCnpj, setEmpresaCnpj] = useState("");
   const [segmento, setSegmento] = useState("");
@@ -177,11 +178,11 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
 
   useEffect(() => {
     if (!isEditing) {
-      clientService.getNextCode().then(setCode);
+      clientService.getNextCode(kind as "CLIENTE" | "FORNECEDOR").then(setCode);
     } else {
       setCode(editClient.code);
     }
-  }, [isEditing, editClient]);
+  }, [isEditing, editClient, kind]);
 
   useEffect(() => {
     if (editClient) {
@@ -246,7 +247,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
       if (isEditing) {
         const updated = await clientService.update(editClient.id, clientData);
         toast({
-          title: "Cliente atualizado",
+          title: kind === "FORNECEDOR" ? "Fornecedor atualizado" : "Cliente atualizado",
           message: `${updated.code} — ${updated.name} atualizado com sucesso.`,
           variant: "success",
         });
@@ -254,7 +255,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
       } else {
         const client = await clientRepository.create(clientData);
         toast({
-          title: "Cliente cadastrado",
+          title: kind === "FORNECEDOR" ? "Fornecedor cadastrado" : "Cliente cadastrado",
           message: `${client.code} — ${client.name} criado com sucesso.`,
           variant: "success",
         });
@@ -275,7 +276,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
       <PageHeader
-        title={isEditing ? "Editar cliente" : "Novo cliente"}
+        title={isEditing ? (kind === "FORNECEDOR" ? "Editar fornecedor" : "Editar cliente") : (kind === "FORNECEDOR" ? "Novo fornecedor" : "Novo cliente")}
         description={isEditing ? `${editClient.code} — ${editClient.name}` : `Código gerado automaticamente: ${code || "..."}`}
         actions={
           <>
@@ -283,7 +284,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               <Button variant="outline">Cancelar</Button>
             </Link>
             <Button type="submit" loading={submitting}>
-              {isEditing ? "Salvar alterações" : "Salvar cliente"}
+              {isEditing ? "Salvar alterações" : (kind === "FORNECEDOR" ? "Salvar fornecedor" : "Salvar cliente")}
             </Button>
           </>
         }
@@ -293,7 +294,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
       <Card>
         <CardHeader
           title="Identificação"
-          description="Dados principais do cliente"
+          description={kind === "FORNECEDOR" ? "Dados principais do fornecedor" : "Dados principais do cliente"}
           action={<IconUser className="h-5 w-5 text-muted-2" />}
         />
         <CardContent>
@@ -308,7 +309,7 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
             />
             <Input
               id="cliente-nome"
-              label="Nome do cliente"
+              label={kind === "FORNECEDOR" ? "Nome do fornecedor" : "Nome do cliente"}
               placeholder="Nome completo ou razão social"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
@@ -331,7 +332,6 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
               icon={<IconLayers className="h-4 w-4" />}
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
-              defaultValue="PESSOA_FISICA"
             />
             <Select
               id="cliente-kind"
@@ -558,11 +558,11 @@ export default function ClientForm({ currentUserId, editClient }: ClientFormProp
         <Link href={isEditing ? `/clientes/${editClient.id}` : "/clientes"}>
           <Button variant="ghost">
             <IconArrowLeft className="h-4 w-4" />
-            {isEditing ? "Voltar para cliente" : "Voltar para clientes"}
+            {isEditing ? (kind === "FORNECEDOR" ? "Voltar para fornecedor" : "Voltar para cliente") : (kind === "FORNECEDOR" ? "Voltar para fornecedores" : "Voltar para clientes")}
           </Button>
         </Link>
         <Button type="submit" size="lg" loading={submitting} className="ml-auto">
-          {isEditing ? "Salvar alterações" : "Salvar cliente"}
+          {isEditing ? "Salvar alterações" : (kind === "FORNECEDOR" ? "Salvar fornecedor" : "Salvar cliente")}
         </Button>
       </div>
     </form>

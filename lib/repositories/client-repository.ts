@@ -1,6 +1,6 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
 import { getCompanyIdFromUser } from "@/lib/supabase/auth";
-import { formatDocument, maskPhone, stripMask } from "@/lib/utils";
+import { formatDocument, maskPhone, stripMask, generateSupplierCode } from "@/lib/utils";
 import type { Client, TimelineEntry } from "@/types";
 
 export interface CreateClientInput {
@@ -150,11 +150,25 @@ export class ClientRepository {
       .order("code", { ascending: false })
       .limit(1);
 
+    const kind = input.kind ?? "CLIENTE";
     let nextCode = "CLT-000001";
-    if (existing && existing.length > 0) {
-      const last = existing[0].code as string;
-      const num = parseInt(last.replace("CLT-", ""), 10) + 1;
-      nextCode = `CLT-${String(num).padStart(6, "0")}`;
+    if (kind === "FORNECEDOR") {
+      nextCode = "FOR-0000001";
+      if (existing && existing.length > 0) {
+        const last = existing[0].code as string;
+        if (last.startsWith("FOR-")) {
+          const num = parseInt(last.replace("FOR-", ""), 10) + 1;
+          nextCode = `FOR-${String(num).padStart(7, "0")}`;
+        }
+      }
+    } else {
+      if (existing && existing.length > 0) {
+        const last = existing[0].code as string;
+        if (last.startsWith("CLT-")) {
+          const num = parseInt(last.replace("CLT-", ""), 10) + 1;
+          nextCode = `CLT-${String(num).padStart(6, "0")}`;
+        }
+      }
     }
 
     const row = {

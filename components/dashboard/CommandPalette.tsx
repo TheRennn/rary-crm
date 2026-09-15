@@ -69,7 +69,7 @@ export function CommandPalette({ open, onClose, clients }: CommandPaletteProps) 
         section: "Ações",
         label: "Novo cliente",
         icon: <IconUser className="h-4 w-4" />,
-        href: "/clientes/novo",
+        href: "/clientes/novo?kind=CLIENTE",
       },
       {
         id: "action-venda",

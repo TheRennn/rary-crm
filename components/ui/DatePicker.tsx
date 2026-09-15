@@ -35,10 +35,17 @@ const WEEKDAYS = ["Se", "Te", "Qa", "Qi", "Se", "Sa", "Do"];
 const MONTH_LABELS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 export function DatePicker({ id, name, label, error, value, defaultValue, onChange, required, className }: DatePickerProps) {
-  const resolved = value ?? defaultValue ?? "";
+  const [internalValue, setInternalValue] = useState(value ?? defaultValue ?? "");
+  const resolved = value ?? internalValue;
   const [cursor, setCursor] = useState(() => parseISO(resolved) ?? new Date());
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (value !== undefined) {
+      setInternalValue(value);
+    }
+  }, [value]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -51,6 +58,7 @@ export function DatePicker({ id, name, label, error, value, defaultValue, onChan
   }, [open]);
 
   const handleChange = useCallback((iso: string) => {
+    setInternalValue(iso);
     onChange?.(iso);
     const parsed = parseISO(iso);
     if (parsed) setCursor(parsed);
@@ -59,6 +67,7 @@ export function DatePicker({ id, name, label, error, value, defaultValue, onChan
   function selectDay(day: number) {
     const selected = new Date(cursor.getFullYear(), cursor.getMonth(), day);
     const iso = toISOLocal(selected);
+    setInternalValue(iso);
     onChange?.(iso);
     setOpen(false);
   }

@@ -13,7 +13,7 @@ import { RegisterRecebimentoModal } from "./RegisterRecebimentoModal";
 import { RegisterGoalModal } from "./RegisterGoalModal";
 import { RegisterProductModal } from "./RegisterProductModal";
 import { cn } from "@/lib/utils";
-import { IconBuilding, IconUsers, IconPlus } from "@/components/icons";
+import { IconBuilding, IconUsers, IconPlus, IconCalendar } from "@/components/icons";
 import type { Commission, Goal, Order, Payment, Product, Recebimento } from "@/types";
 import type { PaymentStats, RecebimentoStats } from "@/lib/services";
 
@@ -166,6 +166,10 @@ export function FinanceiroContent({
             ? "Novo pagamento"
             : "Novo recebimento";
 
+  const showCalendarIcon =
+    (profile === "administracao" && (adminTab === "receber" || adminTab === "pagar")) ||
+    profile === "representante";
+
   function handleCreate() {
     if (profile === "representante") {
       setPaymentDirection("SAIDA");
@@ -228,7 +232,11 @@ export function FinanceiroContent({
               onClick={handleCreate}
               className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-1 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-brand-500/40 hover:text-brand-300"
             >
-              <IconPlus className="h-3.5 w-3.5 text-brand-400" />
+              {showCalendarIcon ? (
+                <IconCalendar className="h-3.5 w-3.5 text-brand-400" />
+              ) : (
+                <IconPlus className="h-3.5 w-3.5 text-brand-400" />
+              )}
               {actionLabel}
             </button>
           </div>

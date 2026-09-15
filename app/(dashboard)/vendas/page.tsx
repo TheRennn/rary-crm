@@ -15,14 +15,14 @@ export default async function VendasPage() {
     authUser ? userService.getCurrentUser(authUser, supabase).catch(() => null) : null,
   ]);
 
-  const clientMap = new Map(clients.map((client) => [client.id, client.companyName]));
+  const clientMap = new Map(clients.map((client) => [client.id, client.companyName || client.name || "Sem nome"]));
 
   return (
     <SalesContentClient
       deals={deals}
       stats={stats}
       clientNames={Object.fromEntries(clientMap)}
-      clients={clients.map((c) => ({ id: c.id, name: c.companyName, code: c.code }))}
+      clients={clients.map((c) => ({ id: c.id, name: c.companyName || c.name || "Sem nome", code: c.code }))}
       currentUserId={currentUser?.id ?? ""}
     />
   );
