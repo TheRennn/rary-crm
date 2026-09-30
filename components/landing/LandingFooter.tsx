@@ -26,6 +26,12 @@ export function LandingFooter() {
             <p className="max-w-xs text-sm leading-relaxed text-muted">
               Seu cliente. Sua operação. Tudo em um só lugar.
             </p>
+            <a
+              href="mailto:contato@raryservice.com.br"
+              className="text-md text-muted-2 hover:text-foreground transition-colors"
+            >
+              contato@raryservice.com.br
+            </a>
           </div>
           <nav className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-muted sm:grid-cols-3 sm:gap-x-10">
             {navLinks.map((link) => (
