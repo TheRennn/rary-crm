@@ -17,6 +17,7 @@ export default async function NovoClientePage({
 
   return (
     <ClientForm
+      key={kind}
       currentUserId={currentUser?.id ?? ""}
       initialKind={kind}
     />

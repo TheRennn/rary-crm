@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/Toast";
 import { clientRepository } from "@/lib/repositories";
 import { clientService } from "@/lib/services";
 import { CLIENT_STATUS_LABELS, COUNTRY_OPTIONS, UF_LIST } from "@/lib/constants";
-import type { Client, ClientStatus } from "@/types";
+import type { Client, ClientStatus, Segment } from "@/types";
 import {
   IconArrowLeft,
   IconUser,
@@ -151,66 +151,43 @@ export default function ClientForm({ currentUserId, editClient, initialKind }: C
   const router = useRouter();
   const { toast } = useToast();
   const isEditing = !!editClient;
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(editClient?.code ?? "");
   const [submitting, setSubmitting] = useState(false);
 
-  const [nome, setNome] = useState("");
-  const [doc, setDoc] = useState("");
-  const [tipo, setTipo] = useState("PESSOA_FISICA");
-  const [kind, setKind] = useState(initialKind ?? "CLIENTE");
-  const [empresaNome, setEmpresaNome] = useState("");
-  const [empresaCnpj, setEmpresaCnpj] = useState("");
-  const [segmento, setSegmento] = useState("");
-  const [cidade, setCidade] = useState("");
-  const [uf, setUf] = useState("");
-  const [decisorNome, setDecisorNome] = useState("");
-  const [decisorCargo, setDecisorCargo] = useState("");
-  const [decisorTelefone, setDecisorTelefone] = useState("");
-  const [decisorEmail, setDecisorEmail] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [contatoEmail, setContatoEmail] = useState("");
-  const [contatoTelefone, setContatoTelefone] = useState("");
-  const [responsavel, setResponsavel] = useState("");
-  const [status, setStatus] = useState("");
-  const [origem, setOrigem] = useState("");
+  const [nome, setNome] = useState(editClient?.name ?? "");
+  const [doc, setDoc] = useState(editClient?.cpfCnpj ?? "");
+  const [tipo, setTipo] = useState<string>(editClient?.type ?? "PESSOA_FISICA");
+  const [kind, setKind] = useState(editClient?.kind ?? initialKind ?? "CLIENTE");
+  const [empresaNome, setEmpresaNome] = useState(editClient?.companyName ?? "");
+  const [empresaCnpj, setEmpresaCnpj] = useState(editClient?.companyCnpj ?? "");
+  const [segmento, setSegmento] = useState<string>(editClient?.segment ?? "");
+  const [cidade, setCidade] = useState(editClient?.city ?? "");
+  const [uf, setUf] = useState(editClient?.state ?? "");
+  const [decisorNome, setDecisorNome] = useState(editClient?.decisor.name ?? "");
+  const [decisorCargo, setDecisorCargo] = useState(editClient?.decisor.role ?? "");
+  const [decisorTelefone, setDecisorTelefone] = useState(editClient?.decisor.phone ?? "");
+  const [decisorEmail, setDecisorEmail] = useState(editClient?.decisor.email ?? "");
+  const [whatsapp, setWhatsapp] = useState(editClient?.contacts.find((contact) => contact.type === "WHATSAPP")?.value ?? "");
+  const [contatoEmail, setContatoEmail] = useState(editClient?.contacts.find((contact) => contact.type === "EMAIL")?.value ?? "");
+  const [contatoTelefone, setContatoTelefone] = useState(editClient?.contacts.find((contact) => contact.type === "TELEFONE")?.value ?? "");
+  const [responsavel, setResponsavel] = useState(editClient?.responsibleId ?? "");
+  const [status, setStatus] = useState<string>(editClient?.status ?? "");
+  const [origem, setOrigem] = useState(editClient?.origin ?? "");
   const [pais, setPais] = useState("BR");
-  const [obs, setObs] = useState("");
+  const [obs, setObs] = useState(editClient?.notes ?? "");
 
   useEffect(() => {
-    if (!isEditing) {
-      clientService.getNextCode(kind as "CLIENTE" | "FORNECEDOR").then(setCode);
-    } else {
-      setCode(editClient.code);
-    }
-  }, [isEditing, editClient, kind]);
+    if (editClient) return;
 
-  useEffect(() => {
-    if (editClient) {
-      setNome(editClient.name);
-      setDoc(editClient.cpfCnpj);
-      setTipo(editClient.type);
-      setKind(editClient.kind ?? "CLIENTE");
-      setEmpresaNome(editClient.companyName);
-      setEmpresaCnpj(editClient.companyCnpj);
-      setSegmento(editClient.segment);
-      setCidade(editClient.city);
-      setUf(editClient.state);
-      setDecisorNome(editClient.decisor.name);
-      setDecisorCargo(editClient.decisor.role);
-      setDecisorTelefone(editClient.decisor.phone);
-      setDecisorEmail(editClient.decisor.email);
-      setResponsavel(editClient.responsibleId);
-      setStatus(editClient.status);
-      setOrigem(editClient.origin);
-      setObs(editClient.notes ?? "");
-      const whatsapp = editClient.contacts.find((c) => c.type === "WHATSAPP");
-      const email = editClient.contacts.find((c) => c.type === "EMAIL");
-      const phone = editClient.contacts.find((c) => c.type === "TELEFONE");
-      setWhatsapp(whatsapp?.value ?? "");
-      setContatoEmail(email?.value ?? "");
-      setContatoTelefone(phone?.value ?? "");
-    }
-  }, [editClient]);
+    let cancelled = false;
+    clientService.getNextCode(kind).then((nextCode) => {
+      if (!cancelled) setCode(nextCode);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editClient, kind]);
 
   const responsavelOptions = currentUserId
     ? [{ value: currentUserId, label: "Eu mesmo" }]
@@ -228,7 +205,7 @@ export default function ClientForm({ currentUserId, editClient, initialKind }: C
         kind: (kind || "CLIENTE") as "CLIENTE" | "FORNECEDOR",
         companyName: empresaNome,
         companyCnpj: empresaCnpj,
-        segment: (segmento || "Tecnologia") as any,
+        segment: (segmento || "Tecnologia") as Segment,
         city: cidade,
         state: uf,
         decisorName: decisorNome,
@@ -262,7 +239,7 @@ export default function ClientForm({ currentUserId, editClient, initialKind }: C
         router.push("/clientes");
       }
       router.refresh();
-    } catch (err) {
+    } catch {
       toast({
         title: "Erro ao salvar",
         message: isEditing ? "Não foi possível atualizar o cliente. Tente novamente." : "Não foi possível cadastrar o cliente. Tente novamente.",
@@ -339,7 +316,11 @@ export default function ClientForm({ currentUserId, editClient, initialKind }: C
               options={kindOptions}
               placeholder="Selecione"
               value={kind}
-              onChange={(e) => setKind(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value === "CLIENTE" || e.target.value === "FORNECEDOR") {
+                  setKind(e.target.value);
+                }
+              }}
               required
             />
           </div>

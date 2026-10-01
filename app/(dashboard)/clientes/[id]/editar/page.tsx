@@ -26,6 +26,7 @@ export default async function EditarClientePage({
 
   return (
     <ClientForm
+      key={client.id}
       currentUserId={currentUser?.id ?? ""}
       editClient={client}
     />
