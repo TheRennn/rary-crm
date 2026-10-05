@@ -573,7 +573,7 @@ export function LandingDemo() {
                 <div className="flex flex-1 items-center justify-center">
                   <div className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-3 py-1">
                     <IconArrowRight className="h-3 w-3 text-muted" />
-                    <span className="text-[10px] text-muted">rary-crm.vercel.app</span>
+                    <span className="text-[10px] text-muted">crm.raryservice.com.br</span>
                   </div>
                 </div>
               </div>

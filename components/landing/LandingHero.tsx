@@ -31,7 +31,7 @@ function HeroMiniDashboard() {
               <div className="flex flex-1 items-center justify-center">
                 <div className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-2 py-1 sm:px-3">
                   <IconRefresh className="h-2 w-2 text-muted sm:h-2.5 sm:w-2.5" />
-                  <span className="text-[9px] text-muted sm:text-[10px]">rary-crm.vercel.app/dashboard</span>
+                  <span className="text-[9px] text-muted sm:text-[10px]">crm.raryservice.com.br</span>
                 </div>
               </div>
             </div>
