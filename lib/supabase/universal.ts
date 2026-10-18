@@ -1,4 +1,5 @@
 import { createBrowserClient, createServerClient, type CookieOptions } from "@supabase/ssr";
+import { nodeRealtimeTransport } from "@/lib/supabase/node-websocket";
 
 let browserClient: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -30,6 +31,9 @@ export async function createUniversalClient() {
               cookieStore.set({ name, value: "", ...options });
             } catch {}
           },
+        },
+        realtime: {
+          transport: nodeRealtimeTransport,
         },
       }
     );

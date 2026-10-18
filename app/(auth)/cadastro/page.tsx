@@ -29,30 +29,38 @@ export default function CadastroPage() {
     event.preventDefault();
     setLoading(true);
 
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name, company, segment }),
-    });
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name, company, segment }),
+      });
+      const data = await res.json();
 
-    const data = await res.json();
+      if (!res.ok) {
+        toast({
+          title: "Erro ao criar conta",
+          message: data.error || "Tente novamente.",
+          variant: "error",
+        });
+        return;
+      }
 
-    if (!res.ok) {
-      setLoading(false);
+      toast({
+        title: "Conta criada!",
+        message: "Confirme seu e-mail para continuar.",
+        variant: "success",
+      });
+      router.push(`/verificar-email?email=${encodeURIComponent(email.trim())}`);
+    } catch {
       toast({
         title: "Erro ao criar conta",
-        message: data.error || "Tente novamente.",
+        message: "Não foi possível conectar ao servidor. Tente novamente.",
         variant: "error",
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    toast({
-      title: "Conta criada!",
-      message: "Verifique seu e-mail para ativar sua conta.",
-      variant: "success",
-    });
-    router.push(`/verificar-email?email=${encodeURIComponent(email)}`);
   }
 
   return (

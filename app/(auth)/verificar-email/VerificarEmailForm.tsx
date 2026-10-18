@@ -83,59 +83,80 @@ export default function VerificarEmailForm() {
 
     setLoading(true);
 
-    const res = await fetch("/api/auth/verify-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, token }),
-    });
+    try {
+      const res = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, token }),
+      });
+      const data = await res.json();
 
-    const data = await res.json();
+      if (!res.ok) {
+        toast({
+          title: "Não foi possível verificar o código",
+          message: data.error === "Código inválido ou expirado."
+            ? "Código expirado ou inválido. Solicite um novo."
+            : data.error || "Tente novamente.",
+          variant: "error",
+        });
+        setOtp(new Array(OTP_LENGTH).fill(""));
+        inputRefs.current[0]?.focus();
+        return;
+      }
 
-    if (!res.ok) {
-      setLoading(false);
+      toast({ title: "E-mail verificado!", message: "Agora conclua o pagamento para liberar o acesso.", variant: "success" });
+      router.push(`/pagamento?email=${encodeURIComponent(email)}`);
+    } catch {
       toast({
-        title: "Código inválido",
-        message: data.error === "Código inválido ou expirado."
-          ? "Código expirado ou inválido. Solicite um novo."
-          : data.error,
+        title: "Erro ao verificar código",
+        message: "Não foi possível conectar ao servidor. Tente novamente.",
         variant: "error",
       });
-      setOtp(new Array(OTP_LENGTH).fill(""));
-      inputRefs.current[0]?.focus();
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    toast({ title: "E-mail verificado!", message: "Sua conta foi ativada com sucesso.", variant: "success" });
-    router.push("/dashboard");
   }
 
   async function handleResend() {
     if (cooldown > 0) return;
     setResending(true);
 
-    const res = await fetch("/api/auth/send-verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
+    try {
+      const res = await fetch("/api/auth/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-    const data = await res.json();
-    setResending(false);
+      const data = await res.json();
 
-    if (!res.ok) {
-      toast({ title: "Erro ao reenviar", message: data.error, variant: "error" });
-      return;
+      if (!res.ok) {
+        toast({ title: "Erro ao reenviar", message: data.error || "Tente novamente.", variant: "error" });
+        return;
+      }
+
+      toast({ title: "Código reenviado", message: "Verifique sua caixa de entrada.", variant: "success" });
+      setCooldown(60);
+      setOtp(new Array(OTP_LENGTH).fill(""));
+      inputRefs.current[0]?.focus();
+    } catch {
+      toast({
+        title: "Erro ao reenviar",
+        message: "Não foi possível conectar ao servidor. Tente novamente.",
+        variant: "error",
+      });
+    } finally {
+      setResending(false);
     }
-
-    toast({ title: "Código reenviado", message: "Verifique sua caixa de entrada.", variant: "success" });
-    setCooldown(60);
-    setOtp(new Array(OTP_LENGTH).fill(""));
-    inputRefs.current[0]?.focus();
   }
 
   async function handleLogout() {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({ title: "Erro ao sair", message: "Não foi possível encerrar a sessão. Tente novamente.", variant: "error" });
+      return;
+    }
     router.push("/login");
   }
 

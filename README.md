@@ -20,6 +20,19 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Mensalidade e liberação de acesso
+
+O acesso de contas novas exige e-mail verificado e período mensal pago. O valor é R$ 49,90; Pix, boleto e cartão são cobrados por links avulsos, e a confirmação só acontece pelo webhook (o retorno do checkout não libera o CRM).
+
+Antes de ativar o fluxo:
+
+1. No Supabase SQL Editor, confirme que `015_add_payment_verified.sql` já foi aplicada e execute `supabase/migrations/016_monthly_manual_billing.sql`.
+2. Configure `PAGARME_API_KEY`, `PAGARME_ENV` e `PAGARME_WEBHOOK_SECRET` no ambiente da aplicação.
+3. Aponte o webhook Stone/Pagar.me para `https://<dominio-publico>/api/webhooks/pagarme`. Se o provedor não enviar `x-hub-signature-256`, acrescente `?token=<PAGARME_WEBHOOK_SECRET>` à URL. Use HTTPS e um segredo aleatório forte; não coloque o segredo no repositório.
+4. Habilite os eventos `charge.paid`, `order.paid`, `charge.payment_failed`, `order.payment_failed` e `charge.refunded`.
+
+Em desenvolvimento local, use um túnel HTTPS (por exemplo, ngrok) e atualize a URL do webhook para esse túnel. Uma confirmação de pagamento simulada sem o valor exato de R$ 49,90 é recusada e não concede acesso.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -25,7 +25,7 @@ export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
   action?: ReactNode;
 }
 
-export function CardHeader({ title, description, action, className, ...props }: CardHeaderProps) {
+export function CardHeader({ title, description, action, children, className, ...props }: CardHeaderProps) {
   return (
     <div
       className={cn(
@@ -35,11 +35,15 @@ export function CardHeader({ title, description, action, className, ...props }: 
       {...props}
     >
       <div className="min-w-0">
-        {title && (
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        )}
-        {description && (
-          <p className="mt-0.5 text-xs text-muted">{description}</p>
+        {children ?? (
+          <>
+            {title && (
+              <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+            )}
+            {description && (
+              <p className="mt-0.5 text-xs text-muted">{description}</p>
+            )}
+          </>
         )}
       </div>
       {action}

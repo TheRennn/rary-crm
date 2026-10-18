@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { IconMail, IconEye } from "@/components/icons";
 import { IconKey, IconEyeOff } from "@/components/ui/icons-additional";
+import { getAccessRequirementStatus } from "@/lib/auth/subscription-access";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -24,44 +25,106 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setLoading(false);
+      if (error) {
+        const emailNotConfirmed =
+          error.code === "email_not_confirmed" ||
+          error.message.toLowerCase().includes("email not confirmed");
+        toast({
+          title: emailNotConfirmed ? "E-mail não verificado" : "Erro ao entrar",
+          message:
+            emailNotConfirmed
+              ? "Digite o código enviado para confirmar seu e-mail."
+              : error.message === "Invalid login credentials"
+                ? "E-mail ou senha inválidos."
+                : error.message,
+          variant: emailNotConfirmed ? "warning" : "error",
+        });
+        if (emailNotConfirmed) {
+          router.push(`/verificar-email?email=${encodeURIComponent(email.trim())}`);
+        }
+        return;
+      }
+
+      if (!data.user) {
+        toast({
+          title: "Erro ao entrar",
+          message: "Não foi possível validar sua conta. Tente novamente.",
+          variant: "error",
+        });
+        return;
+      }
+
+      const { data: appUser, error: appUserError } = await supabase
+        .from("users")
+        .select("email_verified, payment_verified, access_requirements_enforced, access_expires_at")
+        .eq("auth_id", data.user.id)
+        .maybeSingle();
+
+      if (appUserError || !appUser) {
+        if (appUserError) console.error("Erro ao validar status da conta:", appUserError);
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) console.error("Erro ao encerrar sessão sem status de conta:", signOutError);
+        toast({
+          title: "Não foi possível validar sua conta",
+          message: "Tente novamente em instantes ou entre em contato com o suporte.",
+          variant: "error",
+        });
+        return;
+      }
+
+      const accessStatus = getAccessRequirementStatus({
+        requirementsEnforced: appUser.access_requirements_enforced,
+        emailVerified: appUser.email_verified,
+        paymentVerified: appUser.payment_verified,
+        accessExpiresAt: appUser.access_expires_at,
+      });
+
+      if (accessStatus === "email-unverified") {
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) console.error("Erro ao encerrar sessão de e-mail pendente:", signOutError);
+        toast({
+          title: "E-mail não verificado",
+          message: "Digite o código enviado para confirmar seu e-mail.",
+          variant: "warning",
+        });
+        router.push(`/verificar-email?email=${encodeURIComponent(data.user.email ?? email)}`);
+        return;
+      }
+
+      if (accessStatus === "payment-required") {
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) console.error("Erro ao encerrar sessão sem pagamento:", signOutError);
+        toast({
+          title: "Pagamento necessário",
+          message: "Pague ou renove sua mensalidade para liberar o acesso ao painel.",
+          variant: "warning",
+        });
+        router.push(`/pagamento?email=${encodeURIComponent(data.user.email ?? email)}`);
+        return;
+      }
+
+      toast({
+        title: "Bem-vindo de volta!",
+        message: "Login realizado com sucesso.",
+        variant: "success",
+      });
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Erro inesperado ao entrar:", error);
       toast({
         title: "Erro ao entrar",
-        message:
-          error.message === "Invalid login credentials"
-            ? "E-mail ou senha inválidos."
-            : error.message,
+        message: "Não foi possível concluir o login. Tente novamente.",
         variant: "error",
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    // TODO: reativar quando dominio Resend estiver configurado
-    // if (data.user) {
-    //   const { data: appUser } = await supabase
-    //     .from("users")
-    //     .select("email_verified")
-    //     .eq("auth_id", data.user.id)
-    //     .single();
-    //   if (!appUser?.email_verified) {
-    //     toast({ title: "E-mail não verificado", message: "Verifique seu e-mail para acessar o painel.", variant: "warning" });
-    //     router.push(`/verificar-email?email=${encodeURIComponent(email)}`);
-    //     return;
-    //   }
-    // }
-
-    toast({
-      title: "Bem-vindo de volta!",
-      message: "Login realizado com sucesso.",
-      variant: "success",
-    });
-    router.push("/dashboard");
   }
 
   return (

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { randomInt } from "node:crypto";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return randomInt(0, 1_000_000).toString().padStart(6, "0");
 }
 
 function verificationEmailHtml(code: string): string {
@@ -35,23 +36,20 @@ function verificationEmailHtml(code: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const body = await request.json();
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
 
-    if (!email || typeof email !== "string") {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "E-mail obrigatório." }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const resendKey = process.env.RESEND_API_KEY;
 
-    if (!supabaseUrl || !serviceKey || !resendKey) {
+    if (!resendKey) {
       return NextResponse.json(
         {
           error: "Variáveis de ambiente não configuradas no servidor.",
           missing: {
-            NEXT_PUBLIC_SUPABASE_URL: !supabaseUrl,
-            SUPABASE_SERVICE_ROLE_KEY: !serviceKey,
             RESEND_API_KEY: !resendKey,
           },
         },
@@ -59,7 +57,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = getSupabaseAdmin();
 
     // Buscar usuário por email (listUsers pagina em 50 por padrão)
     let authUser: { id: string } | null = null;
@@ -90,22 +88,47 @@ export async function POST(request: Request) {
     }
 
     // Verificar se já verificou
-    const { data: appUser } = await supabase
+    const { data: appUser, error: appUserErr } = await supabase
       .from("users")
       .select("email_verified")
       .eq("auth_id", authUser.id)
-      .single();
+      .maybeSingle();
+    if (appUserErr) {
+      console.error("Erro ao verificar status do usuário:", appUserErr);
+      return NextResponse.json({ error: "Erro ao acessar conta." }, { status: 500 });
+    }
 
     if (appUser?.email_verified) {
       return NextResponse.json({ ok: true });
     }
 
+    const recentTokenCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: recentTokenCount, error: rateLimitErr } = await supabase
+      .from("verification_tokens")
+      .select("id", { count: "exact", head: true })
+      .eq("email", email)
+      .gte("created_at", recentTokenCutoff);
+    if (rateLimitErr) {
+      console.error("Erro ao verificar limite de reenvios:", rateLimitErr);
+      return NextResponse.json({ error: "Erro ao reenviar código." }, { status: 500 });
+    }
+    if ((recentTokenCount ?? 0) >= 10) {
+      return NextResponse.json(
+        { error: "Limite de reenvios atingido. Tente novamente mais tarde." },
+        { status: 429 }
+      );
+    }
+
     // Invalidar tokens antigos
-    await supabase
+    const { error: invalidateErr } = await supabase
       .from("verification_tokens")
       .update({ used: true })
       .eq("email", email)
       .eq("used", false);
+    if (invalidateErr) {
+      console.error("Erro ao invalidar códigos antigos:", invalidateErr);
+      return NextResponse.json({ error: "Erro ao gerar novo código." }, { status: 500 });
+    }
 
     // Gerar OTP
     const token = generateOtp();
@@ -136,14 +159,22 @@ export async function POST(request: Request) {
     });
 
     if (emailErr) {
+      console.error("Resend recusou o reenvio do código:", {
+        name: emailErr.name,
+        message: emailErr.message,
+        statusCode: emailErr.statusCode,
+      });
       return NextResponse.json(
-        { error: "Erro ao enviar e-mail.", detail: emailErr.message },
-        { status: 500 }
+        {
+          error: `O Resend recusou o envio (${emailErr.name}, HTTP ${emailErr.statusCode ?? "desconhecido"}): ${emailErr.message}. Verifique o domínio remetente e as restrições do destinatário.`,
+        },
+        { status: 502 }
       );
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    console.error("Erro ao reenviar código de verificação:", err);
     return NextResponse.json(
       { error: "Erro interno.", detail: err instanceof Error ? err.message : String(err) },
       { status: 500 }
