@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { MobileNav } from "./MobileNav";
+import { AssistantChat } from "@/components/assistant/AssistantChat";
 import type { User } from "@/types";
 
 export interface DashboardShellProps {
@@ -26,6 +27,7 @@ export function DashboardShell({ user, companyName, companyLogoUrl, children }: 
           {children}
         </main>
       </div>
+      <AssistantChat />
     </div>
   );
 }
