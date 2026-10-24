@@ -207,13 +207,15 @@ export function RegisterOrderModal({
           shippingValue: shippingAmount > 0 ? shippingAmount : undefined,
         });
         onCreated(created);
-        toast({
-          title: source === "REPRESENTANTE" ? "Pedido e comissão registrados" : "Pedido adicionado",
-          message: source === "REPRESENTANTE"
-            ? `${created.code} · comissão gerada automaticamente.`
-            : `${created.code} · ${created.clientName} — ${ORDER_TYPE_LABELS[created.type]}`,
-          variant: "success",
-        });
+        toast(created.commissionWarning
+          ? { title: "Pedido salvo; comissão pendente", message: `${created.code} foi salvo, mas não foi possível criar a comissão automática. Cadastre-a novamente.`, variant: "error" }
+          : {
+              title: source === "REPRESENTANTE" ? "Pedido e comissão registrados" : "Pedido adicionado",
+              message: source === "REPRESENTANTE"
+                ? `${created.code} · comissão gerada automaticamente.`
+                : `${created.code} · ${created.clientName} — ${ORDER_TYPE_LABELS[created.type]}`,
+              variant: "success",
+            });
       }
       reset();
       onClose();

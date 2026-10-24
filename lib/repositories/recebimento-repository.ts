@@ -40,26 +40,28 @@ export class RecebimentoRepository {
     let query = supabase.from("recebimentos").select("*");
 
     if (clientIds.length > 0 && userId) {
-      query = query.or(`client_id.in.(${clientIds.join(",")}),responsible_id.eq.${userId}`);
-    } else if (clientIds.length > 0) {
-      query = query.in("client_id", clientIds);
+      query = query.or(`client_id.in.(${clientIds.join(",")}),owner_user_id.eq.${userId}`);
     } else if (userId) {
-      query = query.eq("responsible_id", userId);
+      query = query.eq("owner_user_id", userId);
     } else {
       return [];
     }
 
     const { data, error } = await query.order("created_at", { ascending: false });
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToRecebimento);
   }
 
   async create(input: CreateRecebimentoInput): Promise<Recebimento> {
     const supabase = await createUniversalClient();
+    const ownerId = await getUserIdFromUser();
+    if (!ownerId) throw new Error("Não foi possível identificar o usuário desta conta.");
     const id = `rec-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const row = {
       id,
+      owner_user_id: ownerId,
       client_id: input.clientId ?? null,
       client_name: input.clientName,
       responsible_id: input.responsibleId ?? null,
@@ -114,8 +116,9 @@ export class RecebimentoRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("recebimentos").delete().eq("id", id);
+    const { data, error } = await supabase.from("recebimentos").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

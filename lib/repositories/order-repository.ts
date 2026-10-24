@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
 import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { Order } from "@/types";
 
@@ -25,26 +26,32 @@ function rowToOrder(row: Record<string, unknown>): Order {
 export class OrderRepository {
   async findAll(companyId?: string | null): Promise<Order[]> {
     const supabase = await createUniversalClient();
-    const clientIds = await getClientIdsForCompany(companyId);
+    const [clientIds, ownerId] = await Promise.all([
+      getClientIdsForCompany(companyId),
+      getUserIdFromUser(),
+    ]);
+    if (!ownerId) return [];
 
-    if (clientIds.length === 0) return [];
+    let query = supabase.from("orders").select("*");
+    query = clientIds.length
+      ? query.or(`client_id.in.(${clientIds.join(",")}),owner_user_id.eq.${ownerId}`)
+      : query.eq("owner_user_id", ownerId);
+    const { data, error } = await query.order("date", { ascending: false });
 
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .in("client_id", clientIds)
-      .order("date", { ascending: false });
-
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToOrder);
   }
 
   async create(input: Omit<Order, "id">): Promise<Order> {
     const supabase = await createUniversalClient();
+    const ownerId = await getUserIdFromUser();
+    if (!ownerId) throw new Error("Não foi possível identificar o usuário desta conta.");
     const id = `ord-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const row = {
       id,
+      owner_user_id: ownerId,
       code: input.code,
       client_id: input.clientId ?? null,
       client_name: input.clientName,
@@ -91,8 +98,9 @@ export class OrderRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("orders").delete().eq("id", id);
+    const { data, error } = await supabase.from("orders").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

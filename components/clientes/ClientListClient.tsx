@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ClientList } from "./ClientList";
 import { ProductsContent } from "@/components/financeiro/ProductsContent";
 import { RegisterProductModal } from "@/components/financeiro/RegisterProductModal";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { clientService, productService } from "@/lib/services";
@@ -62,6 +61,17 @@ export function ClientListClient({ clients: initialClients, products: initialPro
         message: "Não foi possível excluir o produto. Tente novamente.",
         variant: "error",
       });
+    }
+  }
+
+  async function handleDeleteClient(client: Client) {
+    try {
+      await clientService.delete(client.id);
+      setClients((prev) => prev.filter((item) => item.id !== client.id));
+      toast({ title: "Cadastro excluído", message: `${client.code} — ${client.name} foi removido.`, variant: "success" });
+    } catch (error) {
+      console.error("Erro ao excluir cadastro:", error);
+      toast({ title: "Erro ao excluir", message: "O cadastro continua salvo. Verifique se há pedidos ou vendas vinculados e tente novamente.", variant: "error" });
     }
   }
 
@@ -136,9 +146,7 @@ export function ClientListClient({ clients: initialClients, products: initialPro
           clients={clients}
           initialQuery={initialQuery}
           kindFilter={activeTab === "fornecedores" ? "FORNECEDOR" : "CLIENTE"}
-          onDelete={(client) => {
-            setClients((prev) => prev.filter((c) => c.id !== client.id));
-          }}
+          onDelete={handleDeleteClient}
         />
       )}
     </div>

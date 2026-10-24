@@ -31,27 +31,29 @@ export class TaskRepository {
     let query = supabase.from("tasks").select("*");
 
     if (clientIds.length > 0 && userId) {
-      query = query.or(`client_id.in.(${clientIds.join(",")}),responsible_id.eq.${userId}`);
-    } else if (clientIds.length > 0) {
-      query = query.in("client_id", clientIds);
+      query = query.or(`client_id.in.(${clientIds.join(",")}),owner_user_id.eq.${userId}`);
     } else if (userId) {
-      query = query.eq("responsible_id", userId);
+      query = query.eq("owner_user_id", userId);
     } else {
       return [];
     }
 
     const { data, error } = await query.order("due_date", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToTask);
   }
 
   async create(input: CreateTaskInput): Promise<Task> {
     const supabase = await createUniversalClient();
+    const ownerId = await getUserIdFromUser();
+    if (!ownerId) throw new Error("Não foi possível identificar o usuário desta conta.");
     const id = `task-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const row = {
       id,
+      owner_user_id: ownerId,
       title: input.title,
       description: input.description ?? null,
       client_id: input.clientId ?? null,
@@ -88,8 +90,9 @@ export class TaskRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("tasks").delete().eq("id", id);
+    const { data, error } = await supabase.from("tasks").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

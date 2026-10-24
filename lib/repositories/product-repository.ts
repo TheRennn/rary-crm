@@ -28,28 +28,26 @@ export class ProductRepository {
   async findAll(userId?: string | null): Promise<Product[]> {
     const supabase = await createUniversalClient();
     const uid = userId ?? await getUserIdFromUser();
+    if (!uid) return [];
 
-    let query = supabase.from("products").select("*");
-    if (uid) {
-      query = query.eq("user_id", uid);
-    }
+    const query = supabase.from("products").select("*").eq("user_id", uid);
     const { data, error } = await query.order("created_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToProduct);
   }
 
   async findAllCodes(userId?: string | null): Promise<string[]> {
     const supabase = await createUniversalClient();
     const uid = userId ?? await getUserIdFromUser();
+    if (!uid) return [];
 
-    let query = supabase.from("products").select("code");
-    if (uid) {
-      query = query.eq("user_id", uid);
-    }
+    const query = supabase.from("products").select("code").eq("user_id", uid);
     const { data, error } = await query;
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map((row: Record<string, unknown>) => row.code as string);
   }
 
@@ -63,11 +61,12 @@ export class ProductRepository {
   async create(input: CreateProductInput, userId?: string | null): Promise<Product> {
     const supabase = await createUniversalClient();
     const uid = userId ?? await getUserIdFromUser();
+    if (!uid) throw new Error("Não foi possível identificar o usuário desta conta.");
     const id = `prd-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const row = {
       id,
-      user_id: uid ?? null,
+      user_id: uid,
       code: input.code,
       name: input.name,
       description: input.description ?? null,
@@ -117,8 +116,9 @@ export class ProductRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { data, error } = await supabase.from("products").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

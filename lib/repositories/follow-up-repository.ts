@@ -31,16 +31,15 @@ export class FollowUpRepository {
   async findAll(): Promise<FollowUp[]> {
     const supabase = await createUniversalClient();
     const userId = await getUserIdFromUser();
+    if (!userId) return [];
 
-    let query = supabase.from("follow_ups").select("*");
-
-    if (userId) {
-      query = query.eq("responsible_id", userId);
-    }
+    const query = supabase.from("follow_ups").select("*")
+      .or(`responsible_id.eq.${userId},owner_user_id.eq.${userId}`);
 
     const { data, error } = await query.order("date", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToFollowUp);
   }
 
@@ -52,6 +51,8 @@ export class FollowUpRepository {
     if (!responsibleId) {
       throw new Error("Não foi possível identificar o usuário responsável.");
     }
+    const ownerId = await getUserIdFromUser();
+    if (!ownerId) throw new Error("Não foi possível identificar o usuário desta conta.");
 
     const dateTime = input.date.includes("T")
       ? input.date
@@ -59,6 +60,7 @@ export class FollowUpRepository {
 
     const row = {
       id,
+      owner_user_id: ownerId,
       client_id: input.clientId || null,
       client_name: input.clientName,
       responsible_id: responsibleId,
@@ -93,8 +95,9 @@ export class FollowUpRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("follow_ups").delete().eq("id", id);
+    const { data, error } = await supabase.from("follow_ups").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

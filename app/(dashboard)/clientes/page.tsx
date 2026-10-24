@@ -12,7 +12,7 @@ export default async function ClientesPage({
 
   const [clients, products] = await Promise.all([
     clientService.getAll(),
-    tab === "produtos" ? productService.getAll().catch(() => []) : Promise.resolve([]),
+    tab === "produtos" ? productService.getAll() : Promise.resolve([]),
   ]);
 
   return (

@@ -8,6 +8,8 @@ export interface OrderStats {
   totalCount: number;
 }
 
+export type CreateOrderResult = Order & { commissionWarning?: boolean };
+
 export type CreateOrderInput = Omit<Order, "id" | "total" | "code" | "items"> & {
   items: Omit<OrderItem, "id">[];
   code?: string;
@@ -36,7 +38,7 @@ export class OrderService {
     return orderRepository.findAll();
   }
 
-  async create(input: CreateOrderInput): Promise<Order> {
+  async create(input: CreateOrderInput): Promise<CreateOrderResult> {
     const existing = await this.getAll();
     const items: OrderItem[] = input.items.map((item, index) => ({
       ...item,
@@ -56,6 +58,7 @@ export class OrderService {
     };
     const created = await orderRepository.create(order);
 
+    let commissionWarning = false;
     if (input.source === "REPRESENTANTE" && input.companyName) {
       try {
         const { commissionService } = await import("@/lib/services");
@@ -69,12 +72,13 @@ export class OrderService {
           method: "A_VISTA",
           notes: `Pedido ${created.code} — gerado automaticamente`,
         });
-      } catch {
-        // Comissão auxiliar falha silenciosamente — pedido já foi criado
+      } catch (error) {
+        console.error("O pedido foi salvo, mas a comissão automática falhou:", error);
+        commissionWarning = true;
       }
     }
 
-    return created;
+    return commissionWarning ? { ...created, commissionWarning } : created;
   }
 
   async update(id: string, input: Partial<Omit<Order, "id" | "total" | "items"> & { items: Omit<OrderItem, "id">[] }>): Promise<Order> {

@@ -11,16 +11,22 @@ export async function getCompanyIdFromUser(
 ): Promise<string | null> {
   const supabase = await createUniversalClient();
 
-  const user = authUser ?? (await supabase.auth.getUser()).data.user;
+  const { data: { user: sessionUser }, error: authError } = authUser
+    ? { data: { user: authUser }, error: null }
+    : await supabase.auth.getUser();
+  if (authError) throw authError;
+  const user = sessionUser;
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("users")
     .select("company_id")
     .eq("auth_id", user.id)
     .single();
 
-  return data?.company_id ?? null;
+  if (error && error.code !== "PGRST116") throw error;
+  if (!data?.company_id) throw new Error("A conta autenticada não possui uma empresa vinculada.");
+  return data.company_id;
 }
 
 /**
@@ -31,14 +37,20 @@ export async function getUserIdFromUser(
 ): Promise<string | null> {
   const supabase = await createUniversalClient();
 
-  const user = authUser ?? (await supabase.auth.getUser()).data.user;
+  const { data: { user: sessionUser }, error: authError } = authUser
+    ? { data: { user: authUser }, error: null }
+    : await supabase.auth.getUser();
+  if (authError) throw authError;
+  const user = sessionUser;
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("users")
     .select("id")
     .eq("auth_id", user.id)
     .single();
 
-  return data?.id ?? null;
+  if (error && error.code !== "PGRST116") throw error;
+  if (!data?.id) throw new Error("A conta autenticada não possui um usuário CRM vinculado.");
+  return data.id;
 }

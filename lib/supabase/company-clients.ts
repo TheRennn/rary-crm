@@ -18,6 +18,7 @@ export async function getClientIdsForCompany(
     .select("id")
     .eq("company_id", cid);
 
-  if (error || !data) return [];
+  if (error) throw error;
+  if (!data) throw new Error("Não foi possível carregar os clientes da empresa.");
   return data.map((row: { id: string }) => row.id);
 }

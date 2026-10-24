@@ -98,19 +98,15 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
 
   async function uploadAttachment(): Promise<{ url: string; name: string } | null> {
     if (!attachmentFile) return null;
-    try {
-      const supabase = await createUniversalClient();
-      const ext = attachmentFile.name.split(".").pop() ?? "bin";
-      const path = `attachments/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("payments")
-        .upload(path, attachmentFile);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from("payments").getPublicUrl(path);
-      return { url: urlData.publicUrl, name: attachmentFile.name };
-    } catch {
-      return null;
-    }
+    const supabase = await createUniversalClient();
+    const ext = attachmentFile.name.split(".").pop() ?? "bin";
+    const path = `attachments/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("payments")
+      .upload(path, attachmentFile);
+    if (uploadError) throw uploadError;
+    const { data: urlData } = supabase.storage.from("payments").getPublicUrl(path);
+    return { url: urlData.publicUrl, name: attachmentFile.name };
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -210,8 +206,9 @@ export function RegisterPaymentModal({ open, onClose, existingClients, onCreated
               recurrent: true,
             });
             toast({ title: "Próximo lançamento criado", message: `Vencimento: ${new Date(nextDueDate + "T00:00:00").toLocaleDateString("pt-BR")}`, variant: "info" });
-          } catch {
-            // Silent fail for auto-create
+          } catch (error) {
+            console.error("Falha ao criar a próxima parcela recorrente:", error);
+            toast({ title: "Lançamento recorrente incompleto", message: "O pagamento atual foi salvo, mas a próxima parcela não foi criada. Cadastre-a novamente.", variant: "error" });
           }
         }
       }

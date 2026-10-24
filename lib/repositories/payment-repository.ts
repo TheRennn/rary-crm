@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
 import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { Payment } from "@/types";
 
@@ -27,17 +28,20 @@ export type CreatePaymentInput = Omit<Payment, "id">;
 export class PaymentRepository {
   async findAll(companyId?: string | null): Promise<Payment[]> {
     const supabase = await createUniversalClient();
-    const clientIds = await getClientIdsForCompany(companyId);
+    const [clientIds, ownerId] = await Promise.all([
+      getClientIdsForCompany(companyId),
+      getUserIdFromUser(),
+    ]);
+    if (!ownerId) return [];
 
-    if (clientIds.length === 0) return [];
+    let query = supabase.from("payments").select("*");
+    query = clientIds.length
+      ? query.or(`client_id.in.(${clientIds.join(",")}),owner_user_id.eq.${ownerId}`)
+      : query.eq("owner_user_id", ownerId);
+    const { data, error } = await query.order("due_date", { ascending: false });
 
-    const { data, error } = await supabase
-      .from("payments")
-      .select("*")
-      .in("client_id", clientIds)
-      .order("due_date", { ascending: false });
-
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToPayment);
   }
 
@@ -49,7 +53,8 @@ export class PaymentRepository {
       .eq("client_id", clientId)
       .order("due_date", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToPayment);
   }
 
@@ -61,12 +66,15 @@ export class PaymentRepository {
       .eq("deal_id", dealId)
       .order("due_date", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToPayment);
   }
 
   async create(input: CreatePaymentInput): Promise<Payment> {
     const supabase = await createUniversalClient();
+    const ownerId = await getUserIdFromUser();
+    if (!ownerId) throw new Error("Não foi possível identificar o usuário desta conta.");
     const id = `pay-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const dueDateValue = input.dueDate
@@ -75,6 +83,7 @@ export class PaymentRepository {
 
     const row = {
       id,
+      owner_user_id: ownerId,
       client_id: input.clientId,
       deal_id: input.dealId ?? null,
       purchase_id: input.purchaseId ?? null,
@@ -123,8 +132,9 @@ export class PaymentRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("payments").delete().eq("id", id);
+    const { data, error } = await supabase.from("payments").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

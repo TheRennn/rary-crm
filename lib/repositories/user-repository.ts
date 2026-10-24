@@ -11,12 +11,13 @@ export class UserRepository {
 
     const supabase = serverClient ?? await createUniversalClient();
 
-    const { data: existing } = await supabase
+    const { data: existing, error: lookupError } = await supabase
       .from("users")
       .select("*")
       .eq("auth_id", authUser.id)
       .single();
 
+    if (lookupError && lookupError.code !== "PGRST116") throw lookupError;
     if (existing) {
       return {
         id: existing.id,
@@ -36,7 +37,7 @@ export class UserRepository {
 
     const companyId = `comp-${Date.now().toString(36)}`;
 
-    await supabase.from("companies").insert({
+    const { error: companyError } = await supabase.from("companies").insert({
       id: companyId,
       name: company || "Minha Empresa",
       cnpj: "",
@@ -44,10 +45,11 @@ export class UserRepository {
       city: "",
       state: "",
     });
+    if (companyError) throw companyError;
 
     const userId = `usr-${authUser.id.slice(0, 8)}`;
 
-    await supabase.from("users").insert({
+    const { error: userError } = await supabase.from("users").insert({
       id: userId,
       auth_id: authUser.id,
       name,
@@ -56,6 +58,10 @@ export class UserRepository {
       company_id: companyId,
       phone: "",
     });
+    if (userError) {
+      await supabase.from("companies").delete().eq("id", companyId);
+      throw userError;
+    }
 
     return {
       id: userId,
@@ -71,14 +77,13 @@ export class UserRepository {
   async findActivities(userId?: string | null): Promise<Activity[]> {
     const supabase = await createUniversalClient();
     const uid = userId ?? await getUserIdFromUser();
+    if (!uid) return [];
 
-    let query = supabase.from("activities").select("*");
-    if (uid) {
-      query = query.eq("user_id", uid);
-    }
+    const query = supabase.from("activities").select("*").eq("user_id", uid);
     const { data, error } = await query.order("created_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
 
     return data.map((row: Record<string, unknown>) => ({
       id: row.id as string,

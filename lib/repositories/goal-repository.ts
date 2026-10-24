@@ -18,25 +18,25 @@ export class GoalRepository {
   async findAll(userId?: string | null): Promise<Goal[]> {
     const supabase = await createUniversalClient();
     const uid = userId ?? await getUserIdFromUser();
+    if (!uid) return [];
 
-    let query = supabase.from("goals").select("*");
-    if (uid) {
-      query = query.eq("user_id", uid);
-    }
+    const query = supabase.from("goals").select("*").eq("user_id", uid);
     const { data, error } = await query.order("created_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToGoal);
   }
 
   async create(input: Omit<Goal, "id">, userId?: string | null): Promise<Goal> {
     const supabase = await createUniversalClient();
     const uid = userId ?? await getUserIdFromUser();
+    if (!uid) throw new Error("Não foi possível identificar o usuário desta conta.");
     const id = `goal-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const row = {
       id,
-      user_id: uid ?? null,
+      user_id: uid,
       target_type: input.targetType,
       target_value: input.targetValue,
       period: input.period,
@@ -67,8 +67,9 @@ export class GoalRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("goals").delete().eq("id", id);
+    const { data, error } = await supabase.from("goals").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

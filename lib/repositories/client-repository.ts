@@ -1,6 +1,6 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
 import { getCompanyIdFromUser } from "@/lib/supabase/auth";
-import { formatDocument, maskPhone, stripMask, generateSupplierCode } from "@/lib/utils";
+import { formatDocument, maskPhone, stripMask } from "@/lib/utils";
 import type { Client, TimelineEntry } from "@/types";
 
 export interface CreateClientInput {
@@ -72,23 +72,25 @@ export class ClientRepository {
   async findAll(companyId?: string | null): Promise<Client[]> {
     const supabase = await createUniversalClient();
     const cid = companyId ?? await getCompanyIdFromUser();
+    if (!cid) return [];
 
-    let query = supabase.from("clients").select("*");
-    if (cid) {
-      query = query.eq("company_id", cid);
-    }
+    const query = supabase.from("clients").select("*").eq("company_id", cid);
     const { data, error } = await query.order("created_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("Não foi possível carregar os clientes.");
     return data.map(rowToClient);
   }
 
   async findById(id: string): Promise<Client | null> {
     const supabase = await createUniversalClient();
+    const cid = await getCompanyIdFromUser();
+    if (!cid) return null;
     const { data, error } = await supabase
       .from("clients")
       .select("*")
       .eq("id", id)
+      .eq("company_id", cid)
       .single();
 
     if (error || !data) return null;
@@ -97,10 +99,13 @@ export class ClientRepository {
 
   async findByCode(code: string): Promise<Client | null> {
     const supabase = await createUniversalClient();
+    const cid = await getCompanyIdFromUser();
+    if (!cid) return null;
     const { data, error } = await supabase
       .from("clients")
       .select("*")
       .eq("code", code)
+      .eq("company_id", cid)
       .single();
 
     if (error || !data) return null;
@@ -110,14 +115,13 @@ export class ClientRepository {
   async findAllCodes(companyId?: string | null): Promise<string[]> {
     const supabase = await createUniversalClient();
     const cid = companyId ?? await getCompanyIdFromUser();
+    if (!cid) return [];
 
-    let query = supabase.from("clients").select("code");
-    if (cid) {
-      query = query.eq("company_id", cid);
-    }
+    const query = supabase.from("clients").select("code").eq("company_id", cid);
     const { data, error } = await query;
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map((row: Record<string, unknown>) => row.code as string);
   }
 
@@ -129,7 +133,8 @@ export class ClientRepository {
       .eq("client_id", clientId)
       .order("date", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map((row: Record<string, unknown>) => ({
       id: row.id as string,
       date: row.date as string,
@@ -141,14 +146,21 @@ export class ClientRepository {
 
   async create(input: CreateClientInput, companyId?: string | null): Promise<Client> {
     const supabase = await createUniversalClient();
-    const cid = companyId ?? await getCompanyIdFromUser();
+    const authenticatedCompanyId = await getCompanyIdFromUser();
+    const cid = authenticatedCompanyId;
+    if (!cid) throw new Error("Não foi possível identificar a empresa desta conta.");
+    if (companyId && companyId !== authenticatedCompanyId) {
+      throw new Error("Não é permitido cadastrar clientes para outra empresa.");
+    }
     const id = `clt-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
-    const { data: existing } = await supabase
+    const { data: existing, error: codeLookupError } = await supabase
       .from("clients")
       .select("code")
+      .eq("company_id", cid)
       .order("code", { ascending: false })
       .limit(1);
+    if (codeLookupError) throw codeLookupError;
 
     const kind = input.kind ?? "CLIENTE";
     let nextCode = "CLT-000001";
@@ -233,6 +245,8 @@ export class ClientRepository {
 
   async update(id: string, input: Partial<CreateClientInput>): Promise<Client> {
     const supabase = await createUniversalClient();
+    const cid = await getCompanyIdFromUser();
+    if (!cid) throw new Error("Não foi possível identificar a empresa desta conta.");
     const row: Record<string, unknown> = {};
     if (input.name !== undefined) row.name = input.name;
     if (input.cpfCnpj !== undefined) row.cpf_cnpj = stripMask(input.cpfCnpj);
@@ -255,15 +269,18 @@ export class ClientRepository {
     if (input.origin !== undefined) row.origin = input.origin;
     if (input.notes !== undefined) row.notes = input.notes ?? null;
 
-    const { data, error } = await supabase.from("clients").update(row).eq("id", id).select().single();
+    const { data, error } = await supabase.from("clients").update(row).eq("id", id).eq("company_id", cid).select().single();
     if (error) throw error;
     return rowToClient(data);
   }
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("clients").delete().eq("id", id);
+    const cid = await getCompanyIdFromUser();
+    if (!cid) throw new Error("Não foi possível identificar a empresa desta conta.");
+    const { data, error } = await supabase.from("clients").delete().eq("id", id).eq("company_id", cid).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Cliente não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

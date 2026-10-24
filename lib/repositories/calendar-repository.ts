@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
 import type { CalendarEvent } from "@/types";
 
 function rowToEvent(row: Record<string, unknown>): CalendarEvent {
@@ -28,16 +29,20 @@ export class CalendarRepository {
       .select("*")
       .order("date", { ascending: true });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToEvent);
   }
 
   async create(input: CreateCalendarEventInput): Promise<CalendarEvent> {
     const supabase = await createUniversalClient();
+    const ownerId = await getUserIdFromUser();
+    if (!ownerId) throw new Error("Não foi possível identificar o usuário desta conta.");
     const id = `evt-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const row = {
       id,
+      owner_user_id: ownerId,
       title: input.title,
       type: input.type,
       date: input.date,
@@ -73,8 +78,9 @@ export class CalendarRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("calendar_events").delete().eq("id", id);
+    const { data, error } = await supabase.from("calendar_events").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

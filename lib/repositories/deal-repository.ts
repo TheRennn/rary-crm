@@ -1,4 +1,5 @@
 import { createUniversalClient } from "@/lib/supabase/universal";
+import { getUserIdFromUser } from "@/lib/supabase/auth";
 import { getClientIdsForCompany } from "@/lib/supabase/company-clients";
 import type { Deal, Purchase } from "@/types";
 
@@ -57,17 +58,20 @@ function rowToPurchase(row: Record<string, unknown>): Purchase {
 export class DealRepository {
   async findAll(companyId?: string | null): Promise<Deal[]> {
     const supabase = await createUniversalClient();
-    const clientIds = await getClientIdsForCompany(companyId);
+    const [clientIds, ownerId] = await Promise.all([
+      getClientIdsForCompany(companyId),
+      getUserIdFromUser(),
+    ]);
+    if (!ownerId) return [];
 
-    if (clientIds.length === 0) return [];
+    let query = supabase.from("deals").select("*");
+    query = clientIds.length
+      ? query.or(`client_id.in.(${clientIds.join(",")}),owner_user_id.eq.${ownerId}`)
+      : query.eq("owner_user_id", ownerId);
+    const { data, error } = await query.order("created_at", { ascending: false });
 
-    const { data, error } = await supabase
-      .from("deals")
-      .select("*")
-      .in("client_id", clientIds)
-      .order("created_at", { ascending: false });
-
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToDeal);
   }
 
@@ -79,7 +83,8 @@ export class DealRepository {
       .eq("client_id", clientId)
       .order("created_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToDeal);
   }
 
@@ -91,7 +96,8 @@ export class DealRepository {
       .eq("client_id", clientId)
       .order("date", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToPurchase);
   }
 
@@ -109,6 +115,8 @@ export class DealRepository {
 
   async create(input: CreateDealInput): Promise<Deal> {
     const supabase = await createUniversalClient();
+    const ownerId = await getUserIdFromUser();
+    if (!ownerId) throw new Error("Não foi possível identificar o usuário desta conta.");
     const id = `deal-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const { data: existing } = await supabase
@@ -126,6 +134,7 @@ export class DealRepository {
 
     const row = {
       id,
+      owner_user_id: ownerId,
       code: nextCode,
       client_id: input.clientId,
       product: input.product,
@@ -192,8 +201,9 @@ export class DealRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("deals").delete().eq("id", id);
+    const { data, error } = await supabase.from("deals").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

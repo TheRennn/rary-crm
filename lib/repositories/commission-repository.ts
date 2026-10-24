@@ -25,25 +25,25 @@ export class CommissionRepository {
   async findAll(userId?: string | null): Promise<Commission[]> {
     const supabase = await createUniversalClient();
     const uid = userId ?? await getUserIdFromUser();
+    if (!uid) return [];
 
-    let query = supabase.from("commissions").select("*");
-    if (uid) {
-      query = query.eq("user_id", uid);
-    }
+    const query = supabase.from("commissions").select("*").eq("user_id", uid);
     const { data, error } = await query.order("due_date", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToCommission);
   }
 
   async create(input: CreateCommissionInput, userId?: string | null): Promise<Commission> {
     const supabase = await createUniversalClient();
     const uid = userId ?? await getUserIdFromUser();
+    if (!uid) throw new Error("Não foi possível identificar o usuário desta conta.");
     const id = `com-${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
     const row = {
       id,
-      user_id: uid ?? null,
+      user_id: uid,
       company_name: input.companyName,
       period: input.period,
       rate: input.rate,
@@ -85,8 +85,9 @@ export class CommissionRepository {
 
   async delete(id: string): Promise<void> {
     const supabase = await createUniversalClient();
-    const { error } = await supabase.from("commissions").delete().eq("id", id);
+    const { data, error } = await supabase.from("commissions").delete().eq("id", id).select("id");
     if (error) throw error;
+    if (!data?.length) throw new Error("Registro não encontrado ou sem permissão para excluí-lo.");
   }
 }
 

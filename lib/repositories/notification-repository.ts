@@ -17,14 +17,13 @@ export class NotificationRepository {
   async findAll(userId?: string | null): Promise<Notification[]> {
     const supabase = await createUniversalClient();
     const uid = userId ?? await getUserIdFromUser();
+    if (!uid) return [];
 
-    let query = supabase.from("notifications").select("*");
-    if (uid) {
-      query = query.eq("user_id", uid);
-    }
+    const query = supabase.from("notifications").select("*").eq("user_id", uid);
     const { data, error } = await query.order("created_at", { ascending: false });
 
-    if (error || !data) return [];
+    if (error) throw error;
+    if (!data) throw new Error("O Supabase não retornou dados para esta consulta.");
     return data.map(rowToNotification);
   }
 }

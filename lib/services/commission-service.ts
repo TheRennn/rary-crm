@@ -1,5 +1,4 @@
 import { commissionRepository } from "@/lib/repositories";
-import { orderService } from "@/lib/services";
 import type { Commission, CommissionInstallment, CommissionPaymentMethod } from "@/types";
 
 export interface CommissionStats {
@@ -75,31 +74,6 @@ export class CommissionService {
       oneMonthDelay,
     };
     const created = await commissionRepository.create(commission);
-
-    try {
-      await orderService.create({
-        clientName: "",
-        companyName: input.companyName,
-        period: input.period,
-        date: dueDate,
-        source: "REPRESENTANTE",
-        type: "VENDA",
-        status: input.status ?? "PENDENTE",
-        items: [
-          {
-            product: `Comissão — ${input.companyName}`,
-            productCode: "",
-            quantity: 1,
-            unitValue: baseValue,
-          },
-        ],
-        entryValue: undefined,
-        entryType: undefined,
-        shippingValue: undefined,
-      });
-    } catch {
-      // Pedido auxiliar falha silenciosamente — comissão já foi criada
-    }
 
     return created;
   }
