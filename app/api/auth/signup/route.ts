@@ -1,36 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { Resend } from "resend";
+import { sendVerificationEmail } from "@/lib/email";
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function verificationEmailHtml(code: string): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 20px;">
-    <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fff;border-radius:12px;overflow:hidden;">
-        <tr><td style="padding:40px 32px 24px;text-align:center;">
-          <h1 style="margin:0;font-size:20px;font-weight:600;color:#18181b;">RARY</h1>
-        </td></tr>
-        <tr><td style="padding:0 32px 32px;text-align:center;">
-          <h2 style="margin:0 0 12px;font-size:18px;font-weight:600;color:#18181b;">Verifique seu e-mail</h2>
-          <p style="margin:0 0 24px;font-size:14px;color:#71717a;">Use o código abaixo. Expira em <strong>15 minutos</strong>.</p>
-          <div style="background:#f4f4f5;border-radius:8px;padding:16px 24px;margin-bottom:24px;">
-            <span style="font-size:32px;font-weight:700;color:#18181b;letter-spacing:8px;font-family:monospace;">${code}</span>
-          </div>
-          <p style="margin:0;font-size:13px;color:#a1a1aa;">Se não solicitou, ignore este e-mail.</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
 }
 
 function getAdmin() {
@@ -52,7 +25,7 @@ export async function POST(request: Request) {
     try {
       supabase = getAdmin();
     } catch {
-      return NextResponse.json({ error: "Configuração incompleta." }, { status: 500 });
+      return NextResponse.json({ error: "Configuração incompleta no servidor." }, { status: 500 });
     }
 
     const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
@@ -88,6 +61,7 @@ export async function POST(request: Request) {
       role: "ADMIN",
       company_id: companyId,
       phone: "",
+      email_verified: false,
     });
 
     const token = generateOtp();
@@ -99,20 +73,19 @@ export async function POST(request: Request) {
       expires_at: expiresAt,
     });
 
-    const resendKey = process.env.RESEND_API_KEY;
-    if (resendKey) {
-      const resend = new Resend(resendKey);
-      const from = process.env.RESEND_FROM || "RARY <onboarding@resend.dev>";
-      await resend.emails.send({
-        from,
-        to: email,
-        subject: "Seu código de verificação - RARY",
-        html: verificationEmailHtml(token),
-      });
+    const emailResult = await sendVerificationEmail({
+      to: email,
+      code: token,
+      name,
+    });
+
+    if (!emailResult.success && process.env.NODE_ENV !== "development") {
+      console.error("[Signup] Falha no disparo do e-mail de verificação:", emailResult.error);
     }
 
-    return NextResponse.json({ ok: true });
-  } catch {
+    return NextResponse.json({ ok: true, emailSent: emailResult.success });
+  } catch (err) {
+    console.error("[Signup Exception]", err);
     return NextResponse.json({ error: "Erro interno." }, { status: 500 });
   }
 }
