@@ -34,7 +34,9 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/cadastro");
 
-  const isPublicPage = request.nextUrl.pathname === "/";
+  const isPublicPage =
+    request.nextUrl.pathname === "/" ||
+    request.nextUrl.pathname.startsWith("/verificar-email");
 
   if (!user && !isAuthPage && !isPublicPage) {
     const url = request.nextUrl.clone();

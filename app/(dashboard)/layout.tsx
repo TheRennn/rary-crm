@@ -17,10 +17,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const appUser = await userService.getCurrentUser(user, supabase);
 
-  // TODO: reativar quando dominio Resend estiver configurado
-  // if (!appUser?.emailVerified) {
-  //   redirect(`/verificar-email?email=${encodeURIComponent(user.email ?? "")}`);
-  // }
+  if (!appUser?.emailVerified) {
+    redirect(`/verificar-email?email=${encodeURIComponent(user.email ?? "")}`);
+  }
 
   let companyName = "Minha empresa";
   let companyLogoUrl = "";

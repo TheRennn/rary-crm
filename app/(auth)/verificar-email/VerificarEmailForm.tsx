@@ -95,9 +95,10 @@ export default function VerificarEmailForm() {
       setLoading(false);
       toast({
         title: "Código inválido",
-        message: data.error === "Código inválido ou expirado."
-          ? "Código expirado ou inválido. Solicite um novo."
-          : data.error,
+        message:
+          data.error === "Código inválido ou expirado."
+            ? "Código expirado ou inválido. Solicite um novo."
+            : data.error,
         variant: "error",
       });
       setOtp(new Array(OTP_LENGTH).fill(""));
@@ -105,8 +106,24 @@ export default function VerificarEmailForm() {
       return;
     }
 
-    toast({ title: "E-mail verificado!", message: "Sua conta foi ativada com sucesso.", variant: "success" });
-    router.push("/dashboard");
+    const supabase = createClient();
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (sessionData?.session) {
+      toast({
+        title: "E-mail verificado!",
+        message: "Sua conta foi ativada com sucesso.",
+        variant: "success",
+      });
+      router.push("/dashboard");
+    } else {
+      toast({
+        title: "E-mail verificado!",
+        message: "Sua conta foi ativada. Faça login para continuar.",
+        variant: "success",
+      });
+      router.push("/login");
+    }
   }
 
   async function handleResend() {
