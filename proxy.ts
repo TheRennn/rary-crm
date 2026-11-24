@@ -58,7 +58,8 @@ export async function proxy(request: NextRequest) {
   const isAuthPage =
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/cadastro") ||
-    request.nextUrl.pathname.startsWith("/verificar-email");
+    request.nextUrl.pathname.startsWith("/verificar-email") ||
+    request.nextUrl.pathname.startsWith("/aguardando-aprovacao");
 
   const isPublicPage = request.nextUrl.pathname === "/";
   const isPagamentoPage = request.nextUrl.pathname.startsWith("/pagamento");

@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   const { data: access, error: accessError } = await supabase
     .from("users")
-    .select("email, email_verified, payment_verified, access_requirements_enforced, access_expires_at")
+    .select("email, email_verified, payment_verified, access_requirements_enforced, access_expires_at, access_status")
     .eq("auth_id", user.id)
     .maybeSingle();
 
@@ -36,6 +36,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     emailVerified: access.email_verified,
     paymentVerified: access.payment_verified,
     accessExpiresAt: access.access_expires_at,
+    accessStatus: access.access_status,
   });
 
   if (accessStatus === "email-unverified") {
@@ -44,6 +45,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   if (accessStatus === "payment-required") {
     redirect(`/pagamento?email=${encodeURIComponent(access.email || user.email || "")}`);
+  }
+
+  if (accessStatus === "approval-required") {
+    redirect("/aguardando-aprovacao");
   }
 
   const appUser = await userService.getCurrentUser(user, supabase);

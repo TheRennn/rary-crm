@@ -62,7 +62,7 @@ export default function LoginPage() {
 
       const { data: appUser, error: appUserError } = await supabase
         .from("users")
-        .select("email_verified, payment_verified, access_requirements_enforced, access_expires_at")
+        .select("email_verified, payment_verified, access_requirements_enforced, access_expires_at, access_status")
         .eq("auth_id", data.user.id)
         .maybeSingle();
 
@@ -83,6 +83,7 @@ export default function LoginPage() {
         emailVerified: appUser.email_verified,
         paymentVerified: appUser.payment_verified,
         accessExpiresAt: appUser.access_expires_at,
+        accessStatus: appUser.access_status,
       });
 
       if (accessStatus === "email-unverified") {
@@ -94,6 +95,13 @@ export default function LoginPage() {
           variant: "warning",
         });
         router.push(`/verificar-email?email=${encodeURIComponent(data.user.email ?? email)}`);
+        return;
+      }
+
+      if (accessStatus === "approval-required") {
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) console.error("Erro ao encerrar sessão sem aprovação:", signOutError);
+        router.push("/aguardando-aprovacao");
         return;
       }
 

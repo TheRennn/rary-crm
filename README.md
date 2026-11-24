@@ -20,11 +20,17 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Mensalidade e liberação de acesso
+## Solicitação e liberação de acesso
 
-O acesso de contas novas exige e-mail verificado e período mensal pago. O valor é R$ 49,90; Pix, boleto e cartão são cobrados por links avulsos, e a confirmação só acontece pelo webhook (o retorno do checkout não libera o CRM).
+Novos clientes solicitam acesso pelo cadastro, informando nome, empresa, e-mail, telefone/WhatsApp e senha. O pedido chega a `contato@raryservice.com.br` pelo Resend, e o dashboard fica bloqueado até a aprovação manual.
 
-### Ambiente local e sandbox
+1. Aplique `supabase/migrations/017_manual_access_approval.sql` no SQL Editor do Supabase, depois das migrations anteriores.
+2. Configure `RESEND_API_KEY` e `RESEND_FROM`. O endereço remetente precisa pertencer a um domínio verificado no Resend. O destino padrão é `contato@raryservice.com.br`; `ACCESS_REQUEST_EMAIL_TO` pode sobrescrevê-lo para testes ou outro endereço autorizado.
+3. No Supabase, localize o cliente em `public.users` pelo e-mail e altere `access_status` de `Aguardando` para `Liberado`. O próximo login permitirá o acesso ao dashboard.
+
+Contas existentes com acesso legado ou mensalidade ativa são mantidas como `Liberado` pela migration. O fluxo de cobrança antigo não é necessário para os novos cadastros.
+
+### Integração de pagamentos legada
 
 1. No Supabase SQL Editor, confirme que `015_add_payment_verified.sql` já foi aplicada e execute `supabase/migrations/016_monthly_manual_billing.sql`.
 2. Configure a chave de teste em `PAGARME_API_KEY`, `PAGARME_ENV=test` e um `PAGARME_WEBHOOK_SECRET` forte no ambiente local.
