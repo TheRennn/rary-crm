@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { getAccessRequirementStatus } from "@/lib/auth/subscription-access";
 import { userService } from "@/lib/services";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,10 +16,38 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect("/login");
   }
 
-  const appUser = await userService.getCurrentUser(user, supabase);
+  const { data: access, error: accessError } = await supabase
+    .from("users")
+    .select("email, email_verified, access_requirements_enforced, access_status")
+    .eq("auth_id", user.id)
+    .maybeSingle();
 
-  if (!appUser?.emailVerified) {
-    redirect(`/verificar-email?email=${encodeURIComponent(user.email ?? "")}`);
+  if (accessError) {
+    console.error("Erro ao validar permissões de acesso ao dashboard:", accessError);
+    throw new Error("Não foi possível validar as permissões da conta.");
+  }
+
+  if (!access) {
+    redirect("/login");
+  }
+
+  const accessStatus = getAccessRequirementStatus({
+    requirementsEnforced: access.access_requirements_enforced,
+    emailVerified: access.email_verified,
+    accessStatus: access.access_status,
+  });
+
+  if (accessStatus === "email-unverified") {
+    redirect(`/verificar-email?email=${encodeURIComponent(access.email || user.email || "")}`);
+  }
+
+  if (accessStatus === "approval-required") {
+    redirect("/aguardando-aprovacao");
+  }
+
+  const appUser = await userService.getCurrentUser(user, supabase);
+  if (!appUser) {
+    redirect("/login");
   }
 
   let companyName = "Minha empresa";

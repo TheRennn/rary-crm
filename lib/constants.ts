@@ -16,6 +16,7 @@ import type {
 } from "@/types";
 
 export const APP_NAME = "RARY CRM";
+export const CADASTRO_VALOR_CENTAVOS = 4990;
 
 export const DEFAULT_THEME = {
   companyName: "RARY",

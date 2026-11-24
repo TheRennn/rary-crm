@@ -26,8 +26,8 @@ export function isEmailServiceConfigured(): boolean {
 }
 
 /**
- * Retorna o remetente padrão configurado ou o fallback de onboarding.
+ * Retorna o remetente configurado ou o endereço padrão verificado da RARY.
  */
 export function getDefaultSender(): string {
-  return process.env.RESEND_FROM || "RARY CRM <onboarding@resend.dev>";
+  return process.env.RESEND_FROM || "RARY CRM <contato@raryservice.com.br>";
 }

@@ -1,4 +1,4 @@
-import { getResendClient, getDefaultSender, isEmailServiceConfigured } from "./client";
+import { getResendClient, getDefaultSender } from "./client";
 import {
   renderVerificationEmailHtml,
   renderVerificationEmailText,
@@ -18,6 +18,8 @@ export interface SendEmailResult {
   id?: string;
   simulated?: boolean;
   error?: string;
+  name?: string;
+  statusCode?: number | null;
 }
 
 /**
@@ -61,7 +63,12 @@ export async function sendVerificationEmail({
 
     if (error) {
       console.error("[Resend Error]", error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error.message,
+        name: error.name,
+        statusCode: error.statusCode,
+      };
     }
 
     return { success: true, id: data?.id };
@@ -69,5 +76,57 @@ export async function sendVerificationEmail({
     const message = err instanceof Error ? err.message : String(err);
     console.error("[Resend Exception]", message);
     return { success: false, error: message };
+  }
+}
+
+export interface SendAccessRequestEmailParams {
+  name: string;
+  company: string;
+  email: string;
+  phone: string;
+  segment: string;
+}
+
+/** Envia à equipe os dados de contato de quem pediu acesso ao CRM. */
+export async function sendAccessRequestEmail({
+  name,
+  company,
+  email,
+  phone,
+  segment,
+}: SendAccessRequestEmailParams): Promise<SendEmailResult> {
+  const resend = getResendClient();
+  if (!resend) {
+    return { success: false, error: "Serviço de e-mail não configurado (RESEND_API_KEY ausente)." };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: getDefaultSender(),
+      to: process.env.ACCESS_REQUEST_EMAIL_TO || "contato@raryservice.com.br",
+      subject: `Novo pedido de acesso ao RARY CRM — ${name}`,
+      text: [
+        "Novo pedido de acesso ao RARY CRM",
+        "",
+        `Nome: ${name}`,
+        `Empresa: ${company}`,
+        `E-mail: ${email}`,
+        `Telefone/WhatsApp: ${phone}`,
+        `Segmento: ${segment || "Não informado"}`,
+        "",
+        "A conta está aguardando aprovação. Para liberar, altere public.users.access_status para Liberado para este usuário no Supabase.",
+      ].join("\n"),
+    });
+
+    if (error) {
+      console.error("[Resend Access Request Error]", error);
+      return { success: false, error: error.message, name: error.name, statusCode: error.statusCode };
+    }
+
+    return { success: true, id: data?.id };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[Resend Access Request Exception]", message);
+    return { success: false, error: message, name: "send_error" };
   }
 }

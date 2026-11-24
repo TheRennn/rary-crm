@@ -19,7 +19,6 @@ export function SettingsProfile({ user }: SettingsProfileProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [name, setName] = useState(user?.name ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [saving, setSaving] = useState(false);
   const [resendingVerification, setResendingVerification] = useState(false);
@@ -33,7 +32,7 @@ export function SettingsProfile({ user }: SettingsProfileProps) {
       const supabase = createClient();
       const { error } = await supabase
         .from("users")
-        .update({ name, email, phone: stripMask(phone) })
+        .update({ name, phone: stripMask(phone) })
         .eq("id", user.id);
 
       if (error) throw error;
@@ -79,7 +78,7 @@ export function SettingsProfile({ user }: SettingsProfileProps) {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input id="perf-nome" label="Nome completo" value={name} onChange={(e) => setName(e.target.value)} required />
           <div className="flex flex-col gap-1.5">
-            <Input id="perf-email" label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input id="perf-email" label="E-mail" type="email" value={user?.email ?? ""} readOnly />
             <div className="flex items-center gap-2">
               {user?.emailVerified ? (
                 <Badge tone="success">E-mail verificado</Badge>

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { IconMail, IconEye } from "@/components/icons";
 import { IconKey, IconEyeOff } from "@/components/ui/icons-additional";
+import { getAccessRequirementStatus } from "@/lib/auth/subscription-access";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -24,48 +25,100 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setLoading(false);
-      toast({
-        title: "Erro ao entrar",
-        message:
-          error.message === "Invalid login credentials"
-            ? "E-mail ou senha inválidos."
-            : error.message,
-        variant: "error",
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      return;
-    }
 
-    if (data.user) {
-      const { data: appUser } = await supabase
-        .from("users")
-        .select("email_verified")
-        .eq("auth_id", data.user.id)
-        .single();
-
-      if (!appUser?.email_verified) {
+      if (error) {
+        const emailNotConfirmed =
+          error.code === "email_not_confirmed" ||
+          error.message.toLowerCase().includes("email not confirmed");
         toast({
-          title: "E-mail não verificado",
-          message: "Confirme o código enviado ao seu e-mail para acessar o painel.",
-          variant: "warning",
+          title: emailNotConfirmed ? "E-mail não verificado" : "Erro ao entrar",
+          message:
+            emailNotConfirmed
+              ? "Digite o código enviado para confirmar seu e-mail."
+              : error.message === "Invalid login credentials"
+                ? "E-mail ou senha inválidos."
+                : error.message,
+          variant: emailNotConfirmed ? "warning" : "error",
         });
-        router.push(`/verificar-email?email=${encodeURIComponent(email)}`);
+        if (emailNotConfirmed) {
+          router.push(`/verificar-email?email=${encodeURIComponent(email.trim())}`);
+        }
         return;
       }
-    }
 
-    toast({
-      title: "Bem-vindo de volta!",
-      message: "Login realizado com sucesso.",
-      variant: "success",
-    });
-    router.push("/dashboard");
+      if (!data.user) {
+        toast({
+          title: "Erro ao entrar",
+          message: "Não foi possível validar sua conta. Tente novamente.",
+          variant: "error",
+        });
+        return;
+      }
+
+      const { data: appUser, error: appUserError } = await supabase
+        .from("users")
+        .select("email_verified, access_requirements_enforced, access_status")
+        .eq("auth_id", data.user.id)
+        .maybeSingle();
+
+      if (appUserError || !appUser) {
+        if (appUserError) console.error("Erro ao validar status da conta:", appUserError);
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) console.error("Erro ao encerrar sessão sem status de conta:", signOutError);
+        toast({
+          title: "Não foi possível validar sua conta",
+          message: "Tente novamente em instantes ou entre em contato com o suporte.",
+          variant: "error",
+        });
+        return;
+      }
+
+      const accessStatus = getAccessRequirementStatus({
+        requirementsEnforced: appUser.access_requirements_enforced,
+        emailVerified: appUser.email_verified,
+        accessStatus: appUser.access_status,
+      });
+
+      if (accessStatus === "email-unverified") {
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) console.error("Erro ao encerrar sessão de e-mail pendente:", signOutError);
+        toast({
+          title: "E-mail não verificado",
+          message: "Digite o código enviado para confirmar seu e-mail.",
+          variant: "warning",
+        });
+        router.push(`/verificar-email?email=${encodeURIComponent(data.user.email ?? email)}`);
+        return;
+      }
+
+      if (accessStatus === "approval-required") {
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) console.error("Erro ao encerrar sessão sem aprovação:", signOutError);
+        router.push("/aguardando-aprovacao");
+        return;
+      }
+
+      toast({
+        title: "Bem-vindo de volta!",
+        message: "Login realizado com sucesso.",
+        variant: "success",
+      });
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Erro inesperado ao entrar:", error);
+      toast({
+        title: "Erro ao entrar",
+        message: "Não foi possível concluir o login. Tente novamente.",
+        variant: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

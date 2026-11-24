@@ -20,6 +20,40 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Solicitação e liberação de acesso
+
+Novos clientes solicitam acesso pelo cadastro, informando nome, empresa, e-mail, telefone/WhatsApp e senha. O pedido chega a `contato@raryservice.com.br` pelo Resend, e o dashboard fica bloqueado até a aprovação manual.
+
+1. Aplique `supabase/migrations/017_manual_access_approval.sql` no SQL Editor do Supabase, depois das migrations anteriores.
+2. Configure `RESEND_API_KEY` e `RESEND_FROM`. O endereço remetente precisa pertencer a um domínio verificado no Resend. O destino padrão é `contato@raryservice.com.br`; `ACCESS_REQUEST_EMAIL_TO` pode sobrescrevê-lo para testes ou outro endereço autorizado.
+3. No Supabase, localize o cliente em `public.users` pelo e-mail e altere `access_status` de `Aguardando` para `Liberado`. O próximo login permitirá o acesso ao dashboard.
+
+Contas existentes com acesso legado ou mensalidade ativa são mantidas como `Liberado` pela migration. O fluxo de cobrança antigo não é necessário para os novos cadastros.
+
+### Integração de pagamentos legada
+
+1. No Supabase SQL Editor, confirme que `015_add_payment_verified.sql` já foi aplicada e execute `supabase/migrations/016_monthly_manual_billing.sql`.
+2. Configure a chave de teste em `PAGARME_API_KEY`, `PAGARME_ENV=test` e um `PAGARME_WEBHOOK_SECRET` forte no ambiente local.
+3. Aponte o webhook do ambiente de testes Stone/Pagar.me para o túnel HTTPS ativo, por exemplo `https://<tunnel>/api/webhooks/pagarme`. Se o provedor não enviar `x-hub-signature-256`, acrescente `?token=<PAGARME_WEBHOOK_SECRET>` à URL.
+4. Habilite `charge.paid`, `order.paid`, `charge.payment_failed`, `order.payment_failed` e `charge.refunded`.
+
+Em desenvolvimento local, mantenha o servidor e o túnel ativos. Uma confirmação assinada com valor diferente de R$ 49,90 é recusada e não concede acesso. Não use o retorno do checkout como confirmação de pagamento.
+
+### Ativação pública em `crm.raryservice.com.br`
+
+O domínio público pretendido é `https://crm.raryservice.com.br`. O DNS já aponta para a Vercel, mas isso, por si só, não configura as variáveis, o domínio de envio no Resend nem publica a implementação da mensalidade.
+
+Antes de liberar usuários:
+
+1. **Vercel — Preview primeiro:** configure as variáveis necessárias no ambiente Preview e publique a branch `feature/monthly-manual-billing`. Use credenciais Stone/Pagar.me de sandbox e, preferencialmente, um projeto Supabase de staging separado do banco de usuários reais.
+2. **Supabase Auth:** defina `https://crm.raryservice.com.br` como Site URL e adicione `https://crm.raryservice.com.br/**` aos Redirect URLs. Mantenha `http://localhost:3000/**` apenas para desenvolvimento local.
+3. **Resend:** verifique `raryservice.com.br` no painel do Resend, publique os registros DNS exatamente como fornecidos pelo Resend e aguarde a verificação. O domínio já publica SPF para Zoho; não substitua esse registro ao configurar o Resend. Só então configure `RESEND_FROM` com um remetente do domínio verificado, por exemplo `RARY CRM <contato@raryservice.com.br>`.
+4. **Stone/Pagar.me — Testes:** a URL deve apontar para a implantação pública de Preview validada, no formato `https://<preview>/api/webhooks/pagarme`. Use o segredo correspondente ao ambiente Preview se for necessário autenticar por token na query; não reutilize o segredo de produção.
+5. **Validação obrigatória:** conclua um pagamento de sandbox e confirme que o callback automático do provedor chega ao endpoint, atualiza a fatura uma única vez e libera acesso somente após a confirmação. Reenvie o evento para verificar idempotência e teste recusa, estorno, assinatura inválida e valor incorreto.
+6. **Produção:** somente após a validação de Preview, configure na Vercel `NEXT_PUBLIC_APP_URL=https://crm.raryservice.com.br`, `PAGARME_SUCCESS_URL=https://crm.raryservice.com.br/pagamento/sucesso`, as chaves e o segredo **de produção** do Pagar.me (`PAGARME_ENV=live`), além das credenciais do Supabase público e do Resend verificado. A `SUPABASE_SERVICE_ROLE_KEY` deve permanecer somente no servidor, nunca em variável `NEXT_PUBLIC_*`.
+7. Crie/ative o webhook no ambiente de produção Stone com `https://crm.raryservice.com.br/api/webhooks/pagarme` e os cinco eventos listados acima. Se não houver assinatura HMAC `x-hub-signature-256`, use `?token=<segredo-de-producao>` com um segredo aleatório exclusivo. Não grave segredos no repositório, em capturas de tela ou em mensagens.
+8. Faça uma última validação controlada em produção antes de divulgar a URL. Depois promova a alteração testada para `master`; não faça o merge enquanto o callback automático do sandbox não tiver sido comprovado.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

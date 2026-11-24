@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { nodeRealtimeTransport } from "@/lib/supabase/node-websocket";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -26,6 +27,9 @@ export async function createClient() {
             // Ignorado em Server Components
           }
         },
+      },
+      realtime: {
+        transport: nodeRealtimeTransport,
       },
     }
   );

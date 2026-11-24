@@ -1,21 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
-import { IconMail, IconUser, IconBuilding, IconLayers, IconEye } from "@/components/icons";
-import { IconKey, IconEyeOff, IconBadgeCheck } from "@/components/ui/icons-additional";
+import { IconMail, IconUser, IconBuilding, IconLayers, IconEye, IconPhone } from "@/components/icons";
+import { IconKey, IconEyeOff } from "@/components/ui/icons-additional";
 import { SEGMENTS } from "@/lib/constants";
 
 const segmentOptions = SEGMENTS.map((segment) => ({ value: segment, label: segment }));
 
 export default function CadastroPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,41 +22,63 @@ export default function CadastroPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [segment, setSegment] = useState("");
+  const [phone, setPhone] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
 
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name, company, segment }),
-    });
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name, company, segment, phone }),
+      });
+      const data = await res.json();
 
-    const data = await res.json();
+      if (!res.ok) {
+        toast({
+          title: "Erro ao criar conta",
+          message: data.error || "Tente novamente.",
+          variant: "error",
+        });
+        return;
+      }
 
-    if (!res.ok) {
-      setLoading(false);
+      setSubmitted(true);
+    } catch {
       toast({
         title: "Erro ao criar conta",
-        message: data.error || "Tente novamente.",
+        message: "Não foi possível conectar ao servidor. Tente novamente.",
         variant: "error",
       });
-      return;
+    } finally {
+      setLoading(false);
     }
+  }
 
-    toast({
-      title: "Conta criada!",
-      message: "Verifique seu e-mail para ativar sua conta.",
-      variant: "success",
-    });
-    router.push(`/verificar-email?email=${encodeURIComponent(email)}`);
+  if (submitted) {
+    return (
+      <AuthShell
+        title="Pedido recebido"
+        description="Obrigado pelo seu interesse no RARY CRM."
+        footer={<Link href="/login" className="font-medium text-brand-400 hover:text-brand-300">Voltar para o login</Link>}
+      >
+        <div className="flex flex-col gap-4 text-center">
+          <p className="text-sm leading-6 text-muted">
+            Seu cadastro está aguardando aprovação. Nossa equipe entrará em contato pelo e-mail e WhatsApp informados em até 24 horas.
+          </p>
+          <p className="text-xs text-muted-2">Seu acesso ao dashboard será liberado depois desse contato.</p>
+        </div>
+      </AuthShell>
+    );
   }
 
   return (
     <AuthShell
       title="Criar sua conta"
-      description="Comece a organizar clientes, vendas e pagamentos em poucos minutos."
+      description="Solicite acesso ao RARY CRM. Nossa equipe falará com você antes da liberação."
       footer={
         <>
           Já tem conta?{" "}
@@ -100,6 +120,16 @@ export default function CadastroPage() {
           required
         />
         <Input
+          id="cad-telefone"
+          label="Telefone / WhatsApp"
+          type="tel"
+          placeholder="(11) 99999-9999"
+          leftIcon={<IconPhone className="h-4 w-4" />}
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          required
+        />
+        <Input
           id="cad-senha"
           label="Senha"
           type={showPassword ? "text" : "password"}
@@ -130,11 +160,10 @@ export default function CadastroPage() {
           required
         />
         <Button type="submit" size="lg" loading={loading} className="mt-2 w-full">
-          Criar conta gratuita
+          Solicitar acesso
         </Button>
-        <p className="flex items-center justify-center gap-1.5 text-xs text-muted-2">
-          <IconBadgeCheck className="h-3.5 w-3.5 text-success" />
-          Sem cartão de crédito. Dados protegidos.
+        <p className="text-center text-xs text-muted-2">
+          O acesso será liberado após nossa equipe analisar seu pedido.
         </p>
       </form>
     </AuthShell>
